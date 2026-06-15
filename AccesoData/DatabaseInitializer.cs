@@ -19,6 +19,11 @@ namespace AccesoData
         private void CrearTablas(SqliteConnection con)
         {
             string sql = @"
+                CREATE TABLE IF NOT EXISTS Categoria (
+                    IdCategoria INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nombre      TEXT    NOT NULL UNIQUE
+                );
+
                 CREATE TABLE IF NOT EXISTS Usuario (
                     IdUsuario   INTEGER PRIMARY KEY AUTOINCREMENT,
                     Nombre      TEXT    NOT NULL,
@@ -63,6 +68,17 @@ namespace AccesoData
                     FOREIGN KEY (IdUsuario) REFERENCES Usuario(IdUsuario)
                 );
 
+                CREATE TABLE IF NOT EXISTS LogMovimiento (
+                    IdLog       INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Fecha       TEXT    NOT NULL,
+                    IdUsuario   INTEGER NOT NULL,
+                    NombreUsuario TEXT  NOT NULL,
+                    Modulo      TEXT    NOT NULL,
+                    Accion      TEXT    NOT NULL,
+                    Detalle     TEXT,
+                    FOREIGN KEY (IdUsuario) REFERENCES Usuario(IdUsuario)
+                );
+
                 CREATE TABLE IF NOT EXISTS DetalleVenta (
                     IdDetalle      INTEGER PRIMARY KEY AUTOINCREMENT,
                     IdVenta        INTEGER NOT NULL,
@@ -82,7 +98,6 @@ namespace AccesoData
 
         private void SembrarAdmin(SqliteConnection con)
         {
-            // Solo crea el admin si la tabla Usuario está vacía
             using (var cmdCount = new SqliteCommand("SELECT COUNT(*) FROM Usuario;", con))
             {
                 long total = Convert.ToInt64(cmdCount.ExecuteScalar());
@@ -100,6 +115,18 @@ namespace AccesoData
                 cmd.Parameters.AddWithValue("@pass", Seguridad.Hash("admin123"));
                 cmd.Parameters.AddWithValue("@rol", RolUsuario.Admin);
                 cmd.ExecuteNonQuery();
+            }
+
+            // Categorías de ejemplo
+            string[] cats = { "Abarrotes", "Bebidas", "Lácteos", "Panadería", "Limpieza", "Otros" };
+            foreach (var c in cats)
+            {
+                using (var cmd = new SqliteCommand(
+                    "INSERT OR IGNORE INTO Categoria (Nombre) VALUES (@n);", con))
+                {
+                    cmd.Parameters.AddWithValue("@n", c);
+                    cmd.ExecuteNonQuery();
+                }
             }
         }
     }

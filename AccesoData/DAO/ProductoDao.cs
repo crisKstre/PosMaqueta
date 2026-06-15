@@ -6,7 +6,7 @@ namespace AccesoData.DAO
 {
     public class ProductoDao : ConexionSqlite
     {
-        public List<Producto> ObtenerTodos(bool soloActivos = true)
+        public List<Producto> ObtenerTodos(bool soloActivos = false)
         {
             var lista = new List<Producto>();
             using (var con = GetConnection())
@@ -18,7 +18,7 @@ namespace AccesoData.DAO
                     FROM Producto";
                 if (soloActivos)
                     sql += " WHERE Activo = 1";
-                sql += " ORDER BY Nombre;";
+                sql += " ORDER BY Activo DESC, Nombre;";
 
                 using (var cmd = new SqliteCommand(sql, con))
                 using (var reader = cmd.ExecuteReader())
@@ -40,18 +40,15 @@ namespace AccesoData.DAO
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
                            Stock, StockMinimo, UnidadMedida, Activo
                     FROM Producto
-                    WHERE Activo = 1
-                      AND (Nombre LIKE @texto OR CodigoBarras LIKE @texto)
-                    ORDER BY Nombre;";
+                    WHERE (Nombre LIKE @texto OR CodigoBarras LIKE @texto)
+                    ORDER BY Activo DESC, Nombre;";
 
                 using (var cmd = new SqliteCommand(sql, con))
                 {
                     cmd.Parameters.AddWithValue("@texto", "%" + texto + "%");
                     using (var reader = cmd.ExecuteReader())
-                    {
                         while (reader.Read())
                             lista.Add(Mapear(reader));
-                    }
                 }
             }
             return lista;
@@ -103,6 +100,43 @@ namespace AccesoData.DAO
                     }
                 }
             }
+        }
+
+        public List<string> ObtenerCategorias()
+        {
+            var lista = new List<string>();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"SELECT DISTINCT Categoria FROM Producto
+                               WHERE Activo = 1 AND Categoria IS NOT NULL AND Categoria <> ''
+                               ORDER BY Categoria;";
+                using (var cmd = new SqliteCommand(sql, con))
+                using (var r   = cmd.ExecuteReader())
+                    while (r.Read()) lista.Add(r.GetString(0));
+            }
+            return lista;
+        }
+
+        public List<Producto> ObtenerPorCategoria(string categoria)
+        {
+            var lista = new List<Producto>();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
+                                      Stock, StockMinimo, UnidadMedida, Activo
+                               FROM Producto
+                               WHERE Activo = 1 AND Categoria = @cat
+                               ORDER BY Nombre;";
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@cat", categoria);
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) lista.Add(Mapear(r));
+                }
+            }
+            return lista;
         }
 
         public bool ExisteCodigo(string codigoBarras, int idExcluir = 0)
@@ -174,6 +208,20 @@ namespace AccesoData.DAO
             {
                 con.Open();
                 string sql = "UPDATE Producto SET Activo = 0 WHERE IdProducto = @id;";
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+        }
+
+        public bool Activar(int idProducto)
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = "UPDATE Producto SET Activo = 1 WHERE IdProducto = @id;";
                 using (var cmd = new SqliteCommand(sql, con))
                 {
                     cmd.Parameters.AddWithValue("@id", idProducto);

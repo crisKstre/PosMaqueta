@@ -12,16 +12,12 @@ namespace Dominio.Servicios
         private readonly VentaDao ventaDao = new VentaDao();
         private readonly ProductoDao productoDao = new ProductoDao();
         private readonly CajaDao cajaDao = new CajaDao();
+        private readonly LogService logService = new LogService();
 
-        // El carrito vive en memoria mientras se arma la venta
         private readonly List<DetalleVenta> carrito = new List<DetalleVenta>();
-
         public IReadOnlyList<DetalleVenta> Carrito => carrito;
-
         public decimal Total => carrito.Sum(d => d.Subtotal);
 
-        // Agrega un producto al carrito por código de barras.
-        // Si ya está en el carrito, suma la cantidad.
         public void AgregarPorCodigo(string codigoBarras, decimal cantidad)
         {
             if (cantidad <= 0)
@@ -29,17 +25,17 @@ namespace Dominio.Servicios
 
             var producto = productoDao.ObtenerPorCodigo(codigoBarras);
             if (producto == null)
-                throw new InvalidOperationException("No se encontró un producto con ese código.");
+                throw new InvalidOperationException("Producto no encontrado con ese código de barras.");
 
+            ValidarStock(producto, cantidad);
             AgregarProducto(producto, cantidad);
         }
 
-        // Busca productos por nombre o código (para el autocompletado de la UI)
         public List<Producto> BuscarProductos(string texto)
         {
-            if (string.IsNullOrWhiteSpace(texto))
-                return new List<Producto>();
-            return productoDao.Buscar(texto.Trim());
+            if (string.IsNullOrWhiteSpace(texto)) return new List<Producto>();
+            // Solo activos para vender
+            return productoDao.Buscar(texto.Trim()).FindAll(p => p.Activo);
         }
 
         public void AgregarPorId(int idProducto, decimal cantidad)
@@ -51,7 +47,22 @@ namespace Dominio.Servicios
             if (producto == null)
                 throw new InvalidOperationException("El producto no existe.");
 
+            ValidarStock(producto, cantidad);
             AgregarProducto(producto, cantidad);
+        }
+
+        private void ValidarStock(Producto producto, decimal cantidadAgregar)
+        {
+            // Stock actual en BD menos lo que ya está en el carrito para este producto
+            decimal enCarrito = 0;
+            var enCarritoItem = carrito.FirstOrDefault(d => d.IdProducto == producto.IdProducto);
+            if (enCarritoItem != null) enCarrito = enCarritoItem.Cantidad;
+
+            decimal disponible = producto.Stock - enCarrito;
+            if (cantidadAgregar > disponible)
+                throw new InvalidOperationException(
+                    "Stock insuficiente para \"" + producto.Nombre + "\".\n" +
+                    "Disponible: " + disponible.ToString("0.##") + " " + producto.UnidadMedida + ".");
         }
 
         public void AgregarProducto(Producto producto, decimal cantidad)
@@ -78,29 +89,20 @@ namespace Dominio.Servicios
         public void QuitarDelCarrito(int idProducto)
         {
             var item = carrito.FirstOrDefault(d => d.IdProducto == idProducto);
-            if (item != null)
-                carrito.Remove(item);
+            if (item != null) carrito.Remove(item);
         }
 
-        public void VaciarCarrito()
-        {
-            carrito.Clear();
-        }
+        public void VaciarCarrito() => carrito.Clear();
 
-        // Cierra la venta: arma la cabecera, la registra con su detalle,
-        // descuenta stock y vacía el carrito. Devuelve el Id de la venta.
         public int CobrarVenta(int idUsuario, string medioPago, int? idCaja = null)
         {
             if (carrito.Count == 0)
                 throw new InvalidOperationException("El carrito está vacío.");
 
-            // Si no se pasó una caja, se asocia a la caja abierta actual (si existe).
-            // Si no hay caja abierta, la venta queda con IdCaja = NULL.
             if (idCaja == null)
             {
                 var cajaAbierta = cajaDao.ObtenerCajaAbierta();
-                if (cajaAbierta != null)
-                    idCaja = cajaAbierta.IdCaja;
+                if (cajaAbierta != null) idCaja = cajaAbierta.IdCaja;
             }
 
             var venta = new Venta
@@ -114,11 +116,11 @@ namespace Dominio.Servicios
             };
 
             int idVenta = ventaDao.RegistrarVenta(venta);
-
+            logService.Registrar(ModuloLog.Ventas, "Venta",
+                "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + medioPago);
             VaciarCarrito();
             NotificadorCambios.Notificar(Entidad.Venta);
             NotificadorCambios.Notificar(Entidad.Producto);
-
             return idVenta;
         }
     }

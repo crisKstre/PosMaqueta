@@ -7,166 +7,204 @@ namespace Presentacion.Forms
     {
         private System.ComponentModel.IContainer components = null;
 
-        private Panel pnlSidebar;
-        private Label lblTituloApp;
-        private Label lblUsuario;
-        private Label lblRol;
+        private Panel  pnlSidebar;
+        private Label  lblAppNombre;
+        private Label  lblAppSub;
+        private Panel  pnlSepUsuario;
+        private Label  lblUsuario;
+        private Label  lblRol;
+        private Panel  pnlSepMenu;
         private Button btnVentas;
         private Button btnProductos;
         private Button btnCaja;
         private Button btnCerrarSesion;
-        private Panel pnlTop;
-        private Label lblTituloSeccion;
-        private Panel pnlContenido;
+        private Panel  pnlTop;
+        private Label  lblTituloSeccion;
+        private Label  lblReloj;
+        private Panel  pnlContenido;
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-                components.Dispose();
+            if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
 
         private void InitializeComponent()
         {
-            this.pnlSidebar = new Panel();
-            this.lblTituloApp = new Label();
-            this.lblUsuario = new Label();
-            this.lblRol = new Label();
-            this.btnVentas = new Button();
-            this.btnProductos = new Button();
-            this.btnCaja = new Button();
+            this.pnlSidebar     = new Panel();
+            this.lblAppNombre   = new Label();
+            this.lblAppSub      = new Label();
+            this.pnlSepUsuario  = new Panel();
+            this.lblUsuario     = new Label();
+            this.lblRol         = new Label();
+            this.pnlSepMenu     = new Panel();
+            this.btnVentas      = new Button();
+            this.btnProductos   = new Button();
+            this.btnCaja        = new Button();
             this.btnCerrarSesion = new Button();
-            this.pnlTop = new Panel();
+            this.pnlTop         = new Panel();
             this.lblTituloSeccion = new Label();
-            this.pnlContenido = new Panel();
+            this.lblReloj       = new Label();
+            this.pnlContenido   = new Panel();
             this.pnlSidebar.SuspendLayout();
             this.pnlTop.SuspendLayout();
             this.SuspendLayout();
-            //
-            // pnlSidebar
-            //
-            this.pnlSidebar.BackColor = Color.FromArgb(28, 28, 30);
-            this.pnlSidebar.Controls.Add(this.lblTituloApp);
-            this.pnlSidebar.Controls.Add(this.lblUsuario);
-            this.pnlSidebar.Controls.Add(this.lblRol);
-            this.pnlSidebar.Controls.Add(this.btnVentas);
-            this.pnlSidebar.Controls.Add(this.btnProductos);
-            this.pnlSidebar.Controls.Add(this.btnCaja);
-            this.pnlSidebar.Controls.Add(this.btnCerrarSesion);
-            this.pnlSidebar.Dock = DockStyle.Left;
-            this.pnlSidebar.Width = 230;
-            //
-            // lblTituloApp
-            //
-            this.lblTituloApp.Font = new Font("Segoe UI Semibold", 15F, FontStyle.Bold);
-            this.lblTituloApp.ForeColor = Color.FromArgb(245, 245, 244);
-            this.lblTituloApp.Location = new Point(0, 28);
-            this.lblTituloApp.Size = new Size(230, 32);
-            this.lblTituloApp.Text = "Sistema POS";
-            this.lblTituloApp.TextAlign = ContentAlignment.MiddleCenter;
-            //
-            // lblUsuario
-            //
-            this.lblUsuario.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
-            this.lblUsuario.ForeColor = Color.FromArgb(229, 229, 228);
-            this.lblUsuario.Location = new Point(0, 72);
-            this.lblUsuario.Size = new Size(230, 24);
-            this.lblUsuario.Text = "Usuario";
+
+            // ── Sidebar ──────────────────────────────────────────────
+            this.pnlSidebar.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.pnlSidebar.Dock      = DockStyle.Left;
+            this.pnlSidebar.Width     = 200;
+            this.pnlSidebar.Controls.AddRange(new System.Windows.Forms.Control[] {
+                lblAppNombre, lblAppSub, pnlSepUsuario,
+                lblUsuario, lblRol, pnlSepMenu,
+                btnVentas, btnProductos, btnCaja, btnCerrarSesion });
+
+            // Nombre de la app
+            this.lblAppNombre.AutoSize  = false;
+            this.lblAppNombre.Text      = "Sistema POS";
+            this.lblAppNombre.Font      = new Font("Segoe UI", 15F, FontStyle.Bold);
+            this.lblAppNombre.ForeColor = Color.White;
+            this.lblAppNombre.Location  = new Point(0, 22);
+            this.lblAppNombre.Size      = new Size(200, 28);
+            this.lblAppNombre.TextAlign = ContentAlignment.MiddleCenter;
+
+            this.lblAppSub.AutoSize    = false;
+            this.lblAppSub.Text        = "Punto de venta";
+            this.lblAppSub.Font        = new Font("Segoe UI", 9F);
+            this.lblAppSub.ForeColor   = Color.FromArgb(120, 120, 135);
+            this.lblAppSub.Location    = new Point(0, 50);
+            this.lblAppSub.Size        = new Size(200, 18);
+            this.lblAppSub.TextAlign   = ContentAlignment.MiddleCenter;
+
+            // Separador
+            this.pnlSepUsuario.BackColor = Color.FromArgb(40, 40, 52);
+            this.pnlSepUsuario.Location  = new Point(16, 76);
+            this.pnlSepUsuario.Size      = new Size(168, 1);
+
+            // Usuario
+            this.lblUsuario.AutoSize  = false;
+            this.lblUsuario.Font      = new Font("Segoe UI", 11F, FontStyle.Bold);
+            this.lblUsuario.ForeColor = Color.FromArgb(230, 230, 235);
+            this.lblUsuario.Location  = new Point(0, 86);
+            this.lblUsuario.Size      = new Size(200, 22);
             this.lblUsuario.TextAlign = ContentAlignment.MiddleCenter;
-            //
-            // lblRol
-            //
-            this.lblRol.Font = new Font("Segoe UI", 9F);
-            this.lblRol.ForeColor = Color.FromArgb(142, 142, 147);
-            this.lblRol.Location = new Point(0, 96);
-            this.lblRol.Size = new Size(230, 20);
-            this.lblRol.Text = "Rol";
+            this.lblUsuario.Text      = "Usuario";
+
+            this.lblRol.AutoSize  = false;
+            this.lblRol.Font      = new Font("Segoe UI", 9F);
+            this.lblRol.ForeColor = Color.FromArgb(110, 110, 130);
+            this.lblRol.Location  = new Point(0, 108);
+            this.lblRol.Size      = new Size(200, 18);
             this.lblRol.TextAlign = ContentAlignment.MiddleCenter;
-            //
+            this.lblRol.Text      = "Rol";
+
+            // Separador menú
+            this.pnlSepMenu.BackColor = Color.FromArgb(40, 40, 52);
+            this.pnlSepMenu.Location  = new Point(16, 134);
+            this.pnlSepMenu.Size      = new Size(168, 1);
+
+            // Botones menú — centrados
             // btnVentas
-            //
-            ConfigurarBotonMenu(this.btnVentas, "Ventas", 150);
-            this.btnVentas.Click += this.btnVentas_Click;
-            //
+            this.btnVentas.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.btnVentas.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnVentas.FlatAppearance.BorderSize = 0;
+            this.btnVentas.Font      = new System.Drawing.Font("Segoe UI", 13F);
+            this.btnVentas.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
+            this.btnVentas.Location  = new System.Drawing.Point(0, 148);
+            this.btnVentas.Name      = "btnVentas";
+            this.btnVentas.Size      = new System.Drawing.Size(200, 58);
+            this.btnVentas.Text      = "Ventas";
+            this.btnVentas.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnVentas.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnVentas.UseVisualStyleBackColor = false;
+            this.btnVentas.Click += new System.EventHandler(this.btnVentas_Click);
             // btnProductos
-            //
-            ConfigurarBotonMenu(this.btnProductos, "Productos", 200);
-            this.btnProductos.Click += this.btnProductos_Click;
-            //
+            this.btnProductos.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.btnProductos.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnProductos.FlatAppearance.BorderSize = 0;
+            this.btnProductos.Font      = new System.Drawing.Font("Segoe UI", 13F);
+            this.btnProductos.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
+            this.btnProductos.Location  = new System.Drawing.Point(0, 208);
+            this.btnProductos.Name      = "btnProductos";
+            this.btnProductos.Size      = new System.Drawing.Size(200, 58);
+            this.btnProductos.Text      = "Productos";
+            this.btnProductos.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnProductos.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnProductos.UseVisualStyleBackColor = false;
+            this.btnProductos.Click += new System.EventHandler(this.btnProductos_Click);
             // btnCaja
-            //
-            ConfigurarBotonMenu(this.btnCaja, "Caja", 250);
-            this.btnCaja.Click += this.btnCaja_Click;
-            //
-            // btnCerrarSesion
-            //
-            this.btnCerrarSesion.BackColor = Color.FromArgb(28, 28, 30);
-            this.btnCerrarSesion.FlatStyle = FlatStyle.Flat;
+            this.btnCaja.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.btnCaja.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCaja.FlatAppearance.BorderSize = 0;
+            this.btnCaja.Font      = new System.Drawing.Font("Segoe UI", 13F);
+            this.btnCaja.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
+            this.btnCaja.Location  = new System.Drawing.Point(0, 268);
+            this.btnCaja.Name      = "btnCaja";
+            this.btnCaja.Size      = new System.Drawing.Size(200, 58);
+            this.btnCaja.Text      = "Caja";
+            this.btnCaja.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnCaja.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnCaja.UseVisualStyleBackColor = false;
+            this.btnCaja.Click += new System.EventHandler(this.btnCaja_Click);
+
+            // Cerrar sesión
+            this.btnCerrarSesion.BackColor  = Color.FromArgb(28, 28, 36);
+            this.btnCerrarSesion.FlatStyle  = FlatStyle.Flat;
             this.btnCerrarSesion.FlatAppearance.BorderSize = 0;
-            this.btnCerrarSesion.FlatAppearance.MouseOverBackColor = Color.FromArgb(58, 58, 60);
-            this.btnCerrarSesion.Font = new Font("Segoe UI", 10.5F);
-            this.btnCerrarSesion.ForeColor = Color.FromArgb(199, 199, 204);
-            this.btnCerrarSesion.Dock = DockStyle.Bottom;
-            this.btnCerrarSesion.Height = 52;
-            this.btnCerrarSesion.Text = "Cerrar sesión";
-            this.btnCerrarSesion.TextAlign = ContentAlignment.MiddleCenter;
-            this.btnCerrarSesion.Cursor = Cursors.Hand;
+            this.btnCerrarSesion.FlatAppearance.MouseOverBackColor = Color.FromArgb(50, 50, 62);
+            this.btnCerrarSesion.Font       = new Font("Segoe UI", 11F);
+            this.btnCerrarSesion.ForeColor  = Color.FromArgb(160, 160, 175);
+            this.btnCerrarSesion.Dock       = DockStyle.Bottom;
+            this.btnCerrarSesion.Height     = 52;
+            this.btnCerrarSesion.Text       = "Cerrar sesión";
+            this.btnCerrarSesion.TextAlign  = ContentAlignment.MiddleCenter;
+            this.btnCerrarSesion.Cursor     = Cursors.Hand;
             this.btnCerrarSesion.UseVisualStyleBackColor = false;
-            this.btnCerrarSesion.Click += this.btnCerrarSesion_Click;
-            //
-            // pnlTop
-            //
-            this.pnlTop.BackColor = Color.White;
+            this.btnCerrarSesion.Click      += this.btnCerrarSesion_Click;
+
+            // ── Topbar ───────────────────────────────────────────────
+            this.pnlTop.BackColor  = System.Drawing.Color.White;
+            this.pnlTop.Dock       = DockStyle.Top;
+            this.pnlTop.Height     = 52;
             this.pnlTop.Controls.Add(this.lblTituloSeccion);
-            this.pnlTop.Dock = DockStyle.Top;
-            this.pnlTop.Height = 60;
-            //
-            // lblTituloSeccion
-            //
-            this.lblTituloSeccion.Font = new Font("Segoe UI Semibold", 13F, FontStyle.Bold);
-            this.lblTituloSeccion.ForeColor = Color.FromArgb(28, 28, 30);
-            this.lblTituloSeccion.Location = new Point(24, 0);
-            this.lblTituloSeccion.Size = new Size(500, 60);
+            this.pnlTop.Controls.Add(this.lblReloj);
+
+            this.lblTituloSeccion.AutoSize  = false;
+            this.lblTituloSeccion.Font      = new System.Drawing.Font("Segoe UI", 17F, System.Drawing.FontStyle.Bold);
+            this.lblTituloSeccion.ForeColor = System.Drawing.Color.FromArgb(14, 14, 18);
+            this.lblTituloSeccion.Location  = new Point(22, 0);
+            this.lblTituloSeccion.Size      = new Size(600, 52);
             this.lblTituloSeccion.TextAlign = ContentAlignment.MiddleLeft;
-            this.lblTituloSeccion.Text = "Bienvenido";
-            //
-            // pnlContenido
-            //
-            this.pnlContenido.BackColor = Color.FromArgb(250, 250, 249);
-            this.pnlContenido.Dock = DockStyle.Fill;
-            //
-            // FormPrincipal
-            //
+            this.lblTituloSeccion.Text      = "Bienvenido";
+
+            this.lblReloj.AutoSize  = false;
+            this.lblReloj.Font      = new Font("Segoe UI", 10F);
+            this.lblReloj.ForeColor = System.Drawing.Color.FromArgb(143, 143, 154);
+            this.lblReloj.Anchor    = AnchorStyles.Top | AnchorStyles.Right;
+            this.lblReloj.Location  = new Point(700, 0);
+            this.lblReloj.Size      = new Size(260, 52);
+            this.lblReloj.TextAlign = ContentAlignment.MiddleRight;
+
+            // ── Área de contenido ────────────────────────────────────
+            this.pnlContenido.BackColor = System.Drawing.Color.FromArgb(245, 244, 241);
+            this.pnlContenido.Dock      = DockStyle.Fill;
+
+            // ── FormPrincipal ────────────────────────────────────────
             this.AutoScaleMode = AutoScaleMode.None;
-            this.ClientSize = new Size(1000, 620);
+            this.ClientSize    = new Size(1280, 800);
             this.Controls.Add(this.pnlContenido);
             this.Controls.Add(this.pnlTop);
             this.Controls.Add(this.pnlSidebar);
-            this.Name = "FormPrincipal";
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.Text = "Sistema POS";
-            this.WindowState = FormWindowState.Maximized;
-            this.Load += this.FormPrincipal_Load;
-            this.FormClosed += this.FormPrincipal_FormClosed;
+            this.Name             = "FormPrincipal";
+            this.StartPosition    = FormStartPosition.CenterScreen;
+            this.Text             = "Sistema POS";
+            this.WindowState      = FormWindowState.Maximized;
+            this.Load             += this.FormPrincipal_Load;
+            this.FormClosed       += this.FormPrincipal_FormClosed;
             this.pnlSidebar.ResumeLayout(false);
             this.pnlTop.ResumeLayout(false);
             this.ResumeLayout(false);
         }
 
-        private void ConfigurarBotonMenu(Button boton, string texto, int top)
-        {
-            boton.BackColor = Color.FromArgb(28, 28, 30);
-            boton.FlatStyle = FlatStyle.Flat;
-            boton.FlatAppearance.BorderSize = 0;
-            boton.FlatAppearance.MouseOverBackColor = Color.FromArgb(58, 58, 60);
-            boton.Font = new Font("Segoe UI", 10.5F);
-            boton.ForeColor = Color.FromArgb(199, 199, 204);
-            boton.Location = new Point(0, top);
-            boton.Size = new Size(230, 48);
-            boton.Text = "   " + texto;
-            boton.TextAlign = ContentAlignment.MiddleLeft;
-            boton.Cursor = Cursors.Hand;
-            boton.UseVisualStyleBackColor = false;
-        }
     }
 }

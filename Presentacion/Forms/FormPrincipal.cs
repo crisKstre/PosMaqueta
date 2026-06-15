@@ -8,8 +8,9 @@ namespace Presentacion.Forms
     public partial class FormPrincipal : Form
     {
         private Button botonActivo;
-        private Form formHijoActual;
-        private bool cerrandoSesion = false;
+        private Form   formHijoActual;
+        private bool   cerrandoSesion = false;
+        private Timer  timerReloj;
 
         public FormPrincipal()
         {
@@ -19,26 +20,41 @@ namespace Presentacion.Forms
         private void FormPrincipal_Load(object sender, EventArgs e)
         {
             lblUsuario.Text = Sesion.UsuarioActual.Nombre;
-            lblRol.Text = Sesion.UsuarioActual.Rol;
+            lblRol.Text     = Sesion.UsuarioActual.Rol;
 
-            // Control de acceso por rol: el cajero no ve la gestión de productos
             btnProductos.Visible = Sesion.EsAdmin;
+
+            IniciarReloj();
+            AbrirFormHijo(new FormVentas(), btnVentas);
         }
 
-        private static readonly Color ColorSidebar = Color.FromArgb(28, 28, 30);
-        private static readonly Color ColorActivo = Color.FromArgb(58, 58, 60);
-        private static readonly Color ColorTextoIdle = Color.FromArgb(199, 199, 204);
+        private void IniciarReloj()
+        {
+            timerReloj          = new Timer();
+            timerReloj.Interval = 1000;
+            timerReloj.Tick    += (s, e) => ActualizarReloj();
+            timerReloj.Start();
+            ActualizarReloj();
+        }
+
+        private void ActualizarReloj()
+        {
+            lblReloj.Text = DateTime.Now.ToString("dd/MM/yyyy  HH:mm:ss");
+        }
 
         private void ActivarBoton(Button boton)
         {
             if (botonActivo != null)
             {
-                botonActivo.BackColor = ColorSidebar;
-                botonActivo.ForeColor = ColorTextoIdle;
+                botonActivo.BackColor = EstiloPos.Sidebar;
+                botonActivo.ForeColor = Color.FromArgb(160, 160, 175);
             }
-            botonActivo = boton;
-            boton.BackColor = ColorActivo;
-            boton.ForeColor = Color.White;
+            botonActivo           = boton;
+            boton.BackColor       = EstiloPos.SidebarActivo;
+            boton.ForeColor       = Color.White;
+            // Acento: borde izquierdo visible usando padding
+            boton.Padding         = new Padding(4, 0, 0, 0);
+            boton.FlatAppearance.BorderSize  = 0;
         }
 
         private void AbrirFormHijo(Form formHijo, Button boton)
@@ -46,36 +62,30 @@ namespace Presentacion.Forms
             formHijoActual?.Close();
             ActivarBoton(boton);
 
-            formHijoActual = formHijo;
-            formHijo.TopLevel = false;
-            formHijo.FormBorderStyle = FormBorderStyle.None;
-            formHijo.Dock = DockStyle.Fill;
+            formHijo.TopLevel         = false;
+            formHijo.FormBorderStyle  = FormBorderStyle.None;
+            formHijo.Dock             = DockStyle.Fill;
 
             pnlContenido.Controls.Add(formHijo);
-            pnlContenido.Tag = formHijo;
             formHijo.BringToFront();
             formHijo.Show();
 
             lblTituloSeccion.Text = formHijo.Text;
+            formHijoActual        = formHijo;
         }
 
         private void btnVentas_Click(object sender, EventArgs e)
-        {
-            AbrirFormHijo(new FormVentas(), btnVentas);
-        }
+            => AbrirFormHijo(new FormVentas(), btnVentas);
 
         private void btnProductos_Click(object sender, EventArgs e)
-        {
-            AbrirFormHijo(new FormProductos(), btnProductos);
-        }
+            => AbrirFormHijo(new FormProductos(), btnProductos);
 
         private void btnCaja_Click(object sender, EventArgs e)
-        {
-            AbrirFormHijo(new FormCaja(), btnCaja);
-        }
+            => AbrirFormHijo(new FormCaja(), btnCaja);
 
         private void btnCerrarSesion_Click(object sender, EventArgs e)
         {
+            timerReloj?.Stop();
             cerrandoSesion = true;
             Sesion.Cerrar();
             var login = new FormLogin();

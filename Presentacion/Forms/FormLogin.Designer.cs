@@ -6,143 +6,156 @@ namespace Presentacion.Forms
     partial class FormLogin
     {
         private System.ComponentModel.IContainer components = null;
-
-        private Panel pnlCentro;
-        private Label lblTitulo;
-        private Label lblSubtitulo;
-        private Label lblUsuario;
+        private Panel   pnlFondo;
+        private Panel   pnlCard;
+        private Panel   pnlLogoWrap;
+        private Label   lblLogoTxt;
+        private Label   lblTitulo;
+        private Label   lblSubtitulo;
+        private Label   lblUsuario;
         private TextBox txtUsuario;
-        private Label lblPassword;
+        private Label   lblPassword;
         private TextBox txtPass;
-        private Button btnIngresar;
-        private Label lblError;
+        private Button  btnIngresar;
+        private Label   lblError;
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-                components.Dispose();
+            if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
 
         private void InitializeComponent()
         {
-            this.pnlCentro = new Panel();
-            this.lblTitulo = new Label();
-            this.lblSubtitulo = new Label();
-            this.lblUsuario = new Label();
-            this.txtUsuario = new TextBox();
+            this.pnlFondo    = new Panel();
+            this.pnlCard     = new Panel();
+            this.pnlLogoWrap = new Panel();
+            this.lblLogoTxt  = new Label();
+            this.lblTitulo   = new Label();
+            this.lblSubtitulo= new Label();
+            this.lblUsuario  = new Label();
+            this.txtUsuario  = new TextBox();
             this.lblPassword = new Label();
-            this.txtPass = new TextBox();
+            this.txtPass     = new TextBox();
             this.btnIngresar = new Button();
-            this.lblError = new Label();
-            this.pnlCentro.SuspendLayout();
+            this.lblError    = new Label();
+            this.pnlFondo.SuspendLayout();
+            this.pnlCard.SuspendLayout();
+            this.pnlLogoWrap.SuspendLayout();
             this.SuspendLayout();
-            //
-            // pnlCentro
-            //
-            this.pnlCentro.BackColor = Color.White;
-            this.pnlCentro.BorderStyle = BorderStyle.FixedSingle;
-            this.pnlCentro.Controls.Add(this.lblTitulo);
-            this.pnlCentro.Controls.Add(this.lblSubtitulo);
-            this.pnlCentro.Controls.Add(this.lblUsuario);
-            this.pnlCentro.Controls.Add(this.txtUsuario);
-            this.pnlCentro.Controls.Add(this.lblPassword);
-            this.pnlCentro.Controls.Add(this.txtPass);
-            this.pnlCentro.Controls.Add(this.btnIngresar);
-            this.pnlCentro.Controls.Add(this.lblError);
-            this.pnlCentro.Anchor = AnchorStyles.None;
-            this.pnlCentro.Location = new Point(150, 75);
-            this.pnlCentro.Name = "pnlCentro";
-            this.pnlCentro.Size = new Size(340, 330);
-            //
-            // lblTitulo
-            //
-            this.lblTitulo.AutoSize = false;
-            this.lblTitulo.Font = new Font("Segoe UI Semibold", 19F, FontStyle.Bold);
-            this.lblTitulo.ForeColor = Color.FromArgb(28, 28, 30);
-            this.lblTitulo.Location = new Point(0, 36);
-            this.lblTitulo.Size = new Size(338, 36);
-            this.lblTitulo.Text = "Sistema POS";
+
+            // ── Fondo ─────────────────────────────────────────────────
+            this.pnlFondo.BackColor = System.Drawing.Color.FromArgb(245, 244, 241);
+            this.pnlFondo.Dock      = DockStyle.Fill;
+            this.pnlFondo.Controls.Add(this.pnlCard);
+
+            // ── Card centrada ─────────────────────────────────────────
+            this.pnlCard.BackColor   = System.Drawing.Color.White;
+            this.pnlCard.BorderStyle = BorderStyle.FixedSingle;
+            this.pnlCard.Anchor      = AnchorStyles.None;
+            this.pnlCard.Size        = new Size(380, 440);
+            this.pnlCard.Controls.AddRange(new System.Windows.Forms.Control[] {
+                pnlLogoWrap, lblTitulo, lblSubtitulo,
+                lblUsuario, txtUsuario, lblPassword, txtPass,
+                btnIngresar, lblError });
+
+            // Logo cuadrado
+            this.pnlLogoWrap.BackColor  = System.Drawing.Color.FromArgb(14, 14, 18);
+            this.pnlLogoWrap.Location   = new Point(166, 28);
+            this.pnlLogoWrap.Size       = new Size(46, 46);
+            this.pnlLogoWrap.Controls.Add(this.lblLogoTxt);
+
+            this.lblLogoTxt.AutoSize  = false;
+            this.lblLogoTxt.Text      = "P";
+            this.lblLogoTxt.Font      = new Font("Segoe UI", 18F, FontStyle.Bold);
+            this.lblLogoTxt.ForeColor = Color.White;
+            this.lblLogoTxt.Dock      = DockStyle.Fill;
+            this.lblLogoTxt.TextAlign = ContentAlignment.MiddleCenter;
+
+            // Título
+            this.lblTitulo.AutoSize  = false;
+            this.lblTitulo.Font      = new Font("Segoe UI", 18F, FontStyle.Bold);
+            this.lblTitulo.ForeColor = System.Drawing.Color.FromArgb(14, 14, 18);
+            this.lblTitulo.Location  = new Point(0, 90);
+            this.lblTitulo.Size      = new Size(378, 36);
+            this.lblTitulo.Text      = "Sistema POS";
             this.lblTitulo.TextAlign = ContentAlignment.MiddleCenter;
-            //
-            // lblSubtitulo
-            //
-            this.lblSubtitulo.AutoSize = false;
-            this.lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
-            this.lblSubtitulo.ForeColor = Color.FromArgb(142, 142, 147);
-            this.lblSubtitulo.Location = new Point(0, 72);
-            this.lblSubtitulo.Size = new Size(338, 20);
-            this.lblSubtitulo.Text = "Inicia sesión para continuar";
+
+            // Subtítulo
+            this.lblSubtitulo.AutoSize  = false;
+            this.lblSubtitulo.Font      = new System.Drawing.Font("Segoe UI", 10F);
+            this.lblSubtitulo.ForeColor = System.Drawing.Color.FromArgb(143, 143, 154);
+            this.lblSubtitulo.Location  = new Point(0, 126);
+            this.lblSubtitulo.Size      = new Size(378, 20);
+            this.lblSubtitulo.Text      = "Inicia sesión para continuar";
             this.lblSubtitulo.TextAlign = ContentAlignment.MiddleCenter;
-            //
+
             // lblUsuario
-            //
-            this.lblUsuario.AutoSize = true;
-            this.lblUsuario.Font = new Font("Segoe UI", 9.5F);
-            this.lblUsuario.ForeColor = Color.FromArgb(99, 99, 102);
-            this.lblUsuario.Location = new Point(34, 108);
-            this.lblUsuario.Text = "Usuario";
-            //
+            this.lblUsuario.AutoSize  = true;
+            this.lblUsuario.Font      = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblUsuario.ForeColor = System.Drawing.Color.FromArgb(69, 69, 79);
+            this.lblUsuario.Location  = new System.Drawing.Point(36, 162);
+            this.lblUsuario.Name      = "lblUsuario";
+            this.lblUsuario.Text      = "USUARIO";
             // txtUsuario
-            //
-            this.txtUsuario.BorderStyle = BorderStyle.FixedSingle;
-            this.txtUsuario.Font = new Font("Segoe UI", 11F);
-            this.txtUsuario.Location = new Point(34, 130);
-            this.txtUsuario.Size = new Size(272, 27);
-            //
+            this.txtUsuario.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtUsuario.Font        = new System.Drawing.Font("Segoe UI", 12F);
+            this.txtUsuario.Location    = new System.Drawing.Point(36, 184);
+            this.txtUsuario.Name        = "txtUsuario";
+            this.txtUsuario.Size        = new System.Drawing.Size(306, 38);
             // lblPassword
-            //
-            this.lblPassword.AutoSize = true;
-            this.lblPassword.Font = new Font("Segoe UI", 9.5F);
-            this.lblPassword.ForeColor = Color.FromArgb(99, 99, 102);
-            this.lblPassword.Location = new Point(34, 168);
-            this.lblPassword.Text = "Contraseña";
-            //
+            this.lblPassword.AutoSize  = true;
+            this.lblPassword.Font      = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblPassword.ForeColor = System.Drawing.Color.FromArgb(69, 69, 79);
+            this.lblPassword.Location  = new System.Drawing.Point(36, 234);
+            this.lblPassword.Name      = "lblPassword";
+            this.lblPassword.Text      = "CONTRASEÑA";
             // txtPass
-            //
-            this.txtPass.BorderStyle = BorderStyle.FixedSingle;
-            this.txtPass.Font = new Font("Segoe UI", 11F);
-            this.txtPass.Location = new Point(34, 190);
-            this.txtPass.Size = new Size(272, 27);
+            this.txtPass.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPass.Font        = new System.Drawing.Font("Segoe UI", 12F);
+            this.txtPass.Location    = new System.Drawing.Point(36, 256);
+            this.txtPass.Name        = "txtPass";
+            this.txtPass.Size        = new System.Drawing.Size(306, 38);
             this.txtPass.UseSystemPasswordChar = true;
-            this.txtPass.KeyDown += this.txtPass_KeyDown;
-            //
-            // btnIngresar
-            //
-            this.btnIngresar.BackColor = Color.FromArgb(28, 28, 30);
-            this.btnIngresar.FlatStyle = FlatStyle.Flat;
+            this.txtPass.KeyDown    += new System.Windows.Forms.KeyEventHandler(this.txtPass_KeyDown);
+
+            // Botón ingresar
+            this.btnIngresar.BackColor = System.Drawing.Color.FromArgb(14, 14, 18);
+            this.btnIngresar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnIngresar.FlatAppearance.BorderSize = 0;
-            this.btnIngresar.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            this.btnIngresar.ForeColor = Color.White;
-            this.btnIngresar.Cursor = Cursors.Hand;
-            this.btnIngresar.Location = new Point(34, 235);
-            this.btnIngresar.Size = new Size(272, 42);
-            this.btnIngresar.Text = "Ingresar";
+            this.btnIngresar.Font      = new System.Drawing.Font("Segoe UI", 13F, System.Drawing.FontStyle.Bold);
+            this.btnIngresar.ForeColor = System.Drawing.Color.White;
+            this.btnIngresar.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnIngresar.Location  = new System.Drawing.Point(36, 316);
+            this.btnIngresar.Name      = "btnIngresar";
+            this.btnIngresar.Size      = new System.Drawing.Size(306, 50);
+            this.btnIngresar.Text      = "Ingresar al sistema";
             this.btnIngresar.UseVisualStyleBackColor = false;
-            this.btnIngresar.Click += this.btnIngresar_Click;
-            //
-            // lblError
-            //
-            this.lblError.ForeColor = Color.FromArgb(163, 45, 45);
-            this.lblError.Font = new Font("Segoe UI", 9F);
-            this.lblError.Location = new Point(34, 285);
-            this.lblError.Size = new Size(272, 35);
-            this.lblError.TextAlign = ContentAlignment.MiddleCenter;
-            this.lblError.Visible = false;
-            //
-            // FormLogin
-            //
-            this.AutoScaleMode = AutoScaleMode.None;
-            this.BackColor = Color.FromArgb(250, 250, 249);
-            this.ClientSize = new Size(640, 480);
-            this.Controls.Add(this.pnlCentro);
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-            this.Name = "FormLogin";
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.Text = "POS - Inicio de sesión";
-            this.pnlCentro.ResumeLayout(false);
-            this.pnlCentro.PerformLayout();
+            this.btnIngresar.Click    += new System.EventHandler(this.btnIngresar_Click);
+
+            // Error
+            this.lblError.AutoSize  = false;
+            this.lblError.Font      = new System.Drawing.Font("Segoe UI", 10F);
+            this.lblError.ForeColor = System.Drawing.Color.FromArgb(220, 38, 38);
+            this.lblError.Location  = new System.Drawing.Point(36, 374);
+            this.lblError.Name      = "lblError";
+            this.lblError.Size      = new System.Drawing.Size(306, 36);
+            this.lblError.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblError.Visible   = false;
+
+            // ── FormLogin ─────────────────────────────────────────────
+            this.AutoScaleMode   = System.Windows.Forms.AutoScaleMode.None;
+            this.ClientSize      = new System.Drawing.Size(760, 630);
+            this.Controls.Add(this.pnlFondo);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.MaximizeBox     = false;
+            this.Name            = "FormLogin";
+            this.StartPosition   = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text            = "POS — Inicio de sesión";
+            this.pnlFondo.ResumeLayout(false);
+            this.pnlCard.ResumeLayout(false);
+            this.pnlCard.PerformLayout();
+            this.pnlLogoWrap.ResumeLayout(false);
             this.ResumeLayout(false);
         }
     }
