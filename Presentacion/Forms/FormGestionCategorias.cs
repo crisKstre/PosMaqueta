@@ -93,8 +93,8 @@ namespace Presentacion.Forms
         {
             if (lstCategorias.SelectedItem == null) { lblMensaje.Text = "Selecciona una categoría."; lblMensaje.Visible = true; return; }
             var cat = (Categoria)lstCategorias.SelectedItem;
-            if (MessageBox.Show("¿Eliminar la categoría \"" + cat.Nombre + "\"?", "Eliminar",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            if (!Aviso.Confirmar(this, "Si la categoría tiene productos asignados no podrá eliminarse.",
+                    "¿Eliminar \"" + cat.Nombre + "\"?", "Eliminar", TipoAviso.Error)) return;
             try
             {
                 service.Eliminar(cat.IdCategoria);

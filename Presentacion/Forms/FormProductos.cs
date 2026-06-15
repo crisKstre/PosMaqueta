@@ -31,6 +31,8 @@ namespace Presentacion.Forms
             dtpDesde.Value = DateTime.Today;
             dtpHasta.Value = DateTime.Today;
             NotificadorCambios.Cambio += OnCambioDatos;
+            AplicarPermisos();
+            AcomodarFilaAcciones();
             CargarCategorias();
             CargarProductos();
         }
@@ -122,6 +124,42 @@ namespace Presentacion.Forms
             b.ForeColor = fg;
             b.Cursor    = Cursors.Hand;
             b.UseVisualStyleBackColor = false;
+        }
+
+        // Distribuye la barra de acciones: el grupo "modificar existencias" (buscar,
+        // cantidad, agregar/descontar) queda a la izquierda y las acciones de producto
+        // (desactivar, eliminar, log) se anclan al borde derecho — simétrico y responsive.
+        private void pnlAcciones_Resize(object sender, EventArgs e) => AcomodarFilaAcciones();
+
+        private void AcomodarFilaAcciones()
+        {
+            int y = btnLog.Top;     // conserva la Y del diseñador
+            int gap = 10, margenDer = 18;
+
+            // Ancla a la derecha solo los botones visibles (un empleado oculta varios)
+            int x = pnlAcciones.ClientSize.Width - margenDer;
+            foreach (var b in new[] { btnLog, btnEliminar, btnDesactivar })
+            {
+                if (!b.Visible) continue;
+                x -= b.Width;
+                b.Location = new Point(x, y);
+                x -= gap;
+            }
+        }
+
+        // Permisos: el inventario es de solo lectura para empleados (rol no-admin).
+        // Ven la tabla, la búsqueda y el log; no pueden crear, editar, ajustar stock ni eliminar.
+        private void AplicarPermisos()
+        {
+            if (Sesion.EsAdmin) return;
+
+            pnlFormulario.Visible = false;   // formulario de alta / edición
+            lblCantidad.Visible   = false;
+            txtCantidad.Visible   = false;
+            btnAgregar.Visible    = false;   // agregar stock
+            btnDescontar.Visible  = false;   // descontar stock
+            btnDesactivar.Visible = false;
+            btnEliminar.Visible   = false;
         }
 
         private void FormProductos_FormClosed(object sender, FormClosedEventArgs e)
@@ -220,11 +258,26 @@ namespace Presentacion.Forms
             if (!decimal.TryParse(txtStock.Text,  out decimal stock))   { MostrarError("Stock inválido.");   return; }
             decimal.TryParse(txtStockMin.Text, out decimal stockMin);
             p.Precio = precio; p.Stock = stock; p.StockMinimo = stockMin;
+
+            // Confirmar antes de actualizar un producto existente (no para el alta)
+            if (idEnEdicion != 0 &&
+                !Aviso.Confirmar(this, "Se guardarán los cambios del producto \"" + p.Nombre + "\".",
+                    "¿Actualizar producto?", "Actualizar", TipoAviso.Info))
+                return;
             try
             {
-                if (idEnEdicion == 0) productoService.Crear(p);
-                else productoService.Actualizar(p);
-                LimpiarFormulario();
+                if (idEnEdicion == 0)
+                {
+                    productoService.Crear(p);
+                    LimpiarFormulario();
+                }
+                else
+                {
+                    productoService.Actualizar(p);
+                    LimpiarFormulario();
+                    Aviso.Exito(this, "Los cambios de \"" + p.Nombre + "\" se guardaron correctamente.",
+                        "Producto actualizado");
+                }
             }
             catch (Exception ex) { MostrarError(ex.Message); }
         }
@@ -233,6 +286,7 @@ namespace Presentacion.Forms
 
         private void dgvProductos_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (!Sesion.EsAdmin) return;   // los empleados no editan productos
             if (e.RowIndex < 0) return;
             int id = Convert.ToInt32(dgvProductos.Rows[e.RowIndex].Cells["colId"].Value);
             var prod = productoService.ObtenerPorId(id);
@@ -269,8 +323,9 @@ namespace Presentacion.Forms
                 decimal nuevo = productoService.AjustarStock(id, esAgregar ? cant : -cant);
                 txtCantidad.Clear();
                 lblError.Visible = false;
-                MessageBox.Show((esAgregar ? "Stock agregado" : "Stock descontado") + " para \"" + nombre + "\".\nStock actual: " + nuevo.ToString("0.##"),
-                    "Inventario", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Aviso.Exito(this,
+                    (esAgregar ? "Se agregó stock a" : "Se descontó stock de") + " \"" + nombre + "\".\nStock actual: " + nuevo.ToString("0.##"),
+                    "Inventario actualizado");
             }
             catch (Exception ex) { MostrarError(ex.Message); }
         }
@@ -285,13 +340,14 @@ namespace Presentacion.Forms
             bool inactivo  = dgvProductos.CurrentRow.Cells["colEstado"].Value?.ToString() == "Inactivo";
             if (inactivo)
             {
-                if (MessageBox.Show("¿Activar \"" + nombre + "\"?", "Activar", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (Aviso.Confirmar(this, "El producto volverá a estar disponible para la venta.",
+                        "¿Activar \"" + nombre + "\"?", "Activar", TipoAviso.Info))
                 { productoService.Activar(id); LimpiarFormulario(); }
             }
             else
             {
-                if (MessageBox.Show("¿Desactivar \"" + nombre + "\"?\nSeguirá visible en gris y se puede reactivar.", "Desactivar",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                if (Aviso.Confirmar(this, "Seguirá visible en gris y podrás reactivarlo cuando quieras.",
+                        "¿Desactivar \"" + nombre + "\"?", "Desactivar"))
                 { productoService.Desactivar(id); LimpiarFormulario(); }
             }
         }
@@ -301,10 +357,10 @@ namespace Presentacion.Forms
             if (dgvProductos.CurrentRow == null) return;
             int    id     = Convert.ToInt32(dgvProductos.CurrentRow.Cells["colId"].Value);
             string nombre = dgvProductos.CurrentRow.Cells["colNombre"].Value?.ToString();
-            if (MessageBox.Show("¿Eliminar PERMANENTEMENTE \"" + nombre + "\"?", "Eliminar",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+            if (!Aviso.Confirmar(this, "Esta acción no se puede deshacer.",
+                    "¿Eliminar \"" + nombre + "\"?", "Eliminar", TipoAviso.Error)) return;
             try { productoService.Eliminar(id); LimpiarFormulario(); }
-            catch (Exception ex) { MessageBox.Show(ex.Message, "No se puede eliminar", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+            catch (Exception ex) { Aviso.Error(this, ex.Message, "No se puede eliminar"); }
         }
 
         // ── Log ───────────────────────────────────────────────────

@@ -14,6 +14,7 @@ namespace Presentacion.Forms
         private Label  lblUsuario;
         private Label  lblRol;
         private Panel  pnlSepMenu;
+        private Button btnDashboard;
         private Button btnVentas;
         private Button btnProductos;
         private Button btnCaja;
@@ -38,6 +39,7 @@ namespace Presentacion.Forms
             this.lblUsuario     = new Label();
             this.lblRol         = new Label();
             this.pnlSepMenu     = new Panel();
+            this.btnDashboard   = new Button();
             this.btnVentas      = new Button();
             this.btnProductos   = new Button();
             this.btnCaja        = new Button();
@@ -57,7 +59,7 @@ namespace Presentacion.Forms
             this.pnlSidebar.Controls.AddRange(new System.Windows.Forms.Control[] {
                 lblAppNombre, lblAppSub, pnlSepUsuario,
                 lblUsuario, lblRol, pnlSepMenu,
-                btnVentas, btnProductos, btnCaja, btnCerrarSesion });
+                btnDashboard, btnVentas, btnProductos, btnCaja, btnCerrarSesion });
 
             // Nombre de la app
             this.lblAppNombre.AutoSize  = false;
@@ -104,13 +106,27 @@ namespace Presentacion.Forms
             this.pnlSepMenu.Size      = new Size(168, 1);
 
             // Botones menú — centrados
+            // btnDashboard
+            this.btnDashboard.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.btnDashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDashboard.FlatAppearance.BorderSize = 0;
+            this.btnDashboard.Font      = new System.Drawing.Font("Segoe UI", 13F);
+            this.btnDashboard.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
+            this.btnDashboard.Location  = new System.Drawing.Point(0, 148);
+            this.btnDashboard.Name      = "btnDashboard";
+            this.btnDashboard.Size      = new System.Drawing.Size(200, 58);
+            this.btnDashboard.Text      = "Inicio";
+            this.btnDashboard.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnDashboard.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnDashboard.UseVisualStyleBackColor = false;
+            this.btnDashboard.Click += new System.EventHandler(this.btnDashboard_Click);
             // btnVentas
             this.btnVentas.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
             this.btnVentas.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnVentas.FlatAppearance.BorderSize = 0;
             this.btnVentas.Font      = new System.Drawing.Font("Segoe UI", 13F);
             this.btnVentas.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
-            this.btnVentas.Location  = new System.Drawing.Point(0, 148);
+            this.btnVentas.Location  = new System.Drawing.Point(0, 208);
             this.btnVentas.Name      = "btnVentas";
             this.btnVentas.Size      = new System.Drawing.Size(200, 58);
             this.btnVentas.Text      = "Ventas";
@@ -124,7 +140,7 @@ namespace Presentacion.Forms
             this.btnProductos.FlatAppearance.BorderSize = 0;
             this.btnProductos.Font      = new System.Drawing.Font("Segoe UI", 13F);
             this.btnProductos.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
-            this.btnProductos.Location  = new System.Drawing.Point(0, 208);
+            this.btnProductos.Location  = new System.Drawing.Point(0, 268);
             this.btnProductos.Name      = "btnProductos";
             this.btnProductos.Size      = new System.Drawing.Size(200, 58);
             this.btnProductos.Text      = "Productos";
@@ -138,7 +154,7 @@ namespace Presentacion.Forms
             this.btnCaja.FlatAppearance.BorderSize = 0;
             this.btnCaja.Font      = new System.Drawing.Font("Segoe UI", 13F);
             this.btnCaja.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
-            this.btnCaja.Location  = new System.Drawing.Point(0, 268);
+            this.btnCaja.Location  = new System.Drawing.Point(0, 328);
             this.btnCaja.Name      = "btnCaja";
             this.btnCaja.Size      = new System.Drawing.Size(200, 58);
             this.btnCaja.Text      = "Caja";
@@ -160,7 +176,7 @@ namespace Presentacion.Forms
             this.btnCerrarSesion.TextAlign  = ContentAlignment.MiddleCenter;
             this.btnCerrarSesion.Cursor     = Cursors.Hand;
             this.btnCerrarSesion.UseVisualStyleBackColor = false;
-            this.btnCerrarSesion.Click      += this.btnCerrarSesion_Click;
+            this.btnCerrarSesion.Click      += new System.EventHandler(this.btnCerrarSesion_Click);
 
             // ── Topbar ───────────────────────────────────────────────
             this.pnlTop.BackColor  = System.Drawing.Color.White;
@@ -199,8 +215,8 @@ namespace Presentacion.Forms
             this.StartPosition    = FormStartPosition.CenterScreen;
             this.Text             = "Sistema POS";
             this.WindowState      = FormWindowState.Maximized;
-            this.Load             += this.FormPrincipal_Load;
-            this.FormClosed       += this.FormPrincipal_FormClosed;
+            this.Load             += new System.EventHandler(this.FormPrincipal_Load);
+            this.FormClosed       += new System.Windows.Forms.FormClosedEventHandler(this.FormPrincipal_FormClosed);
             this.pnlSidebar.ResumeLayout(false);
             this.pnlTop.ResumeLayout(false);
             this.ResumeLayout(false);

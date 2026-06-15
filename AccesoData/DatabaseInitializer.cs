@@ -13,6 +13,7 @@ namespace AccesoData
                 con.Open();
                 CrearTablas(con);
                 SembrarAdmin(con);
+                SembrarEmpleadoDemo(con);
             }
         }
 
@@ -127,6 +128,28 @@ namespace AccesoData
                     cmd.Parameters.AddWithValue("@n", c);
                     cmd.ExecuteNonQuery();
                 }
+            }
+        }
+
+        // Empleado de prueba (rol Cajero). Idempotente: solo se crea si aún no existe,
+        // así también aparece en bases de datos ya creadas.
+        private void SembrarEmpleadoDemo(SqliteConnection con)
+        {
+            using (var cmd = new SqliteCommand("SELECT COUNT(*) FROM Usuario WHERE LoginNombre = @login;", con))
+            {
+                cmd.Parameters.AddWithValue("@login", "empleado");
+                if (Convert.ToInt64(cmd.ExecuteScalar()) > 0) return;
+            }
+
+            using (var cmd = new SqliteCommand(@"
+                INSERT INTO Usuario (Nombre, LoginNombre, Pass, Rol, Activo)
+                VALUES (@nombre, @login, @pass, @rol, 1);", con))
+            {
+                cmd.Parameters.AddWithValue("@nombre", "Empleado Demo");
+                cmd.Parameters.AddWithValue("@login", "empleado");
+                cmd.Parameters.AddWithValue("@pass", Seguridad.Hash("empleado123"));
+                cmd.Parameters.AddWithValue("@rol", RolUsuario.Cajero);
+                cmd.ExecuteNonQuery();
             }
         }
     }

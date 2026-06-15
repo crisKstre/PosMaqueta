@@ -92,7 +92,45 @@ namespace Dominio.Servicios
             if (item != null) carrito.Remove(item);
         }
 
+        // Fija la cantidad de un ítem ya en el carrito (para editarlo desde la caja).
+        // Si la nueva cantidad es <= 0 se quita el ítem. Valida contra el stock disponible.
+        public void CambiarCantidad(int idProducto, decimal nuevaCantidad)
+        {
+            var item = carrito.FirstOrDefault(d => d.IdProducto == idProducto);
+            if (item == null) return;
+
+            if (nuevaCantidad <= 0)
+            {
+                carrito.Remove(item);
+                return;
+            }
+
+            var producto = productoDao.ObtenerPorId(idProducto);
+            if (producto == null)
+                throw new InvalidOperationException("El producto no existe.");
+            if (nuevaCantidad > producto.Stock)
+                throw new InvalidOperationException(
+                    "Stock insuficiente para \"" + producto.Nombre + "\".\n" +
+                    "Disponible: " + producto.Stock.ToString("0.##") + " " + producto.UnidadMedida + ".");
+
+            item.Cantidad = nuevaCantidad;
+            item.Subtotal = item.Cantidad * item.PrecioUnitario;
+        }
+
+        // Suma/resta una cantidad relativa a un ítem del carrito (botones − / +).
+        public void AjustarCantidadCarrito(int idProducto, decimal delta)
+        {
+            var item = carrito.FirstOrDefault(d => d.IdProducto == idProducto);
+            if (item == null) return;
+            CambiarCantidad(idProducto, item.Cantidad + delta);
+        }
+
         public void VaciarCarrito() => carrito.Clear();
+
+        public System.Collections.Generic.List<Venta> ObtenerVentasHoy()
+        {
+            return ventaDao.ObtenerVentas(DateTime.Today, DateTime.Today);
+        }
 
         public int CobrarVenta(int idUsuario, string medioPago, int? idCaja = null)
         {

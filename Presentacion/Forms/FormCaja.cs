@@ -83,10 +83,10 @@ namespace Presentacion.Forms
             lblInfoApertura.ForeColor = EstiloPos.Ink2;
 
             // Cards
-            pnlCards.BackColor = EstiloPos.Fondo;
-            EstiloCard(cardVentas,   lblVentasTit,   "Ventas del turno",  lblVentasVal);
-            EstiloCard(cardTotal,    lblTotalTit,     "Total vendido",     lblTotalVal);
-            EstiloCard(cardEfectivo, lblEfectivoTit,  "Efectivo esperado", lblEfectivoVal);
+            pnlCards.BackColor = EstiloPos.Surface;
+            EstiloCard(cardVentas,   lblVentasTit,   "Ventas del turno",  lblVentasVal,   EstiloPos.Azul);
+            EstiloCard(cardTotal,    lblTotalTit,     "Total vendido",     lblTotalVal,    EstiloPos.Verde);
+            EstiloCard(cardEfectivo, lblEfectivoTit,  "Efectivo esperado", lblEfectivoVal, EstiloPos.Amber);
 
             // Desglose
             lblDesgloseTit.Font      = EstiloPos.FontSmall;
@@ -110,18 +110,27 @@ namespace Presentacion.Forms
             lblPermisoCerrar.ForeColor = EstiloPos.Ink3;
         }
 
-        private void EstiloCard(Panel card, Label titulo, string textoTit, Label valor)
+        private void EstiloCard(Panel card, Label titulo, string textoTit, Label valor, Color acento)
         {
             card.BackColor   = EstiloPos.Surface;
 
             titulo.Font      = EstiloPos.FontSmall;
             titulo.ForeColor = EstiloPos.Ink3;
             titulo.Text      = textoTit;
-            titulo.Location  = new Point(18, 16);
+            titulo.Location  = new Point(20, 16);
 
             valor.Font      = EstiloPos.FontMetrica;
             valor.ForeColor = EstiloPos.Ink1;
-            valor.Location  = new Point(16, 44);
+            valor.Location  = new Point(18, 44);
+
+            // Borde sutil + barra de acento (consistente con el Dashboard)
+            card.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(EstiloPos.Border))
+                    e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+                using (var br = new SolidBrush(acento))
+                    e.Graphics.FillRectangle(br, 0, 0, 4, card.Height);
+            };
         }
 
         // ── Lógica de estado ─────────────────────────────────────────
@@ -202,6 +211,15 @@ namespace Presentacion.Forms
             int panelY = lblTituloEstado.Bottom + 22;
             panelActivo.Location = new Point(panelX, panelY);
             panelActivo.Width    = pw;
+
+            // Etiquetas de ancho completo: centrarlas respecto al ancho real del panel
+            int wInt = panelActivo.ClientSize.Width;
+            if (pnlAbrir.Visible)
+                foreach (var l in new[] { lblSinCaja, lblMontoInicial, lblPermisoAbrir })
+                { l.Left = 0; l.Width = wInt; }
+            else
+                foreach (var l in new[] { lblDesgloseTit, lblDesgloseVal, lblMontoReal, lblPermisoCerrar })
+                { l.Left = 0; l.Width = wInt; }
 
             // Centrar contenido interno del panel ABRIR
             if (pnlAbrir.Visible)
@@ -284,8 +302,8 @@ namespace Presentacion.Forms
                 }
             }
 
-            if (MessageBox.Show("¿Cerrar la caja con $" + montoReal.ToString("N0") + " contados?",
-                    "Cerrar caja", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            if (!Aviso.Confirmar(this, "Se registrará el cierre con $" + montoReal.ToString("N0") + " contados en caja.",
+                    "¿Cerrar la caja?", "Cerrar caja"))
                 return;
 
             try
@@ -300,26 +318,16 @@ namespace Presentacion.Forms
 
         private void MostrarArqueo(decimal diferencia)
         {
-            string texto;
-            MessageBoxIcon icono;
             if (diferencia == 0)
-            {
-                texto = "✓  Caja cerrada.\n\nArqueo cuadrado exactamente.";
-                icono = MessageBoxIcon.Information;
-            }
+                Aviso.Exito(this, "El arqueo cuadró exactamente. No hay diferencias.", "Caja cerrada");
             else if (diferencia > 0)
-            {
-                texto = "Caja cerrada.\n\nSOBRANTE: $" + diferencia.ToString("N0") +
-                        "\n(Hay más efectivo del esperado — revisar con el cajero)";
-                icono = MessageBoxIcon.Information;
-            }
+                Aviso.Info(this,
+                    "Sobrante de $" + diferencia.ToString("N0") + ".\nHay más efectivo del esperado — conviene revisarlo con el cajero.",
+                    "Caja cerrada");
             else
-            {
-                texto = "Caja cerrada.\n\nFALTANTE: $" + Math.Abs(diferencia).ToString("N0") +
-                        "\n(Queda registrado para seguimiento administrativo)";
-                icono = MessageBoxIcon.Warning;
-            }
-            MessageBox.Show(texto, "Resultado del arqueo", MessageBoxButtons.OK, icono);
+                Aviso.Advertencia(this,
+                    "Faltante de $" + Math.Abs(diferencia).ToString("N0") + ".\nQueda registrado para seguimiento administrativo.",
+                    "Caja cerrada");
         }
 
         private void MostrarMensaje(string msg)

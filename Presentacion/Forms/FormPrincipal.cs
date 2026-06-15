@@ -22,10 +22,10 @@ namespace Presentacion.Forms
             lblUsuario.Text = Sesion.UsuarioActual.Nombre;
             lblRol.Text     = Sesion.UsuarioActual.Rol;
 
-            btnProductos.Visible = Sesion.EsAdmin;
+            btnProductos.Visible = true;   // todos ven el inventario; los empleados en modo solo lectura
 
             IniciarReloj();
-            AbrirFormHijo(new FormVentas(), btnVentas);
+            AbrirFormHijo(new FormDashboard(), btnDashboard);
         }
 
         private void IniciarReloj()
@@ -73,6 +73,9 @@ namespace Presentacion.Forms
             lblTituloSeccion.Text = formHijo.Text;
             formHijoActual        = formHijo;
         }
+
+        private void btnDashboard_Click(object sender, EventArgs e)
+            => AbrirFormHijo(new FormDashboard(), btnDashboard);
 
         private void btnVentas_Click(object sender, EventArgs e)
             => AbrirFormHijo(new FormVentas(), btnVentas);

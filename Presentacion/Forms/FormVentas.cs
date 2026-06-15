@@ -22,8 +22,8 @@ namespace Presentacion.Forms
 
         private void FormVentas_Load(object sender, EventArgs e)
         {
-            // Aplicar estilos de grids en runtime (garantiza que corre después del layout)
-            AplicarEstilosGrids();
+            // Aplicar estilos en runtime (garantiza que corre después del layout)
+            AplicarEstilos();
 
             comboMedioPago.Items.AddRange(new object[] {
                 MedioPago.Efectivo, MedioPago.Tarjeta, MedioPago.Transferencia });
@@ -37,14 +37,72 @@ namespace Presentacion.Forms
             txtCodigo.Focus();
         }
 
+        private void AplicarEstilos()
+        {
+            AplicarEstilosGrids();
+
+            // Combo medio de pago
+            EstiloPos.AplicarCombo(comboMedioPago);
+
+            // Botones del panel de cobro
+            EstiloPos.AplicarBotonPrimario(btnCobrar, grande: true);
+            EstiloPos.AplicarBotonSecundario(btnCancelar, EstiloPos.Rojo);
+            EstiloPos.AplicarBotonSecundario(btnVerLog);
+
+            // Botón filtrar del registro de ventas
+            EstiloPos.AplicarBotonSecundario(btnFiltrarLogV);
+            btnFiltrarLogV.Size = new Size(90, 30);
+
+            // btnAgregar ya viene estilizado desde el Designer (alto 44, alineado con los inputs)
+        }
+
+        private void ConfigColAccion(DataGridViewColumn col, int ancho, float fontSize, Color fg, Color sel)
+        {
+            col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            col.Width        = ancho;
+            col.DefaultCellStyle = new DataGridViewCellStyle
+            {
+                Alignment          = DataGridViewContentAlignment.MiddleCenter,
+                Font               = new Font("Segoe UI", fontSize, FontStyle.Bold),
+                ForeColor          = fg,
+                SelectionForeColor = fg,
+                Padding            = new Padding(0),
+                BackColor          = EstiloPos.Surface,
+                SelectionBackColor = sel
+            };
+        }
+
         private void AplicarEstilosGrids()
         {
             // dgvCarrito
             EstiloPos.AplicarGrid(dgvCarrito);
             dgvCarrito.RowTemplate.Height = 38;
-            // Columna ✕ más pequeña y centrada
             dgvCarrito.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 228, 245);
             dgvCarrito.DefaultCellStyle.SelectionForeColor = EstiloPos.Ink1;
+
+            // Columnas de acción del carrito: ancho fijo y centradas para que no se trunquen.
+            // Solo "Producto" usa el espacio flexible (Fill); el resto va con ancho fijo.
+            Color colSel = Color.FromArgb(220, 228, 245);
+            ConfigColAccion(colMenos,  38, 13F, EstiloPos.Ink1,  colSel);
+            ConfigColAccion(colMas,    38, 13F, EstiloPos.Verde, colSel);
+            ConfigColAccion(colQuitar, 38, 11F, EstiloPos.Rojo,  colSel);
+
+            colVCantidad.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            colVCantidad.Width        = 46;
+            colVCantidad.DefaultCellStyle = new DataGridViewCellStyle {
+                Alignment = DataGridViewContentAlignment.MiddleCenter,
+                Font = EstiloPos.FontTabla,
+                ForeColor = EstiloPos.Ink1, SelectionForeColor = EstiloPos.Ink1,
+                BackColor = EstiloPos.Surface, SelectionBackColor = colSel };
+
+            colVSubtotal.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            colVSubtotal.Width        = 82;
+            colVSubtotal.DefaultCellStyle = new DataGridViewCellStyle {
+                Alignment = DataGridViewContentAlignment.MiddleRight,
+                Font = EstiloPos.FontTabla,
+                ForeColor = EstiloPos.Ink1, SelectionForeColor = EstiloPos.Ink1,
+                Padding = new Padding(0, 0, 8, 0),
+                BackColor = EstiloPos.Surface, SelectionBackColor = colSel };
 
             // dgvLogVentas
             EstiloPos.AplicarGrid(dgvLogVentas);
@@ -319,7 +377,9 @@ namespace Presentacion.Forms
                 dgvCarrito.Rows.Add(
                     d.IdProducto,
                     d.NombreProducto,
+                    "−",
                     d.Cantidad.ToString("0.##"),
+                    "+",
                     "$" + d.Subtotal.ToString("N0"),
                     "✕");
             lblTotal.Text      = "$" + ventaService.Total.ToString("N0");
@@ -329,12 +389,17 @@ namespace Presentacion.Forms
         private void dgvCarrito_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
-            if (dgvCarrito.Columns[e.ColumnIndex].Name == "colQuitar")
+            string col = dgvCarrito.Columns[e.ColumnIndex].Name;
+            int id = Convert.ToInt32(dgvCarrito.Rows[e.RowIndex].Cells["colVId"].Value);
+            try
             {
-                int id = Convert.ToInt32(dgvCarrito.Rows[e.RowIndex].Cells["colVId"].Value);
-                ventaService.QuitarDelCarrito(id);
+                if (col == "colQuitar")     ventaService.QuitarDelCarrito(id);
+                else if (col == "colMenos") ventaService.AjustarCantidadCarrito(id, -1);
+                else if (col == "colMas")   ventaService.AjustarCantidadCarrito(id, +1);
+                else return;
                 RefrescarCarrito();
             }
+            catch (Exception ex) { MostrarMensaje(ex.Message); }
         }
 
         // ── Cobro ──────────────────────────────────────────────────────
@@ -347,8 +412,9 @@ namespace Presentacion.Forms
             try
             {
                 int idVenta = ventaService.CobrarVenta(Sesion.UsuarioActual.IdUsuario, medioPago);
-                MessageBox.Show("Venta N° " + idVenta + " registrada.\nTotal: $" + total.ToString("N0")
-                    + "\nPago: " + medioPago, "Venta exitosa", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Aviso.Exito(this,
+                    "Venta N° " + idVenta + "  ·  $" + total.ToString("N0") + "\nMedio de pago: " + medioPago,
+                    "Venta registrada");
                 RefrescarCarrito();
                 CargarGridProductos();
                 txtCodigo.Focus();
@@ -359,8 +425,8 @@ namespace Presentacion.Forms
         private void btnCancelar_Click(object sender, EventArgs e)
         {
             if (ventaService.Carrito.Count == 0) return;
-            if (MessageBox.Show("¿Cancelar la venta? Se vaciará el carrito.",
-                    "Cancelar", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (Aviso.Confirmar(this, "Se vaciará el carrito y se quitarán todos los productos agregados.",
+                    "¿Cancelar la venta?", "Sí, cancelar"))
             { ventaService.VaciarCarrito(); RefrescarCarrito(); }
         }
 

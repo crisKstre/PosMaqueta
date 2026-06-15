@@ -133,6 +133,12 @@ namespace Dominio.Servicios
             NotificadorCambios.Notificar(Entidad.Producto);
         }
 
+        public List<Producto> ObtenerBajoStock()
+        {
+            return productoDao.ObtenerTodos(soloActivos: true)
+                .FindAll(p => p.Stock <= p.StockMinimo);
+        }
+
         public bool EstaBajoStock(Producto p)
         {
             return p.Stock <= p.StockMinimo;

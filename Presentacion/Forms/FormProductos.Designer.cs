@@ -242,6 +242,7 @@ namespace Presentacion.Forms
             this.pnlAcciones.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlAcciones.Height = 68;
             this.pnlAcciones.Name = "pnlAcciones";
+            this.pnlAcciones.Resize += new System.EventHandler(this.pnlAcciones_Resize);
             // lblBuscar
             this.lblBuscar.AutoSize = true;
             this.lblBuscar.Location = new System.Drawing.Point(18, 18);
