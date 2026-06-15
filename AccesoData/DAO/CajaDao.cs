@@ -95,7 +95,7 @@ namespace AccesoData.DAO
                         COALESCE(SUM(CASE WHEN MedioPago = @tarjeta       THEN Total ELSE 0 END), 0) AS Tarjeta,
                         COALESCE(SUM(CASE WHEN MedioPago = @transferencia THEN Total ELSE 0 END), 0) AS Transferencia
                     FROM Venta
-                    WHERE IdCaja = @idCaja;";
+                    WHERE IdCaja = @idCaja AND Anulada = 0;";
 
                 using (var cmd = new SqliteCommand(sql, con))
                 {
@@ -118,6 +118,37 @@ namespace AccesoData.DAO
                 }
             }
             return r;
+        }
+
+        // Todos los turnos de caja (para el histórico), con el nombre del usuario que la operó.
+        public System.Collections.Generic.List<Caja> ObtenerHistorial(DateTime desde, DateTime hasta)
+        {
+            var lista = new System.Collections.Generic.List<Caja>();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"
+                    SELECT c.IdCaja, c.IdUsuario, c.FechaApertura, c.FechaCierre,
+                           c.MontoInicial, c.MontoEsperado, c.MontoReal, c.Estado,
+                           COALESCE(u.Nombre, '') AS NombreUsuario
+                    FROM Caja c
+                    LEFT JOIN Usuario u ON c.IdUsuario = u.IdUsuario
+                    WHERE c.FechaApertura BETWEEN @desde AND @hasta
+                    ORDER BY c.IdCaja DESC;";
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
+                    cmd.Parameters.AddWithValue("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                        {
+                            var caja = Mapear(reader);
+                            caja.NombreUsuario = reader.GetString(8);
+                            lista.Add(caja);
+                        }
+                }
+            }
+            return lista;
         }
 
         private Caja Mapear(SqliteDataReader reader)

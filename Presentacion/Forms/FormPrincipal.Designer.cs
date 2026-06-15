@@ -18,6 +18,7 @@ namespace Presentacion.Forms
         private Button btnVentas;
         private Button btnProductos;
         private Button btnCaja;
+        private Button btnReportes;
         private Button btnCerrarSesion;
         private Panel  pnlTop;
         private Label  lblTituloSeccion;
@@ -43,6 +44,7 @@ namespace Presentacion.Forms
             this.btnVentas      = new Button();
             this.btnProductos   = new Button();
             this.btnCaja        = new Button();
+            this.btnReportes    = new Button();
             this.btnCerrarSesion = new Button();
             this.pnlTop         = new Panel();
             this.lblTituloSeccion = new Label();
@@ -59,7 +61,7 @@ namespace Presentacion.Forms
             this.pnlSidebar.Controls.AddRange(new System.Windows.Forms.Control[] {
                 lblAppNombre, lblAppSub, pnlSepUsuario,
                 lblUsuario, lblRol, pnlSepMenu,
-                btnDashboard, btnVentas, btnProductos, btnCaja, btnCerrarSesion });
+                btnDashboard, btnVentas, btnProductos, btnCaja, btnReportes, btnCerrarSesion });
 
             // Nombre de la app
             this.lblAppNombre.AutoSize  = false;
@@ -162,6 +164,20 @@ namespace Presentacion.Forms
             this.btnCaja.Cursor    = System.Windows.Forms.Cursors.Hand;
             this.btnCaja.UseVisualStyleBackColor = false;
             this.btnCaja.Click += new System.EventHandler(this.btnCaja_Click);
+            // btnReportes
+            this.btnReportes.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.btnReportes.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnReportes.FlatAppearance.BorderSize = 0;
+            this.btnReportes.Font      = new System.Drawing.Font("Segoe UI", 13F);
+            this.btnReportes.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
+            this.btnReportes.Location  = new System.Drawing.Point(0, 388);
+            this.btnReportes.Name      = "btnReportes";
+            this.btnReportes.Size      = new System.Drawing.Size(200, 58);
+            this.btnReportes.Text      = "Reportes";
+            this.btnReportes.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnReportes.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnReportes.UseVisualStyleBackColor = false;
+            this.btnReportes.Click += new System.EventHandler(this.btnReportes_Click);
 
             // Cerrar sesión
             this.btnCerrarSesion.BackColor  = Color.FromArgb(28, 28, 36);

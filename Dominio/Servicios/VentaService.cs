@@ -14,9 +14,81 @@ namespace Dominio.Servicios
         private readonly CajaDao cajaDao = new CajaDao();
         private readonly LogService logService = new LogService();
 
-        private readonly List<DetalleVenta> carrito = new List<DetalleVenta>();
-        public IReadOnlyList<DetalleVenta> Carrito => carrito;
-        public decimal Total => carrito.Sum(d => d.Subtotal);
+        // ── Ventas en curso ───────────────────────────────────────────────
+        // Estado COMPARTIDO (estático): persiste aunque se recree el FormVentas
+        // al navegar entre módulos, y permite varias ventas simultáneas.
+        private static readonly List<VentaEnCurso> enCurso = new List<VentaEnCurso>();
+        private static VentaEnCurso activa;
+        private static int contador = 0;
+
+        public IReadOnlyList<VentaEnCurso> VentasEnCurso => enCurso;
+
+        /// <summary>La venta en primer plano. Si no hay ninguna, crea una.</summary>
+        public VentaEnCurso Activa
+        {
+            get
+            {
+                if (activa == null) NuevaVenta();
+                return activa;
+            }
+        }
+
+        public IReadOnlyList<DetalleVenta> Carrito => Activa.Detalles;
+        public decimal Total => Activa.Total;
+
+        public VentaEnCurso NuevaVenta()
+        {
+            contador++;
+            var v = new VentaEnCurso
+            {
+                Id = contador,
+                Etiqueta = "Venta " + contador,
+                UltimaActividad = DateTime.Now
+            };
+            enCurso.Add(v);
+            activa = v;
+            return v;
+        }
+
+        public void ActivarVenta(int id)
+        {
+            var v = enCurso.FirstOrDefault(x => x.Id == id);
+            if (v != null)
+            {
+                activa = v;
+                activa.UltimaActividad = DateTime.Now;
+            }
+        }
+
+        /// <summary>Descarta una venta en curso (su carrito se pierde).</summary>
+        public void CerrarVenta(int id)
+        {
+            var v = enCurso.FirstOrDefault(x => x.Id == id);
+            if (v == null) return;
+            enCurso.Remove(v);
+            if (activa == v) activa = enCurso.LastOrDefault();
+        }
+
+        /// <summary>
+        /// Cierra las ventas EN PAUSA (todas menos la activa) sin actividad por más
+        /// de 'limite'. La activa (en primer plano) nunca se cierra. Devuelve cuántas cerró.
+        /// </summary>
+        public int CerrarPausadasInactivas(TimeSpan limite)
+        {
+            var ahora = DateTime.Now;
+            var aCerrar = enCurso
+                .Where(v => v != activa && (ahora - v.UltimaActividad) > limite)
+                .ToList();
+            foreach (var v in aCerrar) enCurso.Remove(v);
+            return aCerrar.Count;
+        }
+
+        // Descarta TODAS las ventas en curso (p. ej. al cerrar sesión un cajero).
+        public static void ReiniciarVentasEnCurso()
+        {
+            enCurso.Clear();
+            activa = null;
+        }
 
         public void AgregarPorCodigo(string codigoBarras, decimal cantidad)
         {
@@ -53,12 +125,12 @@ namespace Dominio.Servicios
 
         private void ValidarStock(Producto producto, decimal cantidadAgregar)
         {
-            // Stock actual en BD menos lo que ya está en el carrito para este producto
-            decimal enCarrito = 0;
-            var enCarritoItem = carrito.FirstOrDefault(d => d.IdProducto == producto.IdProducto);
-            if (enCarritoItem != null) enCarrito = enCarritoItem.Cantidad;
+            // Stock actual en BD menos lo que ya está en el carrito de la venta activa
+            decimal yaEnCarrito = 0;
+            var item = Activa.Detalles.FirstOrDefault(d => d.IdProducto == producto.IdProducto);
+            if (item != null) yaEnCarrito = item.Cantidad;
 
-            decimal disponible = producto.Stock - enCarrito;
+            decimal disponible = producto.Stock - yaEnCarrito;
             if (cantidadAgregar > disponible)
                 throw new InvalidOperationException(
                     "Stock insuficiente para \"" + producto.Nombre + "\".\n" +
@@ -67,6 +139,7 @@ namespace Dominio.Servicios
 
         public void AgregarProducto(Producto producto, decimal cantidad)
         {
+            var carrito = Activa.Detalles;
             var existente = carrito.FirstOrDefault(d => d.IdProducto == producto.IdProducto);
             if (existente != null)
             {
@@ -84,24 +157,29 @@ namespace Dominio.Servicios
                     Subtotal = cantidad * producto.Precio
                 });
             }
+            Activa.UltimaActividad = DateTime.Now;
         }
 
         public void QuitarDelCarrito(int idProducto)
         {
+            var carrito = Activa.Detalles;
             var item = carrito.FirstOrDefault(d => d.IdProducto == idProducto);
             if (item != null) carrito.Remove(item);
+            Activa.UltimaActividad = DateTime.Now;
         }
 
         // Fija la cantidad de un ítem ya en el carrito (para editarlo desde la caja).
         // Si la nueva cantidad es <= 0 se quita el ítem. Valida contra el stock disponible.
         public void CambiarCantidad(int idProducto, decimal nuevaCantidad)
         {
+            var carrito = Activa.Detalles;
             var item = carrito.FirstOrDefault(d => d.IdProducto == idProducto);
             if (item == null) return;
 
             if (nuevaCantidad <= 0)
             {
                 carrito.Remove(item);
+                Activa.UltimaActividad = DateTime.Now;
                 return;
             }
 
@@ -115,26 +193,51 @@ namespace Dominio.Servicios
 
             item.Cantidad = nuevaCantidad;
             item.Subtotal = item.Cantidad * item.PrecioUnitario;
+            Activa.UltimaActividad = DateTime.Now;
         }
 
         // Suma/resta una cantidad relativa a un ítem del carrito (botones − / +).
         public void AjustarCantidadCarrito(int idProducto, decimal delta)
         {
-            var item = carrito.FirstOrDefault(d => d.IdProducto == idProducto);
-            if (item == null) return;
-            CambiarCantidad(idProducto, item.Cantidad + delta);
+            var item = Activa.Detalles.FirstOrDefault(d => d.IdProducto == idProducto);
+            if (item != null) CambiarCantidad(idProducto, item.Cantidad + delta);
         }
 
-        public void VaciarCarrito() => carrito.Clear();
+        public void VaciarCarrito()
+        {
+            Activa.Detalles.Clear();
+            Activa.UltimaActividad = DateTime.Now;
+        }
 
-        public System.Collections.Generic.List<Venta> ObtenerVentasHoy()
+        public List<Venta> ObtenerVentasHoy()
         {
             return ventaDao.ObtenerVentas(DateTime.Today, DateTime.Today);
         }
 
+        // ── Reportes ───────────────────────────────────────────────────────
+        public List<Venta> ObtenerVentas(DateTime desde, DateTime hasta)
+            => ventaDao.ObtenerVentas(desde, hasta);
+
+        public ResumenVentas ObtenerResumenVentas(DateTime desde, DateTime hasta)
+            => ventaDao.ObtenerResumen(desde, hasta);
+
+        public List<ProductoVendido> ObtenerTopProductos(DateTime desde, DateTime hasta, int top = 10)
+            => ventaDao.ObtenerTopProductos(desde, hasta, top);
+
+        // Anula una venta registrada: devuelve el stock y la deja fuera de los reportes.
+        public void AnularVenta(int idVenta)
+        {
+            ventaDao.AnularVenta(idVenta);
+            logService.Registrar(ModuloLog.Ventas, "Anulación",
+                "Venta N°" + idVenta + " anulada (stock devuelto al inventario)");
+            NotificadorCambios.Notificar(Entidad.Venta);
+            NotificadorCambios.Notificar(Entidad.Producto);
+        }
+
         public int CobrarVenta(int idUsuario, string medioPago, int? idCaja = null)
         {
-            if (carrito.Count == 0)
+            var actual = Activa;
+            if (actual.Detalles.Count == 0)
                 throw new InvalidOperationException("El carrito está vacío.");
 
             if (idCaja == null)
@@ -148,15 +251,16 @@ namespace Dominio.Servicios
                 IdCaja = idCaja,
                 IdUsuario = idUsuario,
                 Fecha = DateTime.Now,
-                Total = Total,
+                Total = actual.Total,
                 MedioPago = medioPago,
-                Detalles = new List<DetalleVenta>(carrito)
+                Detalles = new List<DetalleVenta>(actual.Detalles)
             };
 
             int idVenta = ventaDao.RegistrarVenta(venta);
             logService.Registrar(ModuloLog.Ventas, "Venta",
                 "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + medioPago);
-            VaciarCarrito();
+
+            CerrarVenta(actual.Id);   // la venta cobrada deja de estar en curso
             NotificadorCambios.Notificar(Entidad.Venta);
             NotificadorCambios.Notificar(Entidad.Producto);
             return idVenta;

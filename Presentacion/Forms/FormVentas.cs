@@ -17,6 +17,9 @@ namespace Presentacion.Forms
         private bool logVentasVisible = false;
         private List<Producto> sugerencias = new List<Producto>();
         private string categoriaActual = "";
+        private FlowLayoutPanel pnlTabs;
+        private Timer timerVentas;
+        private static readonly TimeSpan InactividadMax = TimeSpan.FromMinutes(10);
 
         public FormVentas() { InitializeComponent(); }
 
@@ -33,6 +36,8 @@ namespace Presentacion.Forms
 
             CargarCategorias();
             CargarGridProductos();
+            InicializarPestanas();
+            ventaService.CerrarPausadasInactivas(InactividadMax);   // limpia las que vencieron en otro módulo
             RefrescarCarrito();
             txtCodigo.Focus();
         }
@@ -53,7 +58,9 @@ namespace Presentacion.Forms
             EstiloPos.AplicarBotonSecundario(btnFiltrarLogV);
             btnFiltrarLogV.Size = new Size(90, 30);
 
-            // btnAgregar ya viene estilizado desde el Designer (alto 44, alineado con los inputs)
+            // btnAgregar viene estilizado desde el Designer; le añadimos el feedback hover
+            btnAgregar.Cursor = Cursors.Hand;
+            btnAgregar.FlatAppearance.MouseOverBackColor = EstiloPos.Hover;
         }
 
         private void ConfigColAccion(DataGridViewColumn col, int ancho, float fontSize, Color fg, Color sel)
@@ -80,15 +87,15 @@ namespace Presentacion.Forms
             dgvCarrito.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 228, 245);
             dgvCarrito.DefaultCellStyle.SelectionForeColor = EstiloPos.Ink1;
 
-            // Columnas de acción del carrito: ancho fijo y centradas para que no se trunquen.
-            // Solo "Producto" usa el espacio flexible (Fill); el resto va con ancho fijo.
-            Color colSel = Color.FromArgb(220, 228, 245);
-            ConfigColAccion(colMenos,  38, 13F, EstiloPos.Ink1,  colSel);
-            ConfigColAccion(colMas,    38, 13F, EstiloPos.Verde, colSel);
-            ConfigColAccion(colQuitar, 38, 11F, EstiloPos.Rojo,  colSel);
+            // Columnas de acción del carrito: los símbolos − + ✕ se DIBUJAN (CellPainting),
+            // así nunca se truncan. Solo "Producto" usa el espacio flexible (Fill).
+            Color colSel = EstiloPos.Seleccion;
+            ConfigColAccion(colMenos,  36, 14F, EstiloPos.Ink1,  colSel);
+            ConfigColAccion(colMas,    36, 16F, EstiloPos.Verde, colSel);
+            ConfigColAccion(colQuitar, 36, 13F, EstiloPos.Rojo,  colSel);
 
             colVCantidad.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            colVCantidad.Width        = 46;
+            colVCantidad.Width        = 54;
             colVCantidad.DefaultCellStyle = new DataGridViewCellStyle {
                 Alignment = DataGridViewContentAlignment.MiddleCenter,
                 Font = EstiloPos.FontTabla,
@@ -103,6 +110,27 @@ namespace Presentacion.Forms
                 ForeColor = EstiloPos.Ink1, SelectionForeColor = EstiloPos.Ink1,
                 Padding = new Padding(0, 0, 8, 0),
                 BackColor = EstiloPos.Surface, SelectionBackColor = colSel };
+
+            // Encabezados del carrito: solo Producto / Cant. / Subtotal llevan título,
+            // alineados con su contenido. Las columnas de acción (− + ✕) quedan sin texto.
+            colVNombre.HeaderCell.Style.Padding     = new Padding(12, 0, 0, 0);
+            colVCantidad.HeaderText                 = "Cant.";
+            colVCantidad.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colVCantidad.HeaderCell.Style.Padding   = new Padding(0);
+            colVSubtotal.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
+            colVSubtotal.HeaderCell.Style.Padding   = new Padding(0, 0, 8, 0);
+
+            // Da un poco más de aire a la izquierda en el nombre del producto
+            colVNombre.DefaultCellStyle = new DataGridViewCellStyle {
+                Alignment = DataGridViewContentAlignment.MiddleLeft,
+                Font = EstiloPos.FontTabla,
+                ForeColor = EstiloPos.Ink1, SelectionForeColor = EstiloPos.Ink1,
+                Padding = new Padding(12, 0, 0, 0),
+                BackColor = EstiloPos.Surface, SelectionBackColor = colSel };
+
+            // Cursor de mano sobre las columnas de acción para indicar que son clickeables
+            dgvCarrito.CellMouseEnter += DgvCarrito_CellMouseEnter;
+            dgvCarrito.CellPainting   += DgvCarrito_CellPainting;
 
             // dgvLogVentas
             EstiloPos.AplicarGrid(dgvLogVentas);
@@ -138,6 +166,7 @@ namespace Presentacion.Forms
             };
             btn.FlatAppearance.BorderColor = EstiloPos.Border;
             btn.FlatAppearance.BorderSize  = 1;
+            btn.FlatAppearance.MouseOverBackColor = EstiloPos.Hover;
             btn.Click += (s, e) => {
                 categoriaActual = valor;
                 ActivarPill(texto);
@@ -216,15 +245,13 @@ namespace Presentacion.Forms
                 Size      = new Size(220, 100)  // tamaño inicial — AjustarTamañoTiles lo corrige
             };
 
-            // Borde pintado con el color del sistema de diseño
+            // Borde pintado; cambia a azul resaltado cuando el mouse está encima
+            bool hover = false;
             tile.Paint += (s, pe) =>
             {
-                using (var pen = new System.Drawing.Pen(bajoStock
-                    ? EstiloPos.Amber : EstiloPos.Border, 1.5f))
-                {
-                    var r = pe.ClipRectangle;
+                Color colorBorde = hover ? EstiloPos.Azul : (bajoStock ? EstiloPos.Amber : EstiloPos.Border);
+                using (var pen = new System.Drawing.Pen(colorBorde, hover ? 2.2f : 1.5f))
                     pe.Graphics.DrawRectangle(pen, 0, 0, tile.Width - 1, tile.Height - 1);
-                }
             };
 
             var lblNombre = new Label
@@ -263,6 +290,21 @@ namespace Presentacion.Forms
             lblNombre.Click  += clickHandler;
             lblPrecio.Click  += clickHandler;
             lblStock.Click   += clickHandler;
+
+            // Feedback hover: fondo azul claro + borde azul (los hijos también disparan el evento)
+            Color fondoNormal = tile.BackColor;
+            Color fondoHover  = bajoStock ? Color.FromArgb(255, 246, 228) : EstiloPos.HoverFila;
+            EventHandler entrar = (s, e) => { hover = true;  tile.BackColor = fondoHover;  tile.Invalidate(); };
+            EventHandler salir  = (s, e) =>
+            {
+                if (!tile.ClientRectangle.Contains(tile.PointToClient(Cursor.Position)))
+                { hover = false; tile.BackColor = fondoNormal; tile.Invalidate(); }
+            };
+            foreach (Control c in new Control[] { tile, lblNombre, lblPrecio, lblStock })
+            {
+                c.MouseEnter += entrar;
+                c.MouseLeave += salir;
+            }
 
             return tile;
         }
@@ -368,6 +410,110 @@ namespace Presentacion.Forms
             txtCodigo.Focus();
         }
 
+        // ── Pestañas de ventas (varias ventas en paralelo) ─────────────
+
+        private void InicializarPestanas()
+        {
+            lblCarritoTitulo.Visible = false;   // la barra de pestañas reemplaza el título
+
+            pnlTabs = new FlowLayoutPanel
+            {
+                Dock          = DockStyle.Top,
+                Height        = 46,
+                BackColor     = EstiloPos.Surface,
+                Padding       = new Padding(8, 8, 8, 0),
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents  = false
+            };
+            pnlCarrito.Controls.Add(pnlTabs);
+            dgvCarrito.BringToFront();   // el carrito (Fill) reclama el espacio entre pestañas y cobro
+
+            timerVentas = new Timer { Interval = 30000 };   // revisa inactividad cada 30 s
+            timerVentas.Tick += TimerVentas_Tick;
+            timerVentas.Start();
+        }
+
+        private void TimerVentas_Tick(object sender, EventArgs e)
+        {
+            if (ventaService.CerrarPausadasInactivas(InactividadMax) > 0)
+                RefrescarCarrito();   // refresca carrito + pestañas
+        }
+
+        private void RefrescarTabs()
+        {
+            if (pnlTabs == null) return;
+            pnlTabs.SuspendLayout();
+            pnlTabs.Controls.Clear();
+
+            var ventas = ventaService.VentasEnCurso;
+            int activaId = ventaService.Activa.Id;
+            for (int i = 0; i < ventas.Count; i++)
+                pnlTabs.Controls.Add(CrearTab(ventas[i], i + 1, ventas[i].Id == activaId));
+
+            var btnMas = new Button
+            {
+                Text      = "",
+                Width     = 38,
+                Height    = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = EstiloPos.Surface,
+                Cursor    = Cursors.Hand,
+                UseVisualStyleBackColor = false,
+                Margin    = new Padding(0)
+            };
+            btnMas.FlatAppearance.BorderColor = EstiloPos.Border;
+            btnMas.FlatAppearance.MouseOverBackColor = EstiloPos.VerdeBg;
+            // El "+" se dibuja (dos líneas) para que quede perfectamente centrado
+            btnMas.Paint += (s, e) =>
+            {
+                int cx = btnMas.Width / 2, cy = btnMas.Height / 2, r = 6;
+                using (var pen = new Pen(EstiloPos.Verde, 2.4f))
+                {
+                    e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
+                    e.Graphics.DrawLine(pen, cx, cy - r, cx, cy + r);
+                }
+            };
+            btnMas.Click += (s, e) =>
+            {
+                ventaService.NuevaVenta();
+                RefrescarCarrito();
+                txtCodigo.Focus();
+            };
+            pnlTabs.Controls.Add(btnMas);
+
+            pnlTabs.ResumeLayout();
+        }
+
+        private Button CrearTab(VentaEnCurso v, int numero, bool activa)
+        {
+            var b = new Button
+            {
+                Text      = "Venta " + numero,
+                AutoSize  = false,
+                Width     = 70,
+                Height    = 30,
+                FlatStyle = FlatStyle.Flat,
+                Font      = EstiloPos.FontSmall,
+                Cursor    = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = activa ? EstiloPos.Ink1 : EstiloPos.Surface,
+                ForeColor = activa ? Color.White    : EstiloPos.Ink2,
+                UseVisualStyleBackColor = false,
+                Margin    = new Padding(0, 0, 6, 0)
+            };
+            b.FlatAppearance.BorderColor = activa ? EstiloPos.Ink1 : EstiloPos.Border;
+            b.FlatAppearance.BorderSize  = 1;
+            b.FlatAppearance.MouseOverBackColor = activa ? Color.FromArgb(45, 45, 55) : EstiloPos.Hover;
+            int id = v.Id;
+            b.Click += (s, e) =>
+            {
+                ventaService.ActivarVenta(id);
+                RefrescarCarrito();
+                txtCodigo.Focus();
+            };
+            return b;
+        }
+
         // ── Carrito ────────────────────────────────────────────────────
 
         private void RefrescarCarrito()
@@ -384,6 +530,7 @@ namespace Presentacion.Forms
                     "✕");
             lblTotal.Text      = "$" + ventaService.Total.ToString("N0");
             lblMensaje.Visible = false;
+            RefrescarTabs();
         }
 
         private void dgvCarrito_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -400,6 +547,49 @@ namespace Presentacion.Forms
                 RefrescarCarrito();
             }
             catch (Exception ex) { MostrarMensaje(ex.Message); }
+        }
+
+        private void DgvCarrito_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) { dgvCarrito.Cursor = Cursors.Default; return; }
+            string col = dgvCarrito.Columns[e.ColumnIndex].Name;
+            dgvCarrito.Cursor = (col == "colMenos" || col == "colMas" || col == "colQuitar")
+                ? Cursors.Hand : Cursors.Default;
+        }
+
+        // Dibuja los símbolos − + ✕ de las columnas de acción (en vez de texto, así no se truncan)
+        private void DgvCarrito_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            string col = dgvCarrito.Columns[e.ColumnIndex].Name;
+            if (col != "colMenos" && col != "colMas" && col != "colQuitar") return;
+
+            e.PaintBackground(e.CellBounds, true);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            int cx = e.CellBounds.Left + e.CellBounds.Width / 2;
+            int cy = e.CellBounds.Top + e.CellBounds.Height / 2;
+            int r = 7;
+            Color color = col == "colMenos" ? EstiloPos.Ink1
+                        : col == "colMas"   ? EstiloPos.Verde
+                        :                     EstiloPos.Rojo;
+            using (var pen = new Pen(color, 2.6f))
+            {
+                if (col == "colMenos")
+                {
+                    e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
+                }
+                else if (col == "colMas")
+                {
+                    e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
+                    e.Graphics.DrawLine(pen, cx, cy - r, cx, cy + r);
+                }
+                else // ✕
+                {
+                    e.Graphics.DrawLine(pen, cx - r, cy - r, cx + r, cy + r);
+                    e.Graphics.DrawLine(pen, cx - r, cy + r, cx + r, cy - r);
+                }
+            }
+            e.Handled = true;
         }
 
         // ── Cobro ──────────────────────────────────────────────────────
@@ -424,16 +614,31 @@ namespace Presentacion.Forms
 
         private void btnCancelar_Click(object sender, EventArgs e)
         {
-            if (ventaService.Carrito.Count == 0) return;
-            if (Aviso.Confirmar(this, "Se vaciará el carrito y se quitarán todos los productos agregados.",
-                    "¿Cancelar la venta?", "Sí, cancelar"))
-            { ventaService.VaciarCarrito(); RefrescarCarrito(); }
+            int items = ventaService.Carrito.Count;
+            // Si es la única venta abierta y está vacía, no hay nada que cancelar
+            if (items == 0 && ventaService.VentasEnCurso.Count <= 1) return;
+
+            string detalle = items > 0
+                ? "Se descartará esta venta y sus " + items + " producto(s) del carrito."
+                : "Se cerrará esta venta.";
+            if (!Aviso.Confirmar(this, detalle, "¿Cancelar la venta?", "Sí, cancelar"))
+                return;
+
+            ventaService.CerrarVenta(ventaService.Activa.Id);
+            RefrescarCarrito();
+            txtCodigo.Focus();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == Keys.F12) { btnCobrar_Click(this, EventArgs.Empty); return true; }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            timerVentas?.Stop();
+            base.OnFormClosed(e);
         }
 
         // ── Log ────────────────────────────────────────────────────────

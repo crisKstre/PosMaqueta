@@ -87,6 +87,85 @@ namespace AccesoData.DAO
             }
         }
 
+        // Totales de ventas en un rango de fechas (módulo de Reportes)
+        public ResumenVentas ObtenerResumen(DateTime desde, DateTime hasta)
+        {
+            var r = new ResumenVentas();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"
+                    SELECT
+                        COUNT(*),
+                        COALESCE(SUM(Total), 0),
+                        COALESCE(SUM(CASE WHEN MedioPago = @efectivo      THEN Total ELSE 0 END), 0),
+                        COALESCE(SUM(CASE WHEN MedioPago = @tarjeta       THEN Total ELSE 0 END), 0),
+                        COALESCE(SUM(CASE WHEN MedioPago = @transferencia THEN Total ELSE 0 END), 0)
+                    FROM Venta
+                    WHERE Fecha BETWEEN @desde AND @hasta AND Anulada = 0;";
+
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
+                    cmd.Parameters.AddWithValue("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
+                    cmd.Parameters.AddWithValue("@efectivo", MedioPago.Efectivo);
+                    cmd.Parameters.AddWithValue("@tarjeta", MedioPago.Tarjeta);
+                    cmd.Parameters.AddWithValue("@transferencia", MedioPago.Transferencia);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            r.CantidadVentas     = reader.GetInt32(0);
+                            r.TotalVendido       = reader.GetDecimal(1);
+                            r.TotalEfectivo      = reader.GetDecimal(2);
+                            r.TotalTarjeta       = reader.GetDecimal(3);
+                            r.TotalTransferencia = reader.GetDecimal(4);
+                        }
+                    }
+                }
+            }
+            return r;
+        }
+
+        // Productos más vendidos en un rango (ordenados por cantidad)
+        public List<ProductoVendido> ObtenerTopProductos(DateTime desde, DateTime hasta, int top)
+        {
+            var lista = new List<ProductoVendido>();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"
+                    SELECT p.Nombre, SUM(d.Cantidad), SUM(d.Subtotal)
+                    FROM DetalleVenta d
+                    JOIN Venta v    ON d.IdVenta    = v.IdVenta
+                    JOIN Producto p ON d.IdProducto = p.IdProducto
+                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0
+                    GROUP BY d.IdProducto, p.Nombre
+                    ORDER BY SUM(d.Cantidad) DESC
+                    LIMIT @top;";
+
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
+                    cmd.Parameters.AddWithValue("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
+                    cmd.Parameters.AddWithValue("@top", top);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lista.Add(new ProductoVendido
+                            {
+                                Nombre   = reader.GetString(0),
+                                Cantidad = reader.GetDecimal(1),
+                                Total    = reader.GetDecimal(2)
+                            });
+                        }
+                    }
+                }
+            }
+            return lista;
+        }
+
         // Historial de ventas (para futuro módulo de reportes / módulo de caja)
         public List<Venta> ObtenerVentas(DateTime desde, DateTime hasta)
         {
@@ -97,7 +176,7 @@ namespace AccesoData.DAO
                 string sql = @"
                     SELECT IdVenta, IdCaja, IdUsuario, Fecha, Total, MedioPago
                     FROM Venta
-                    WHERE Fecha BETWEEN @desde AND @hasta
+                    WHERE Fecha BETWEEN @desde AND @hasta AND Anulada = 0
                     ORDER BY Fecha DESC;";
 
                 using (var cmd = new SqliteCommand(sql, con))
@@ -122,6 +201,53 @@ namespace AccesoData.DAO
                 }
             }
             return lista;
+        }
+
+        // Anula una venta: devuelve su stock al inventario y la marca Anulada=1, en una transacción.
+        public void AnularVenta(int idVenta)
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var tran = con.BeginTransaction())
+                {
+                    try
+                    {
+                        var detalles = new List<KeyValuePair<int, decimal>>();
+                        using (var cmd = new SqliteCommand(
+                            "SELECT IdProducto, Cantidad FROM DetalleVenta WHERE IdVenta = @id;", con, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@id", idVenta);
+                            using (var r = cmd.ExecuteReader())
+                                while (r.Read())
+                                    detalles.Add(new KeyValuePair<int, decimal>(r.GetInt32(0), r.GetDecimal(1)));
+                        }
+
+                        foreach (var d in detalles)
+                            using (var cmd = new SqliteCommand(
+                                "UPDATE Producto SET Stock = Stock + @c WHERE IdProducto = @p;", con, tran))
+                            {
+                                cmd.Parameters.AddWithValue("@c", d.Value);
+                                cmd.Parameters.AddWithValue("@p", d.Key);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                        using (var cmd = new SqliteCommand(
+                            "UPDATE Venta SET Anulada = 1 WHERE IdVenta = @id;", con, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@id", idVenta);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        tran.Commit();
+                    }
+                    catch
+                    {
+                        tran.Rollback();
+                        throw;
+                    }
+                }
+            }
         }
     }
 }

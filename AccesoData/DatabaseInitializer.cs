@@ -12,6 +12,7 @@ namespace AccesoData
             {
                 con.Open();
                 CrearTablas(con);
+                MigrarEsquema(con);
                 SembrarAdmin(con);
                 SembrarEmpleadoDemo(con);
             }
@@ -95,6 +96,25 @@ namespace AccesoData
             {
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        // Migraciones incrementales: agrega columnas nuevas a bases de datos ya creadas.
+        private void MigrarEsquema(SqliteConnection con)
+        {
+            if (!ColumnaExiste(con, "Venta", "Anulada"))
+                using (var cmd = new SqliteCommand(
+                    "ALTER TABLE Venta ADD COLUMN Anulada INTEGER NOT NULL DEFAULT 0;", con))
+                    cmd.ExecuteNonQuery();
+        }
+
+        private bool ColumnaExiste(SqliteConnection con, string tabla, string columna)
+        {
+            using (var cmd = new SqliteCommand("PRAGMA table_info(" + tabla + ");", con))
+            using (var reader = cmd.ExecuteReader())
+                while (reader.Read())
+                    if (string.Equals(reader.GetString(1), columna, StringComparison.OrdinalIgnoreCase))
+                        return true;
+            return false;
         }
 
         private void SembrarAdmin(SqliteConnection con)

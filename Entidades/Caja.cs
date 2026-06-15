@@ -12,6 +12,7 @@ namespace Entidades
         public decimal MontoEsperado { get; set; }
         public decimal MontoReal { get; set; }
         public string Estado { get; set; }
+        public string NombreUsuario { get; set; }   // solo para el histórico (no se persiste)
     }
 
     public static class EstadoCaja

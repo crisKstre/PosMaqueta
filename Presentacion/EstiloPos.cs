@@ -36,23 +36,28 @@ namespace Presentacion
         public static readonly Color Azul        = Color.FromArgb(37,  99,  235);
         public static readonly Color AzulBg      = Color.FromArgb(239, 244, 254);
 
+        // Resaltado al pasar el mouse (hover) sobre elementos claros — azulado, con buen contraste
+        public static readonly Color Hover       = Color.FromArgb(196, 215, 245);
+        public static readonly Color HoverFila   = Color.FromArgb(214, 229, 250);
+        public static readonly Color Seleccion   = Color.FromArgb(184, 208, 246);
+
         // ── Tipografía ────────────────────────────────────────────────────
 
-        public static Font FontTitulo     => new Font("Segoe UI", 17F, FontStyle.Bold);       // título de módulo
-        public static Font FontSubtitulo  => new Font("Segoe UI", 13F, FontStyle.Bold);       // subtítulos / cards
-        public static Font FontBody       => new Font("Segoe UI", 12F, FontStyle.Regular);    // cuerpo general
-        public static Font FontSmall      => new Font("Segoe UI", 10F, FontStyle.Regular);    // hints / labels
-        public static Font FontMicro      => new Font("Segoe UI",  9F, FontStyle.Regular);    // meta / columnas
-        public static Font FontLabel      => new Font("Segoe UI", 10F, FontStyle.Bold);       // labels de campo
-        public static Font FontBoton      => new Font("Segoe UI", 12F, FontStyle.Bold);       // botones
-        public static Font FontBotonGrande=> new Font("Segoe UI", 13F, FontStyle.Bold);       // cobrar F12
-        public static Font FontPrecio     => new Font("Segoe UI", 26F, FontStyle.Bold);       // total carrito
-        public static Font FontInput      => new Font("Segoe UI", 12F, FontStyle.Regular);    // inputs estándar
-        public static Font FontInputGrande=> new Font("Segoe UI", 14F, FontStyle.Regular);    // scanner / monto
-        public static Font FontSidebar    => new Font("Segoe UI", 13F, FontStyle.Regular);    // botones sidebar
-        public static Font FontMetrica    => new Font("Segoe UI", 22F, FontStyle.Bold);       // métricas caja
-        public static Font FontTabla      => new Font("Segoe UI", 11F, FontStyle.Regular);    // filas tabla
-        public static Font FontTablaHead  => new Font("Segoe UI", 10F, FontStyle.Bold);       // cabeceras tabla
+        public static Font FontTitulo     => new Font("Segoe UI", 19F, FontStyle.Bold);       // título de módulo
+        public static Font FontSubtitulo  => new Font("Segoe UI", 15F, FontStyle.Bold);       // subtítulos / cards
+        public static Font FontBody       => new Font("Segoe UI", 13F, FontStyle.Regular);    // cuerpo general
+        public static Font FontSmall      => new Font("Segoe UI", 11F, FontStyle.Regular);    // hints / labels
+        public static Font FontMicro      => new Font("Segoe UI", 10F, FontStyle.Regular);    // meta / columnas
+        public static Font FontLabel      => new Font("Segoe UI", 11F, FontStyle.Bold);       // labels de campo
+        public static Font FontBoton      => new Font("Segoe UI", 13F, FontStyle.Bold);       // botones
+        public static Font FontBotonGrande=> new Font("Segoe UI", 15F, FontStyle.Bold);       // cobrar F12
+        public static Font FontPrecio     => new Font("Segoe UI", 28F, FontStyle.Bold);       // total carrito
+        public static Font FontInput      => new Font("Segoe UI", 13F, FontStyle.Regular);    // inputs estándar
+        public static Font FontInputGrande=> new Font("Segoe UI", 15F, FontStyle.Regular);    // scanner / monto
+        public static Font FontSidebar    => new Font("Segoe UI", 14F, FontStyle.Regular);    // botones sidebar
+        public static Font FontMetrica    => new Font("Segoe UI", 23F, FontStyle.Bold);       // métricas caja
+        public static Font FontTabla      => new Font("Segoe UI", 12.5F, FontStyle.Regular);  // filas tabla
+        public static Font FontTablaHead  => new Font("Segoe UI", 11F, FontStyle.Bold);       // cabeceras tabla
 
         // ── Alturas estándar ─────────────────────────────────────────────
         public const int AlturaInput       = 38;
@@ -105,7 +110,7 @@ namespace Presentacion
             btn.FlatStyle                     = FlatStyle.Flat;
             btn.FlatAppearance.BorderSize     = 1;
             btn.FlatAppearance.BorderColor    = Border;
-            btn.FlatAppearance.MouseOverBackColor = Fondo;
+            btn.FlatAppearance.MouseOverBackColor = Hover;
             btn.Cursor                        = Cursors.Hand;
             btn.UseVisualStyleBackColor       = false;
             btn.Height                        = AlturaBoton;
@@ -141,7 +146,7 @@ namespace Presentacion
                 BackColor        = Surface,
                 ForeColor        = Ink1,
                 Padding          = new Padding(10, 0, 0, 0),
-                SelectionBackColor = Color.FromArgb(220, 228, 245),
+                SelectionBackColor = Seleccion,
                 SelectionForeColor = Ink1
             };
         }
@@ -159,12 +164,31 @@ namespace Presentacion
             dgv.ColumnHeadersHeightSizeMode    = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dgv.RowTemplate.Height             = AlturaFilaTabla;
             dgv.RowHeadersVisible              = false;
+            dgv.AllowUserToResizeColumns      = false;   // el usuario no puede mover/redimensionar columnas
+            dgv.AllowUserToResizeRows         = false;
+            dgv.AllowUserToOrderColumns       = false;
             dgv.AllowUserToAddRows             = false;
             dgv.AllowUserToDeleteRows          = false;
             dgv.ReadOnly                       = true;
             dgv.SelectionMode                  = DataGridViewSelectionMode.FullRowSelect;
             dgv.MultiSelect                    = false;
             dgv.AutoSizeColumnsMode            = DataGridViewAutoSizeColumnsMode.Fill;
+
+            // Resaltado de fila al pasar el mouse (guarda el color base en Tag para restaurarlo)
+            dgv.CellMouseEnter += (s, e) =>
+            {
+                if (e.RowIndex < 0) return;
+                var row = dgv.Rows[e.RowIndex];
+                if (row.Selected) return;
+                if (!(row.Tag is Color)) row.Tag = row.DefaultCellStyle.BackColor;
+                row.DefaultCellStyle.BackColor = HoverFila;
+            };
+            dgv.CellMouseLeave += (s, e) =>
+            {
+                if (e.RowIndex < 0) return;
+                var row = dgv.Rows[e.RowIndex];
+                if (row.Tag is Color c) row.DefaultCellStyle.BackColor = c;
+            };
         }
     }
 }

@@ -16,8 +16,26 @@ namespace Presentacion.Forms
         private void FormCaja_Load(object sender, EventArgs e)
         {
             AplicarEstilos();
+            CrearBotonHistorial();
             NotificadorCambios.Cambio += OnCambioDatos;
             RefrescarEstado();
+        }
+
+        // Botón "Histórico de cajas" (solo admin), anclado arriba a la derecha.
+        private void CrearBotonHistorial()
+        {
+            if (!Sesion.EsAdmin) return;
+            var btn = new Button
+            {
+                Text     = "📋  Histórico de cajas",
+                Size     = new Size(220, 38),
+                Anchor   = AnchorStyles.Top | AnchorStyles.Right,
+                Location = new Point(this.ClientSize.Width - 220 - 24, 22)
+            };
+            EstiloPos.AplicarBotonSecundario(btn);
+            btn.Click += (s, e) => { using (var f = new FormHistorialCajas()) f.ShowDialog(this); };
+            this.Controls.Add(btn);
+            btn.BringToFront();
         }
 
         private void FormCaja_FormClosed(object sender, FormClosedEventArgs e)

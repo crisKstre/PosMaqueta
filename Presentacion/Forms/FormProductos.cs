@@ -120,7 +120,8 @@ namespace Presentacion.Forms
             b.BackColor = EstiloPos.Surface;
             b.FlatAppearance.BorderColor = EstiloPos.Border;
             b.FlatAppearance.BorderSize  = 1;
-            b.Font      = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            b.FlatAppearance.MouseOverBackColor = EstiloPos.Hover;
+            b.Font      = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             b.ForeColor = fg;
             b.Cursor    = Cursors.Hand;
             b.UseVisualStyleBackColor = false;
@@ -133,10 +134,22 @@ namespace Presentacion.Forms
 
         private void AcomodarFilaAcciones()
         {
-            int y = btnLog.Top;     // conserva la Y del diseñador
+            int y = btnAgregar.Top;     // conserva la Y del diseñador
             int gap = 10, margenDer = 18;
 
-            // Ancla a la derecha solo los botones visibles (un empleado oculta varios)
+            // Ajusta el ancho de cada botón a su texto para que no se trunque con fuentes grandes
+            btnAgregar.Width    = TextRenderer.MeasureText(btnAgregar.Text,   btnAgregar.Font).Width + 30;
+            btnDescontar.Width  = TextRenderer.MeasureText(btnDescontar.Text, btnDescontar.Font).Width + 30;
+            btnEliminar.Width   = TextRenderer.MeasureText(btnEliminar.Text,  btnEliminar.Font).Width + 30;
+            btnLog.Width        = TextRenderer.MeasureText(btnLog.Text,       btnLog.Font).Width + 30;
+            btnDesactivar.Width = TextRenderer.MeasureText("Desactivar",      btnDesactivar.Font).Width + 30; // el texto más largo
+
+            // Grupo izquierdo: modificar existencias, tras el campo de cantidad
+            int xi = txtCantidad.Right + 18;
+            btnAgregar.Location   = new Point(xi, y);
+            btnDescontar.Location = new Point(btnAgregar.Right + gap, y);
+
+            // Grupo derecho: acciones de producto, ancladas a la derecha (solo las visibles)
             int x = pnlAcciones.ClientSize.Width - margenDer;
             foreach (var b in new[] { btnLog, btnEliminar, btnDesactivar })
             {

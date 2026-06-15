@@ -136,7 +136,7 @@ namespace Presentacion.Forms
             this.pnlEscaneo.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlEscaneo.Location = new System.Drawing.Point(0, 0);
             this.pnlEscaneo.Name = "pnlEscaneo";
-            this.pnlEscaneo.Size = new System.Drawing.Size(284, 100);
+            this.pnlEscaneo.Size = new System.Drawing.Size(1335, 100);
             this.pnlEscaneo.TabIndex = 4;
             // 
             // lblCodigo
@@ -234,7 +234,7 @@ namespace Presentacion.Forms
             this.lblMensaje.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(38)))), ((int)(((byte)(38)))));
             this.lblMensaje.Location = new System.Drawing.Point(16, 80);
             this.lblMensaje.Name = "lblMensaje";
-            this.lblMensaje.Size = new System.Drawing.Size(982, 16);
+            this.lblMensaje.Size = new System.Drawing.Size(2033, 16);
             this.lblMensaje.TabIndex = 7;
             this.lblMensaje.Visible = false;
             // 
@@ -260,7 +260,7 @@ namespace Presentacion.Forms
             this.pnlCentro.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlCentro.Location = new System.Drawing.Point(0, 100);
             this.pnlCentro.Name = "pnlCentro";
-            this.pnlCentro.Size = new System.Drawing.Size(284, 0);
+            this.pnlCentro.Size = new System.Drawing.Size(1335, 113);
             this.pnlCentro.TabIndex = 1;
             // 
             // pnlGridWrap
@@ -272,7 +272,7 @@ namespace Presentacion.Forms
             this.pnlGridWrap.Location = new System.Drawing.Point(0, 0);
             this.pnlGridWrap.Name = "pnlGridWrap";
             this.pnlGridWrap.Padding = new System.Windows.Forms.Padding(10);
-            this.pnlGridWrap.Size = new System.Drawing.Size(0, 0);
+            this.pnlGridWrap.Size = new System.Drawing.Size(975, 113);
             this.pnlGridWrap.TabIndex = 0;
             // 
             // pnlProdGrid
@@ -282,7 +282,7 @@ namespace Presentacion.Forms
             this.pnlProdGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlProdGrid.Location = new System.Drawing.Point(10, 54);
             this.pnlProdGrid.Name = "pnlProdGrid";
-            this.pnlProdGrid.Size = new System.Drawing.Size(0, 0);
+            this.pnlProdGrid.Size = new System.Drawing.Size(955, 49);
             this.pnlProdGrid.TabIndex = 0;
             this.pnlProdGrid.Resize += new System.EventHandler(this.pnlProdGrid_Resize);
             // 
@@ -293,7 +293,7 @@ namespace Presentacion.Forms
             this.pnlCats.Location = new System.Drawing.Point(10, 10);
             this.pnlCats.Name = "pnlCats";
             this.pnlCats.Padding = new System.Windows.Forms.Padding(0, 6, 0, 6);
-            this.pnlCats.Size = new System.Drawing.Size(0, 44);
+            this.pnlCats.Size = new System.Drawing.Size(955, 44);
             this.pnlCats.TabIndex = 1;
             this.pnlCats.WrapContents = false;
             // 
@@ -305,9 +305,9 @@ namespace Presentacion.Forms
             this.pnlCarrito.Controls.Add(this.dgvCarrito);
             this.pnlCarrito.Controls.Add(this.pnlCobro);
             this.pnlCarrito.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlCarrito.Location = new System.Drawing.Point(-76, 0);
+            this.pnlCarrito.Location = new System.Drawing.Point(975, 0);
             this.pnlCarrito.Name = "pnlCarrito";
-            this.pnlCarrito.Size = new System.Drawing.Size(360, 0);
+            this.pnlCarrito.Size = new System.Drawing.Size(360, 113);
             this.pnlCarrito.TabIndex = 1;
             // 
             // lblCarritoTitulo
@@ -353,23 +353,23 @@ namespace Presentacion.Forms
             this.colVNombre.Name = "colVNombre";
             // 
             // colMenos
-            //
+            // 
             this.colMenos.FillWeight = 34F;
             this.colMenos.HeaderText = "";
             this.colMenos.Name = "colMenos";
-            //
+            // 
             // colVCantidad
-            //
+            // 
             this.colVCantidad.FillWeight = 50F;
             this.colVCantidad.HeaderText = "Cant.";
             this.colVCantidad.Name = "colVCantidad";
-            //
+            // 
             // colMas
-            //
+            // 
             this.colMas.FillWeight = 34F;
             this.colMas.HeaderText = "";
             this.colMas.Name = "colMas";
-            //
+            // 
             // colVSubtotal
             // 
             this.colVSubtotal.HeaderText = "Subtotal";
@@ -392,7 +392,7 @@ namespace Presentacion.Forms
             this.pnlCobro.Controls.Add(this.btnCancelar);
             this.pnlCobro.Controls.Add(this.btnVerLog);
             this.pnlCobro.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlCobro.Location = new System.Drawing.Point(0, -276);
+            this.pnlCobro.Location = new System.Drawing.Point(0, -165);
             this.pnlCobro.Name = "pnlCobro";
             this.pnlCobro.Size = new System.Drawing.Size(358, 276);
             this.pnlCobro.TabIndex = 2;
@@ -471,10 +471,10 @@ namespace Presentacion.Forms
             this.pnlLogVentas.Controls.Add(this.pnlLogFiltrosV);
             this.pnlLogVentas.Controls.Add(this.dgvLogVentas);
             this.pnlLogVentas.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlLogVentas.Location = new System.Drawing.Point(0, -24);
+            this.pnlLogVentas.Location = new System.Drawing.Point(0, 213);
             this.pnlLogVentas.MinimumSize = new System.Drawing.Size(0, 120);
             this.pnlLogVentas.Name = "pnlLogVentas";
-            this.pnlLogVentas.Size = new System.Drawing.Size(284, 280);
+            this.pnlLogVentas.Size = new System.Drawing.Size(1335, 280);
             this.pnlLogVentas.TabIndex = 2;
             this.pnlLogVentas.Visible = false;
             // 
@@ -489,7 +489,7 @@ namespace Presentacion.Forms
             this.pnlLogFiltrosV.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlLogFiltrosV.Location = new System.Drawing.Point(0, 0);
             this.pnlLogFiltrosV.Name = "pnlLogFiltrosV";
-            this.pnlLogFiltrosV.Size = new System.Drawing.Size(282, 50);
+            this.pnlLogFiltrosV.Size = new System.Drawing.Size(1333, 50);
             this.pnlLogFiltrosV.TabIndex = 0;
             // 
             // lblDesdeV
@@ -551,7 +551,7 @@ namespace Presentacion.Forms
             this.dgvLogVentas.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvLogVentas.Location = new System.Drawing.Point(0, 0);
             this.dgvLogVentas.Name = "dgvLogVentas";
-            this.dgvLogVentas.Size = new System.Drawing.Size(282, 278);
+            this.dgvLogVentas.Size = new System.Drawing.Size(1333, 278);
             this.dgvLogVentas.TabIndex = 1;
             // 
             // colLVFecha
@@ -582,9 +582,9 @@ namespace Presentacion.Forms
             this.splitterLogV.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(228)))), ((int)(((byte)(228)))), ((int)(((byte)(224)))));
             this.splitterLogV.Cursor = System.Windows.Forms.Cursors.HSplit;
             this.splitterLogV.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.splitterLogV.Location = new System.Drawing.Point(0, 256);
+            this.splitterLogV.Location = new System.Drawing.Point(0, 493);
             this.splitterLogV.Name = "splitterLogV";
-            this.splitterLogV.Size = new System.Drawing.Size(284, 5);
+            this.splitterLogV.Size = new System.Drawing.Size(1335, 5);
             this.splitterLogV.TabIndex = 3;
             this.splitterLogV.TabStop = false;
             this.splitterLogV.Visible = false;
@@ -593,7 +593,7 @@ namespace Presentacion.Forms
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(244)))), ((int)(((byte)(241)))));
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(1335, 498);
             this.Controls.Add(this.lstSugerencias);
             this.Controls.Add(this.pnlCentro);
             this.Controls.Add(this.pnlLogVentas);

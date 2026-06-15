@@ -1,0 +1,237 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+using Dominio.Servicios;
+
+namespace Presentacion.Forms
+{
+    public class FormReportes : Form
+    {
+        private readonly VentaService ventaService = new VentaService();
+
+        private DateTimePicker dtpDesde, dtpHasta;
+        private Label lblVentasVal, lblTotalVal, lblTicketVal, lblDesgloseVal;
+        private DataGridView dgvTop, dgvVentas;
+
+        public FormReportes()
+        {
+            this.Text = "Reportes";
+            InitUI();
+        }
+
+        private void InitUI()
+        {
+            this.BackColor = EstiloPos.Fondo;
+            this.Load += (s, e) => SetRango(DateTime.Today, DateTime.Today);
+
+            // ── Header + filtro de fechas ──────────────────────────────────
+            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 124, BackColor = EstiloPos.Fondo };
+
+            var lblTitulo = new Label
+            {
+                Text = "Reportes de ventas",
+                Font = EstiloPos.FontTitulo, ForeColor = EstiloPos.Ink1,
+                AutoSize = true, Location = new Point(24, 16)
+            };
+
+            var lblDesde = new Label { Text = "Desde", Font = EstiloPos.FontSmall, ForeColor = EstiloPos.Ink2,
+                AutoSize = true, Location = new Point(24, 62) };
+            dtpDesde = new DateTimePicker { Format = DateTimePickerFormat.Short, Font = EstiloPos.FontBody,
+                Location = new Point(24, 84), Size = new Size(150, 30) };
+
+            var lblHasta = new Label { Text = "Hasta", Font = EstiloPos.FontSmall, ForeColor = EstiloPos.Ink2,
+                AutoSize = true, Location = new Point(190, 62) };
+            dtpHasta = new DateTimePicker { Format = DateTimePickerFormat.Short, Font = EstiloPos.FontBody,
+                Location = new Point(190, 84), Size = new Size(150, 30) };
+
+            var btnVer = new Button { Text = "Ver", Location = new Point(356, 83), Size = new Size(90, 32) };
+            EstiloPos.AplicarBotonPrimario(btnVer);
+            btnVer.Click += (s, e) => Generar();
+
+            var btnHoy    = CrearChip("Hoy",      () => SetRango(DateTime.Today, DateTime.Today));
+            var btnSemana = CrearChip("7 días",   () => SetRango(DateTime.Today.AddDays(-6), DateTime.Today));
+            var btnMes    = CrearChip("Este mes", () => SetRango(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), DateTime.Today));
+            btnHoy.Location    = new Point(470, 84);
+            btnSemana.Location = new Point(btnHoy.Right + 8, 84);
+            btnMes.Location    = new Point(btnSemana.Right + 8, 84);
+
+            pnlHeader.Controls.AddRange(new Control[] {
+                lblTitulo, lblDesde, dtpDesde, lblHasta, dtpHasta, btnVer, btnHoy, btnSemana, btnMes });
+
+            // ── Cards ──────────────────────────────────────────────────────
+            var pnlCards = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top, Height = 122, Padding = new Padding(24, 0, 0, 18),
+                BackColor = EstiloPos.Fondo, FlowDirection = FlowDirection.LeftToRight, WrapContents = false
+            };
+            pnlCards.Controls.Add(CrearCard("Ventas",          EstiloPos.Azul,  out lblVentasVal));
+            pnlCards.Controls.Add(CrearCard("Total vendido",   EstiloPos.Verde, out lblTotalVal));
+            pnlCards.Controls.Add(CrearCard("Ticket promedio", EstiloPos.Amber, out lblTicketVal));
+            pnlCards.Controls.Add(CrearCard("Medios de pago",  EstiloPos.Ink2,  out lblDesgloseVal));
+            lblDesgloseVal.Font      = EstiloPos.FontSmall;
+            lblDesgloseVal.ForeColor = EstiloPos.Ink1;
+            lblDesgloseVal.TextAlign = ContentAlignment.TopLeft;
+            lblDesgloseVal.Location  = new Point(16, 32);
+            lblDesgloseVal.Size      = new Size(214, 66);
+
+            // ── Tablas ─────────────────────────────────────────────────────
+            var split = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+                Padding = new Padding(24, 0, 24, 24), BackColor = EstiloPos.Fondo
+            };
+            split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46F));
+            split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54F));
+            split.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+            var pnlTopProd = CrearPanelTabla("Productos más vendidos", out dgvTop, new Padding(0, 0, 10, 0));
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Producto", FillWeight = 120 });
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Cant.",    FillWeight = 45 });
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",    FillWeight = 55 });
+            EstiloPos.AplicarGrid(dgvTop);
+
+            var pnlListaVentas = CrearPanelTabla("Ventas del período  ·  doble clic para anular", out dgvVentas, new Padding(10, 0, 0, 0));
+            dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { Name = "colVtaId", Visible = false });
+            dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "N°",            FillWeight = 28 });
+            dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Fecha",         FillWeight = 65 });
+            dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Medio de pago", FillWeight = 62 });
+            dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",         FillWeight = 50 });
+            EstiloPos.AplicarGrid(dgvVentas);
+            dgvVentas.CellDoubleClick += DgvVentas_CellDoubleClick;
+
+            split.Controls.Add(pnlTopProd, 0, 0);
+            split.Controls.Add(pnlListaVentas, 1, 0);
+
+            this.Controls.Add(split);
+            this.Controls.Add(pnlCards);
+            this.Controls.Add(pnlHeader);
+        }
+
+        private void SetRango(DateTime desde, DateTime hasta)
+        {
+            dtpDesde.Value = desde;
+            dtpHasta.Value = hasta;
+            Generar();
+        }
+
+        private void Generar()
+        {
+            DateTime desde = dtpDesde.Value.Date, hasta = dtpHasta.Value.Date;
+            if (hasta < desde) { var t = desde; desde = hasta; hasta = t; }
+
+            var r = ventaService.ObtenerResumenVentas(desde, hasta);
+            lblVentasVal.Text   = r.CantidadVentas.ToString();
+            lblTotalVal.Text    = "$" + r.TotalVendido.ToString("N0");
+            lblTicketVal.Text   = "$" + r.TicketPromedio.ToString("N0");
+            lblDesgloseVal.Text =
+                "Efectivo:  $" + r.TotalEfectivo.ToString("N0") + "\n" +
+                "Tarjeta:   $" + r.TotalTarjeta.ToString("N0") + "\n" +
+                "Transfer.: $" + r.TotalTransferencia.ToString("N0");
+
+            dgvTop.Rows.Clear();
+            foreach (var p in ventaService.ObtenerTopProductos(desde, hasta, 12))
+                dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.##"), "$" + p.Total.ToString("N0"));
+
+            dgvVentas.Rows.Clear();
+            foreach (var v in ventaService.ObtenerVentas(desde, hasta))
+                dgvVentas.Rows.Add(v.IdVenta, "#" + v.IdVenta, v.Fecha.ToString("dd/MM HH:mm"), v.MedioPago, "$" + v.Total.ToString("N0"));
+        }
+
+        private void DgvVentas_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            int idVenta  = Convert.ToInt32(dgvVentas.Rows[e.RowIndex].Cells["colVtaId"].Value);
+            string total = dgvVentas.Rows[e.RowIndex].Cells[4].Value?.ToString();
+
+            if (!Aviso.Confirmar(this,
+                    "Se anulará la venta N°" + idVenta + " (" + total + ") y su stock volverá al inventario.\n" +
+                    "Esta acción no se puede deshacer.",
+                    "¿Anular venta?", "Anular", TipoAviso.Error))
+                return;
+
+            try
+            {
+                ventaService.AnularVenta(idVenta);
+                Aviso.Exito(this, "La venta N°" + idVenta + " fue anulada y el stock devuelto al inventario.", "Venta anulada");
+                Generar();
+            }
+            catch (Exception ex) { Aviso.Error(this, ex.Message); }
+        }
+
+        // ── Helpers visuales (mismo lenguaje que el Dashboard) ─────────────
+
+        private Button CrearChip(string texto, Action onClick)
+        {
+            int w = TextRenderer.MeasureText(texto, EstiloPos.FontSmall).Width + 28;
+            var b = new Button
+            {
+                Text = texto, AutoSize = false, Size = new Size(w, 32),
+                FlatStyle = FlatStyle.Flat, Font = EstiloPos.FontSmall,
+                BackColor = EstiloPos.Surface, ForeColor = EstiloPos.Ink2,
+                Cursor = Cursors.Hand, UseVisualStyleBackColor = false
+            };
+            b.FlatAppearance.BorderColor = EstiloPos.Border;
+            b.FlatAppearance.MouseOverBackColor = EstiloPos.Hover;
+            b.Click += (s, e) => onClick();
+            return b;
+        }
+
+        private Panel CrearCard(string titulo, Color acento, out Label valor)
+        {
+            var card = new Panel { Width = 236, Height = 100, Margin = new Padding(0, 0, 16, 0), BackColor = EstiloPos.Surface };
+            var barra = new Panel { Width = 4, Dock = DockStyle.Left, BackColor = acento };
+
+            var lblTit = new Label
+            {
+                Text = titulo, AutoSize = false, Location = new Point(16, 12), Size = new Size(214, 20),
+                ForeColor = EstiloPos.Ink2, Font = EstiloPos.FontSmall
+            };
+            valor = new Label
+            {
+                Text = "—", AutoSize = false, Location = new Point(16, 36), Size = new Size(214, 54),
+                ForeColor = acento, TextAlign = ContentAlignment.MiddleLeft, Font = EstiloPos.FontMetrica
+            };
+
+            card.Controls.Add(barra);
+            card.Controls.Add(lblTit);
+            card.Controls.Add(valor);
+            card.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(EstiloPos.Border))
+                    e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+            };
+            return card;
+        }
+
+        private Panel CrearPanelTabla(string titulo, out DataGridView dgv, Padding margen)
+        {
+            var outer = new Panel { Dock = DockStyle.Fill, BackColor = EstiloPos.Fondo, Padding = margen };
+            var inner = new Panel { Dock = DockStyle.Fill, BackColor = EstiloPos.Surface };
+            inner.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(EstiloPos.Border))
+                    e.Graphics.DrawRectangle(pen, 0, 0, inner.Width - 1, inner.Height - 1);
+            };
+
+            var pnlTit = new Panel { Dock = DockStyle.Top, Height = 44, BackColor = EstiloPos.Surface };
+            pnlTit.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(EstiloPos.Border))
+                    e.Graphics.DrawLine(pen, 0, pnlTit.Height - 1, pnlTit.Width, pnlTit.Height - 1);
+            };
+            var lbl = new Label
+            {
+                Text = titulo, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = EstiloPos.Ink1, Font = EstiloPos.FontLabel, Padding = new Padding(16, 0, 0, 0)
+            };
+            pnlTit.Controls.Add(lbl);
+
+            dgv = new DataGridView { Dock = DockStyle.Fill };
+
+            inner.Controls.Add(dgv);
+            inner.Controls.Add(pnlTit);
+            outer.Controls.Add(inner);
+            return outer;
+        }
+    }
+}

@@ -24,6 +24,11 @@ namespace Dominio.Servicios
             return cajaDao.ObtenerResumen(idCaja);
         }
 
+        public System.Collections.Generic.List<Caja> ObtenerHistorial(DateTime desde, DateTime hasta)
+        {
+            return cajaDao.ObtenerHistorial(desde, hasta);
+        }
+
         // Efectivo que debería haber físicamente: fondo inicial + ventas en efectivo.
         public decimal CalcularEfectivoEsperado(Caja caja, ResumenCaja resumen)
         {

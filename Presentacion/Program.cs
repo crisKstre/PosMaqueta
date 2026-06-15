@@ -17,6 +17,8 @@ namespace Presentacion
             {
                 // Crea la base de datos y el admin por defecto si no existen
                 new DatabaseInitializer().Inicializar();
+                // Respaldo automático de la base de datos (una copia por día)
+                RespaldoBD.RespaldarSiCorresponde();
             }
             catch (Exception ex)
             {
