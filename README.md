@@ -3,7 +3,7 @@
 Punto de venta (POS) de escritorio para **minimarket / almacén**, desarrollado en
 **C# · WinForms · .NET Framework 4.7.2** con base de datos **SQLite local** (sin servidor).
 
-## 🎯 Objetivo del proyecto
+##  Objetivo del proyecto
 
 Un POS **de uso interno** —operado por empleados y el administrador del negocio, no
 por el cliente— pensado para ser **simple, rápido y robusto** en el día a día de una
@@ -20,7 +20,7 @@ Principios:
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 ### Núcleo
 - Login con **roles** (Administrador / Cajero) y contraseña con hash SHA256.
@@ -41,26 +41,26 @@ Principios:
 - Registro de ventas con **detalle por código** (doble clic para ver los ítems).
 - Descuento de stock y registro de la venta en una transacción.
 
-### 📦 Productos / Inventario
+###  Productos / Inventario
 - Alta, edición, baja y desactivación de productos; gestión de categorías.
 - Búsqueda en vivo, control de stock (entrada / salida) y **alerta de stock mínimo**.
 - Soporte por unidad o por peso (kg).
 - **Solo lectura para empleados** (las modificaciones quedan para el administrador).
 
-### 💵 Caja
+###  Caja
 - Apertura de turno con monto inicial (solo admin).
 - Resumen del turno y **cierre con arqueo** (efectivo esperado vs. contado); un faltante
   requiere autorización de administrador.
 - **Histórico de cajas** con filtros por fecha y diferencias de arqueo.
 
-### 📊 Reportes (solo admin)
+###  Reportes (solo admin)
 - Resumen por período: ventas, total, ticket promedio, IVA y desglose por medio de pago.
 - Ranking de **productos más vendidos** y listado de ventas con **detalle por código**.
 - **Anulación de ventas** (devolución): revierte el stock y queda auditada.
 
 ---
 
-## 🏗️ Arquitectura (capas)
+##  Arquitectura (capas)
 
 ```
 Presentacion   WinForms: login, shell con sidebar, formularios de módulos, EstiloPos
@@ -95,7 +95,7 @@ Entidades      Modelos: Usuario, Producto, Venta, DetalleVenta, Caja, etc.
 
 ---
 
-## ▶️ Cómo arrancar
+##  Cómo arrancar
 
 1. Abre `PosMaqueta.sln` en Visual Studio 2022 (o 2019).
 2. Deja que restaure los paquetes NuGet (automático).
@@ -114,7 +114,7 @@ por defecto y categorías de ejemplo.
 
 ---
 
-## 🗺️ Roadmap
+##  Roadmap
 
 - Clientes y **fiado** (cuenta corriente por cliente).
 - **Movimientos de caja** (ingresos / egresos de efectivo en el turno).
@@ -125,7 +125,7 @@ por defecto y categorías de ejemplo.
 
 ---
 
-## 📝 Notas
+##  Notas
 
 - Las contraseñas se guardan con hash SHA256; para producción conviene migrar a PBKDF2 con salt.
 - Las boletas/DTE las emite la máquina de pago; este sistema registra la venta internamente.
