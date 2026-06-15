@@ -19,6 +19,9 @@ namespace Presentacion.Forms
         private string categoriaActual = "";
         private FlowLayoutPanel pnlTabs;
         private Timer timerVentas;
+        private Label lblDesgloseIva;
+        private Button btnDescuento;
+        private List<Venta> ventasRegistro = new List<Venta>();
         private static readonly TimeSpan InactividadMax = TimeSpan.FromMinutes(10);
 
         public FormVentas() { InitializeComponent(); }
@@ -27,6 +30,7 @@ namespace Presentacion.Forms
         {
             // Aplicar estilos en runtime (garantiza que corre después del layout)
             AplicarEstilos();
+            AcomodarCobro();
 
             comboMedioPago.Items.AddRange(new object[] {
                 MedioPago.Efectivo, MedioPago.Tarjeta, MedioPago.Transferencia });
@@ -61,6 +65,51 @@ namespace Presentacion.Forms
             // btnAgregar viene estilizado desde el Designer; le añadimos el feedback hover
             btnAgregar.Cursor = Cursors.Hand;
             btnAgregar.FlatAppearance.MouseOverBackColor = EstiloPos.Hover;
+
+            // Desglose de IVA bajo el total (los precios ya incluyen IVA)
+            lblDesgloseIva = new Label
+            {
+                AutoSize  = false,
+                Location  = new Point(18, 74),
+                Size      = new Size(322, 20),
+                Font      = EstiloPos.FontSmall,
+                ForeColor = EstiloPos.Ink3
+            };
+            pnlCobro.Controls.Add(lblDesgloseIva);
+            lblDesgloseIva.BringToFront();
+
+            // Botón para aplicar un descuento al total de la venta
+            btnDescuento = new Button
+            {
+                Text = "Descuento", AutoSize = false, Size = new Size(112, 28),
+                Font = EstiloPos.FontSmall, FlatStyle = FlatStyle.Flat,
+                BackColor = EstiloPos.Surface, ForeColor = EstiloPos.Ink2,
+                Cursor = Cursors.Hand, UseVisualStyleBackColor = false
+            };
+            btnDescuento.FlatAppearance.BorderColor = EstiloPos.Border;
+            btnDescuento.FlatAppearance.MouseOverBackColor = EstiloPos.Hover;
+            btnDescuento.Click += BtnDescuento_Click;
+            pnlCobro.Controls.Add(btnDescuento);
+            btnDescuento.BringToFront();
+
+            pnlCobro.Resize += (s, e) => AcomodarCobro();   // reajusta el ancho de los controles del cobro
+        }
+
+        private void BtnDescuento_Click(object sender, EventArgs e)
+        {
+            if (ventaService.Carrito.Count == 0)
+            { MostrarMensaje("Agrega productos antes de aplicar un descuento."); return; }
+
+            string actual = ventaService.Descuento > 0 ? ventaService.Descuento.ToString("0") : "";
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+                "Descuento en $ sobre el subtotal ($" + ventaService.Subtotal.ToString("N0") + "):",
+                "Aplicar descuento", actual);
+            if (string.IsNullOrEmpty(input)) return;
+            if (!decimal.TryParse(input, out decimal monto) || monto < 0)
+            { MostrarMensaje("Descuento inválido."); return; }
+
+            ventaService.AplicarDescuento(monto);
+            RefrescarCarrito();
         }
 
         private void ConfigColAccion(DataGridViewColumn col, int ancho, float fontSize, Color fg, Color sel)
@@ -77,6 +126,27 @@ namespace Presentacion.Forms
                 BackColor          = EstiloPos.Surface,
                 SelectionBackColor = sel
             };
+        }
+
+        // Reensancha los controles del panel de cobro al ancho real del carrito
+        private void AcomodarCobro()
+        {
+            const int margen = 18;
+            int util = pnlCobro.ClientSize.Width - margen * 2;
+            if (util < 120) return;
+
+            if (btnDescuento != null)
+                btnDescuento.Location = new Point(pnlCobro.ClientSize.Width - btnDescuento.Width - margen, 12);
+            if (lblDesgloseIva != null) lblDesgloseIva.Width = util;
+            comboMedioPago.Width = util;
+            btnCobrar.Width      = util;
+
+            int gap = 14;
+            int mitad = (util - gap) / 2;
+            btnCancelar.Location = new Point(margen, btnCancelar.Top);
+            btnCancelar.Width    = mitad;
+            btnVerLog.Location   = new Point(margen + mitad + gap, btnVerLog.Top);
+            btnVerLog.Width      = mitad;
         }
 
         private void AplicarEstilosGrids()
@@ -132,8 +202,15 @@ namespace Presentacion.Forms
             dgvCarrito.CellMouseEnter += DgvCarrito_CellMouseEnter;
             dgvCarrito.CellPainting   += DgvCarrito_CellPainting;
 
-            // dgvLogVentas
+            // dgvLogVentas: registro de ventas del período (doble clic para ver detalle por código)
             EstiloPos.AplicarGrid(dgvLogVentas);
+            dgvLogVentas.Columns.Clear();
+            dgvLogVentas.Columns.Add(new DataGridViewTextBoxColumn { Name = "colRegId", Visible = false });
+            dgvLogVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "N°",            FillWeight = 30 });
+            dgvLogVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Fecha",         FillWeight = 70 });
+            dgvLogVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Medio de pago", FillWeight = 65 });
+            dgvLogVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",         FillWeight = 55 });
+            dgvLogVentas.CellDoubleClick += DgvLogVentas_CellDoubleClick;
         }
 
         // ── Categorías (pills) ────────────────────────────────────────
@@ -416,21 +493,121 @@ namespace Presentacion.Forms
         {
             lblCarritoTitulo.Visible = false;   // la barra de pestañas reemplaza el título
 
+            // Pestañas de ventas dentro de una barra navegable con flechas
             pnlTabs = new FlowLayoutPanel
             {
-                Dock          = DockStyle.Top,
-                Height        = 46,
                 BackColor     = EstiloPos.Surface,
-                Padding       = new Padding(8, 8, 8, 0),
+                Padding       = new Padding(6, 11, 6, 0),
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents  = false
             };
-            pnlCarrito.Controls.Add(pnlTabs);
+            var hostTabs = CrearBarraNavegable(pnlTabs, 52);
+            hostTabs.Dock = DockStyle.Top;
+            pnlCarrito.Controls.Add(hostTabs);
             dgvCarrito.BringToFront();   // el carrito (Fill) reclama el espacio entre pestañas y cobro
+
+            // Categorías dentro de una barra navegable con flechas
+            pnlGridWrap.Controls.Remove(pnlCats);
+            pnlCats.WrapContents = false;
+            pnlCats.Padding      = new Padding(0, 8, 0, 0);
+            var hostCats = CrearBarraNavegable(pnlCats, 46);
+            hostCats.Dock = DockStyle.Top;
+            pnlGridWrap.Controls.Add(hostCats);
+            pnlProdGrid.BringToFront();
 
             timerVentas = new Timer { Interval = 30000 };   // revisa inactividad cada 30 s
             timerVentas.Tick += TimerVentas_Tick;
             timerVentas.Start();
+        }
+
+        // Envuelve un FlowLayoutPanel en una barra con flechas ◄ ► que desplazan el contenido.
+        // Las flechas solo aparecen cuando los elementos no caben en el ancho visible.
+        private Panel CrearBarraNavegable(FlowLayoutPanel flow, int altura)
+        {
+            var host = new Panel { Height = altura, BackColor = flow.BackColor };
+
+            // El panel "clip" ocupa todo el host y recorta el contenido; las flechas flotan encima.
+            var clip = new Panel { Dock = DockStyle.Fill, BackColor = flow.BackColor };
+            flow.Dock     = DockStyle.None;
+            flow.Location = new Point(0, 0);
+            flow.Height   = altura;
+            flow.Width    = 6000;   // ancho amplio: los items van en una sola fila; el clip los recorta
+            clip.Controls.Add(flow);
+            host.Controls.Add(clip);
+
+            var btnIzq = FlechaNav(false);
+            var btnDer = FlechaNav(true);
+            btnIzq.Height = altura; btnIzq.Location = new Point(0, 0);
+            btnIzq.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            btnDer.Height = altura;
+            btnDer.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            host.Controls.Add(btnIzq);
+            host.Controls.Add(btnDer);
+
+            void Actualizar()
+            {
+                int ancho   = AnchoContenido(flow);
+                int visible = host.ClientSize.Width;
+                int min     = Math.Min(0, visible - ancho);
+                if (flow.Left < min) flow.Left = min;
+                if (flow.Left > 0)   flow.Left = 0;
+
+                btnDer.Left = visible - btnDer.Width;
+                // Cada flecha aparece solo si hay contenido en esa dirección
+                btnIzq.Visible = flow.Left < 0;
+                btnDer.Visible = flow.Left > min;
+                if (btnIzq.Visible) btnIzq.BringToFront();
+                if (btnDer.Visible) btnDer.BringToFront();
+            }
+
+            btnIzq.Click += (s, e) => { flow.Left = Math.Min(0, flow.Left + 150); Actualizar(); };
+            btnDer.Click += (s, e) =>
+            {
+                int min = Math.Min(0, host.ClientSize.Width - AnchoContenido(flow));
+                flow.Left = Math.Max(min, flow.Left - 150);
+                Actualizar();
+            };
+            flow.ControlAdded   += (s, e) => Actualizar();
+            flow.ControlRemoved += (s, e) => BeginInvoke(new Action(Actualizar));
+            host.SizeChanged    += (s, e) => Actualizar();
+
+            return host;
+        }
+
+        private static int AnchoContenido(FlowLayoutPanel flow)
+        {
+            int ancho = 0;
+            foreach (Control c in flow.Controls)
+                ancho = Math.Max(ancho, c.Right + c.Margin.Right);
+            return ancho + flow.Padding.Right;
+        }
+
+        private Button FlechaNav(bool derecha)
+        {
+            var b = new Button
+            {
+                Text = "", Width = 28,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = EstiloPos.Surface,
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false,
+                Visible = false, TabStop = false
+            };
+            b.FlatAppearance.BorderColor = EstiloPos.Border;
+            b.FlatAppearance.MouseOverBackColor = EstiloPos.Hover;
+            b.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                int cx = b.Width / 2, cy = b.Height / 2, r = 5;
+                using (var br = new SolidBrush(EstiloPos.Ink2))
+                {
+                    Point[] tri = derecha
+                        ? new[] { new Point(cx - r, cy - r - 1), new Point(cx + r, cy), new Point(cx - r, cy + r + 1) }
+                        : new[] { new Point(cx + r, cy - r - 1), new Point(cx - r, cy), new Point(cx + r, cy + r + 1) };
+                    e.Graphics.FillPolygon(br, tri);
+                }
+            };
+            return b;
         }
 
         private void TimerVentas_Tick(object sender, EventArgs e)
@@ -528,7 +705,17 @@ namespace Presentacion.Forms
                     "+",
                     "$" + d.Subtotal.ToString("N0"),
                     "✕");
-            lblTotal.Text      = "$" + ventaService.Total.ToString("N0");
+            decimal total = ventaService.Total;
+            lblTotal.Text = "$" + total.ToString("N0");
+            if (lblDesgloseIva != null)
+            {
+                string txt = ventaService.Descuento > 0
+                    ? "Desc. -$" + ventaService.Descuento.ToString("N0") + "     "
+                    : "";
+                txt += "Neto $" + Impuestos.Neto(total).ToString("N0") +
+                       "     IVA 19% $" + Impuestos.Iva(total).ToString("N0");
+                lblDesgloseIva.Text = txt;
+            }
             lblMensaje.Visible = false;
             RefrescarTabs();
         }
@@ -599,12 +786,27 @@ namespace Presentacion.Forms
             if (ventaService.Carrito.Count == 0) { MostrarMensaje("El carrito está vacío."); return; }
             string  medioPago = comboMedioPago.SelectedItem.ToString();
             decimal total     = ventaService.Total;
+
+            // En efectivo: pedir con cuánto paga y calcular el vuelto antes de registrar
+            decimal vuelto = 0;
+            if (medioPago == MedioPago.Efectivo)
+            {
+                using (var dlg = new FormCobroEfectivo(total))
+                {
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                    vuelto = dlg.Vuelto;
+                }
+            }
+
             try
             {
                 int idVenta = ventaService.CobrarVenta(Sesion.UsuarioActual.IdUsuario, medioPago);
-                Aviso.Exito(this,
-                    "Venta N° " + idVenta + "  ·  $" + total.ToString("N0") + "\nMedio de pago: " + medioPago,
-                    "Venta registrada");
+                string msg = "Venta N° " + idVenta + "  ·  $" + total.ToString("N0") + "\n" +
+                    "Neto $" + Impuestos.Neto(total).ToString("N0") + "   ·   IVA $" + Impuestos.Iva(total).ToString("N0") + "\n" +
+                    "Medio de pago: " + medioPago;
+                if (medioPago == MedioPago.Efectivo && vuelto > 0)
+                    msg += "\nVuelto: $" + vuelto.ToString("N0");
+                Aviso.Exito(this, msg, "Venta registrada");
                 RefrescarCarrito();
                 CargarGridProductos();
                 txtCodigo.Focus();
@@ -654,10 +856,20 @@ namespace Presentacion.Forms
 
         private void CargarLogVentas()
         {
-            var lista = logService.Obtener(dtpDesdeV.Value.Date, dtpHastaV.Value.Date, modulo: ModuloLog.Ventas);
+            ventasRegistro = ventaService.ObtenerVentas(dtpDesdeV.Value.Date, dtpHastaV.Value.Date);
             dgvLogVentas.Rows.Clear();
-            foreach (var l in lista)
-                dgvLogVentas.Rows.Add(l.Fecha.ToString("dd/MM HH:mm"), l.NombreUsuario, l.Accion, l.Detalle);
+            foreach (var v in ventasRegistro)
+                dgvLogVentas.Rows.Add(v.IdVenta, "#" + v.IdVenta, v.Fecha.ToString("dd/MM HH:mm"),
+                    v.MedioPago, "$" + v.Total.ToString("N0"));
+        }
+
+        private void DgvLogVentas_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            int id = Convert.ToInt32(dgvLogVentas.Rows[e.RowIndex].Cells["colRegId"].Value);
+            var v = ventasRegistro.Find(x => x.IdVenta == id);
+            if (v != null)
+                using (var f = new FormDetalleVenta(v)) f.ShowDialog(this);
         }
 
         private void btnFiltrarLogV_Click(object sender, EventArgs e) => CargarLogVentas();

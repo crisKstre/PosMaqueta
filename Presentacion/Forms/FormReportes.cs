@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using Dominio.Servicios;
+using Entidades;
 
 namespace Presentacion.Forms
 {
@@ -10,8 +12,9 @@ namespace Presentacion.Forms
         private readonly VentaService ventaService = new VentaService();
 
         private DateTimePicker dtpDesde, dtpHasta;
-        private Label lblVentasVal, lblTotalVal, lblTicketVal, lblDesgloseVal;
+        private Label lblVentasVal, lblTotalVal, lblIvaVal, lblTicketVal, lblDesgloseVal;
         private DataGridView dgvTop, dgvVentas;
+        private List<Venta> ventasPeriodo = new List<Venta>();
 
         public FormReportes()
         {
@@ -55,8 +58,14 @@ namespace Presentacion.Forms
             btnSemana.Location = new Point(btnHoy.Right + 8, 84);
             btnMes.Location    = new Point(btnSemana.Right + 8, 84);
 
+            var btnAnular = new Button { Text = "Anular venta", Size = new Size(150, 34) };
+            EstiloPos.AplicarBotonSecundario(btnAnular, EstiloPos.Rojo);
+            btnAnular.Click += (s, e) => AnularSeleccionada();
+
             pnlHeader.Controls.AddRange(new Control[] {
-                lblTitulo, lblDesde, dtpDesde, lblHasta, dtpHasta, btnVer, btnHoy, btnSemana, btnMes });
+                lblTitulo, lblDesde, dtpDesde, lblHasta, dtpHasta, btnVer, btnHoy, btnSemana, btnMes, btnAnular });
+            pnlHeader.Resize += (s, e) =>
+                btnAnular.Location = new Point(pnlHeader.ClientSize.Width - btnAnular.Width - 24, 80);
 
             // ── Cards ──────────────────────────────────────────────────────
             var pnlCards = new FlowLayoutPanel
@@ -66,13 +75,14 @@ namespace Presentacion.Forms
             };
             pnlCards.Controls.Add(CrearCard("Ventas",          EstiloPos.Azul,  out lblVentasVal));
             pnlCards.Controls.Add(CrearCard("Total vendido",   EstiloPos.Verde, out lblTotalVal));
+            pnlCards.Controls.Add(CrearCard("IVA (19%) incl.", EstiloPos.Ink2,  out lblIvaVal));
             pnlCards.Controls.Add(CrearCard("Ticket promedio", EstiloPos.Amber, out lblTicketVal));
             pnlCards.Controls.Add(CrearCard("Medios de pago",  EstiloPos.Ink2,  out lblDesgloseVal));
             lblDesgloseVal.Font      = EstiloPos.FontSmall;
             lblDesgloseVal.ForeColor = EstiloPos.Ink1;
             lblDesgloseVal.TextAlign = ContentAlignment.TopLeft;
             lblDesgloseVal.Location  = new Point(16, 32);
-            lblDesgloseVal.Size      = new Size(214, 66);
+            lblDesgloseVal.Size      = new Size(170, 66);
 
             // ── Tablas ─────────────────────────────────────────────────────
             var split = new TableLayoutPanel
@@ -90,7 +100,7 @@ namespace Presentacion.Forms
             dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",    FillWeight = 55 });
             EstiloPos.AplicarGrid(dgvTop);
 
-            var pnlListaVentas = CrearPanelTabla("Ventas del período  ·  doble clic para anular", out dgvVentas, new Padding(10, 0, 0, 0));
+            var pnlListaVentas = CrearPanelTabla("Ventas del período  ·  doble clic para ver detalle", out dgvVentas, new Padding(10, 0, 0, 0));
             dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { Name = "colVtaId", Visible = false });
             dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "N°",            FillWeight = 28 });
             dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Fecha",         FillWeight = 65 });
@@ -122,6 +132,7 @@ namespace Presentacion.Forms
             var r = ventaService.ObtenerResumenVentas(desde, hasta);
             lblVentasVal.Text   = r.CantidadVentas.ToString();
             lblTotalVal.Text    = "$" + r.TotalVendido.ToString("N0");
+            lblIvaVal.Text      = "$" + Impuestos.Iva(r.TotalVendido).ToString("N0");
             lblTicketVal.Text   = "$" + r.TicketPromedio.ToString("N0");
             lblDesgloseVal.Text =
                 "Efectivo:  $" + r.TotalEfectivo.ToString("N0") + "\n" +
@@ -132,27 +143,44 @@ namespace Presentacion.Forms
             foreach (var p in ventaService.ObtenerTopProductos(desde, hasta, 12))
                 dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.##"), "$" + p.Total.ToString("N0"));
 
+            ventasPeriodo = ventaService.ObtenerVentas(desde, hasta);
             dgvVentas.Rows.Clear();
-            foreach (var v in ventaService.ObtenerVentas(desde, hasta))
+            foreach (var v in ventasPeriodo)
                 dgvVentas.Rows.Add(v.IdVenta, "#" + v.IdVenta, v.Fecha.ToString("dd/MM HH:mm"), v.MedioPago, "$" + v.Total.ToString("N0"));
+        }
+
+        private Venta VentaDeFila(int rowIndex)
+        {
+            if (rowIndex < 0) return null;
+            int id = Convert.ToInt32(dgvVentas.Rows[rowIndex].Cells["colVtaId"].Value);
+            return ventasPeriodo.Find(x => x.IdVenta == id);
         }
 
         private void DgvVentas_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0) return;
-            int idVenta  = Convert.ToInt32(dgvVentas.Rows[e.RowIndex].Cells["colVtaId"].Value);
-            string total = dgvVentas.Rows[e.RowIndex].Cells[4].Value?.ToString();
+            var v = VentaDeFila(e.RowIndex);
+            if (v != null)
+                using (var f = new FormDetalleVenta(v)) f.ShowDialog(this);
+        }
+
+        private void AnularSeleccionada()
+        {
+            if (dgvVentas.CurrentRow == null)
+            { Aviso.Info(this, "Selecciona una venta de la lista para anularla."); return; }
+
+            var v = VentaDeFila(dgvVentas.CurrentRow.Index);
+            if (v == null) return;
 
             if (!Aviso.Confirmar(this,
-                    "Se anulará la venta N°" + idVenta + " (" + total + ") y su stock volverá al inventario.\n" +
+                    "Se anulará la venta N°" + v.IdVenta + " ($" + v.Total.ToString("N0") + ") y su stock volverá al inventario.\n" +
                     "Esta acción no se puede deshacer.",
                     "¿Anular venta?", "Anular", TipoAviso.Error))
                 return;
 
             try
             {
-                ventaService.AnularVenta(idVenta);
-                Aviso.Exito(this, "La venta N°" + idVenta + " fue anulada y el stock devuelto al inventario.", "Venta anulada");
+                ventaService.AnularVenta(v.IdVenta);
+                Aviso.Exito(this, "La venta N°" + v.IdVenta + " fue anulada y el stock devuelto al inventario.", "Venta anulada");
                 Generar();
             }
             catch (Exception ex) { Aviso.Error(this, ex.Message); }
@@ -178,17 +206,17 @@ namespace Presentacion.Forms
 
         private Panel CrearCard(string titulo, Color acento, out Label valor)
         {
-            var card = new Panel { Width = 236, Height = 100, Margin = new Padding(0, 0, 16, 0), BackColor = EstiloPos.Surface };
+            var card = new Panel { Width = 192, Height = 100, Margin = new Padding(0, 0, 14, 0), BackColor = EstiloPos.Surface };
             var barra = new Panel { Width = 4, Dock = DockStyle.Left, BackColor = acento };
 
             var lblTit = new Label
             {
-                Text = titulo, AutoSize = false, Location = new Point(16, 12), Size = new Size(214, 20),
+                Text = titulo, AutoSize = false, Location = new Point(16, 12), Size = new Size(170, 20),
                 ForeColor = EstiloPos.Ink2, Font = EstiloPos.FontSmall
             };
             valor = new Label
             {
-                Text = "—", AutoSize = false, Location = new Point(16, 36), Size = new Size(214, 54),
+                Text = "—", AutoSize = false, Location = new Point(16, 36), Size = new Size(170, 54),
                 ForeColor = acento, TextAlign = ContentAlignment.MiddleLeft, Font = EstiloPos.FontMetrica
             };
 

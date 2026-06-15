@@ -14,6 +14,8 @@ namespace Entidades
         public string Etiqueta { get; set; }        // ej. "Venta 1"
         public List<DetalleVenta> Detalles { get; } = new List<DetalleVenta>();
         public DateTime UltimaActividad { get; set; }
-        public decimal Total => Detalles.Sum(d => d.Subtotal);
+        public decimal Descuento { get; set; }
+        public decimal Subtotal => Detalles.Sum(d => d.Subtotal);
+        public decimal Total => System.Math.Max(0, Subtotal - Descuento);
     }
 }

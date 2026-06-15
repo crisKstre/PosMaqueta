@@ -82,11 +82,12 @@ namespace Presentacion
 
         public static void AplicarCombo(ComboBox combo)
         {
-            combo.Font        = FontInput;
-            combo.FlatStyle   = FlatStyle.Flat;
-            combo.BackColor   = Surface;
-            combo.ForeColor   = Ink1;
-            combo.Height      = AlturaInput;
+            combo.Font          = FontInput;
+            combo.FlatStyle     = FlatStyle.Flat;
+            combo.DropDownStyle  = ComboBoxStyle.DropDownList;   // solo selección, no editable
+            combo.BackColor     = Surface;
+            combo.ForeColor     = Ink1;
+            combo.Height        = AlturaInput;
         }
 
         public static void AplicarBotonPrimario(Button btn, bool grande = false)

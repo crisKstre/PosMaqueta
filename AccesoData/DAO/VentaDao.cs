@@ -42,8 +42,8 @@ namespace AccesoData.DAO
         private int InsertarCabecera(SqliteConnection con, SqliteTransaction tran, Venta venta)
         {
             string sql = @"
-                INSERT INTO Venta (IdCaja, IdUsuario, Fecha, Total, MedioPago)
-                VALUES (@idCaja, @idUsuario, @fecha, @total, @medioPago);
+                INSERT INTO Venta (IdCaja, IdUsuario, Fecha, Total, Descuento, MedioPago)
+                VALUES (@idCaja, @idUsuario, @fecha, @total, @descuento, @medioPago);
                 SELECT last_insert_rowid();";
 
             using (var cmd = new SqliteCommand(sql, con, tran))
@@ -53,6 +53,7 @@ namespace AccesoData.DAO
                 cmd.Parameters.AddWithValue("@idUsuario", venta.IdUsuario);
                 cmd.Parameters.AddWithValue("@fecha", venta.Fecha.ToString("yyyy-MM-dd HH:mm:ss"));
                 cmd.Parameters.AddWithValue("@total", venta.Total);
+                cmd.Parameters.AddWithValue("@descuento", venta.Descuento);
                 cmd.Parameters.AddWithValue("@medioPago", (object)venta.MedioPago ?? DBNull.Value);
                 long id = (long)cmd.ExecuteScalar();
                 return (int)id;
@@ -174,7 +175,7 @@ namespace AccesoData.DAO
             {
                 con.Open();
                 string sql = @"
-                    SELECT IdVenta, IdCaja, IdUsuario, Fecha, Total, MedioPago
+                    SELECT IdVenta, IdCaja, IdUsuario, Fecha, Total, Descuento, MedioPago
                     FROM Venta
                     WHERE Fecha BETWEEN @desde AND @hasta AND Anulada = 0
                     ORDER BY Fecha DESC;";
@@ -194,10 +195,45 @@ namespace AccesoData.DAO
                                 IdUsuario = reader.GetInt32(2),
                                 Fecha = DateTime.Parse(reader.GetString(3)),
                                 Total = reader.GetDecimal(4),
-                                MedioPago = reader.IsDBNull(5) ? "" : reader.GetString(5)
+                                Descuento = reader.GetDecimal(5),
+                                MedioPago = reader.IsDBNull(6) ? "" : reader.GetString(6)
                             });
                         }
                     }
+                }
+            }
+            return lista;
+        }
+
+        // Detalle (ítems) de una venta, con el código de barras y nombre del producto.
+        public List<DetalleVenta> ObtenerDetalleVenta(int idVenta)
+        {
+            var lista = new List<DetalleVenta>();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"
+                    SELECT d.IdProducto,
+                           COALESCE(p.CodigoBarras, ''),
+                           COALESCE(p.Nombre, 'Producto #' || d.IdProducto),
+                           d.Cantidad, d.PrecioUnitario, d.Subtotal
+                    FROM DetalleVenta d
+                    LEFT JOIN Producto p ON d.IdProducto = p.IdProducto
+                    WHERE d.IdVenta = @id;";
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@id", idVenta);
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            lista.Add(new DetalleVenta
+                            {
+                                IdProducto     = reader.GetInt32(0),
+                                CodigoBarras   = reader.GetString(1),
+                                NombreProducto = reader.GetString(2),
+                                Cantidad       = reader.GetDecimal(3),
+                                PrecioUnitario = reader.GetDecimal(4),
+                                Subtotal       = reader.GetDecimal(5)
+                            });
                 }
             }
             return lista;

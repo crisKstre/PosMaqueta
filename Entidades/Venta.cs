@@ -10,6 +10,7 @@ namespace Entidades
         public int IdUsuario { get; set; }
         public DateTime Fecha { get; set; }
         public decimal Total { get; set; }
+        public decimal Descuento { get; set; }
         public string MedioPago { get; set; }
 
         public List<DetalleVenta> Detalles { get; set; } = new List<DetalleVenta>();

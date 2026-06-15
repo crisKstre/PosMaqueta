@@ -34,7 +34,18 @@ namespace Dominio.Servicios
         }
 
         public IReadOnlyList<DetalleVenta> Carrito => Activa.Detalles;
+        public decimal Subtotal => Activa.Subtotal;
+        public decimal Descuento => Activa.Descuento;
         public decimal Total => Activa.Total;
+
+        // Fija el descuento (monto en $) de la venta activa, acotado al subtotal.
+        public void AplicarDescuento(decimal monto)
+        {
+            if (monto < 0) monto = 0;
+            if (monto > Activa.Subtotal) monto = Activa.Subtotal;
+            Activa.Descuento = monto;
+            Activa.UltimaActividad = DateTime.Now;
+        }
 
         public VentaEnCurso NuevaVenta()
         {
@@ -224,6 +235,9 @@ namespace Dominio.Servicios
         public List<ProductoVendido> ObtenerTopProductos(DateTime desde, DateTime hasta, int top = 10)
             => ventaDao.ObtenerTopProductos(desde, hasta, top);
 
+        public List<DetalleVenta> ObtenerDetalleVenta(int idVenta)
+            => ventaDao.ObtenerDetalleVenta(idVenta);
+
         // Anula una venta registrada: devuelve el stock y la deja fuera de los reportes.
         public void AnularVenta(int idVenta)
         {
@@ -252,13 +266,15 @@ namespace Dominio.Servicios
                 IdUsuario = idUsuario,
                 Fecha = DateTime.Now,
                 Total = actual.Total,
+                Descuento = actual.Descuento,
                 MedioPago = medioPago,
                 Detalles = new List<DetalleVenta>(actual.Detalles)
             };
 
             int idVenta = ventaDao.RegistrarVenta(venta);
-            logService.Registrar(ModuloLog.Ventas, "Venta",
-                "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + medioPago);
+            string detalleLog = "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + medioPago;
+            if (venta.Descuento > 0) detalleLog += " | desc. $" + venta.Descuento.ToString("N0");
+            logService.Registrar(ModuloLog.Ventas, "Venta", detalleLog);
 
             CerrarVenta(actual.Id);   // la venta cobrada deja de estar en curso
             NotificadorCambios.Notificar(Entidad.Venta);

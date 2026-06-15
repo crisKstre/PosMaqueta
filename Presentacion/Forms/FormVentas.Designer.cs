@@ -307,7 +307,7 @@ namespace Presentacion.Forms
             this.pnlCarrito.Dock = System.Windows.Forms.DockStyle.Right;
             this.pnlCarrito.Location = new System.Drawing.Point(975, 0);
             this.pnlCarrito.Name = "pnlCarrito";
-            this.pnlCarrito.Size = new System.Drawing.Size(360, 113);
+            this.pnlCarrito.Size = new System.Drawing.Size(480, 113);
             this.pnlCarrito.TabIndex = 1;
             // 
             // lblCarritoTitulo

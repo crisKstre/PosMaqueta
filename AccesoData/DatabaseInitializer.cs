@@ -15,6 +15,7 @@ namespace AccesoData
                 MigrarEsquema(con);
                 SembrarAdmin(con);
                 SembrarEmpleadoDemo(con);
+                SincronizarCategorias(con);
             }
         }
 
@@ -65,6 +66,7 @@ namespace AccesoData
                     IdUsuario INTEGER NOT NULL,
                     Fecha     TEXT    NOT NULL,
                     Total     REAL    NOT NULL DEFAULT 0,
+                    Descuento REAL    NOT NULL DEFAULT 0,
                     MedioPago TEXT,
                     FOREIGN KEY (IdCaja)    REFERENCES Caja(IdCaja),
                     FOREIGN KEY (IdUsuario) REFERENCES Usuario(IdUsuario)
@@ -104,6 +106,11 @@ namespace AccesoData
             if (!ColumnaExiste(con, "Venta", "Anulada"))
                 using (var cmd = new SqliteCommand(
                     "ALTER TABLE Venta ADD COLUMN Anulada INTEGER NOT NULL DEFAULT 0;", con))
+                    cmd.ExecuteNonQuery();
+
+            if (!ColumnaExiste(con, "Venta", "Descuento"))
+                using (var cmd = new SqliteCommand(
+                    "ALTER TABLE Venta ADD COLUMN Descuento REAL NOT NULL DEFAULT 0;", con))
                     cmd.ExecuteNonQuery();
         }
 
@@ -171,6 +178,17 @@ namespace AccesoData
                 cmd.Parameters.AddWithValue("@rol", RolUsuario.Cajero);
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        // Asegura que toda categoría usada por algún producto exista en la lista de Categorías,
+        // para que aparezca como filtro en Ventas (útil tras importar o sembrar productos).
+        private void SincronizarCategorias(SqliteConnection con)
+        {
+            using (var cmd = new SqliteCommand(@"
+                INSERT OR IGNORE INTO Categoria (Nombre)
+                SELECT DISTINCT Categoria FROM Producto
+                WHERE Categoria IS NOT NULL AND TRIM(Categoria) <> '';", con))
+                cmd.ExecuteNonQuery();
         }
     }
 }
