@@ -26,11 +26,13 @@ namespace AccesoData
 
                 string destino = Path.Combine(dir, "pos_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".db");
                 File.Copy(db, destino, overwrite: true);
+                Log.Info("Respaldo de base de datos creado: " + Path.GetFileName(destino));
 
                 Rotar(dir, maxBackups);
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Error("No se pudo crear el respaldo de la base de datos", ex);
                 // El respaldo nunca debe impedir que la aplicación arranque.
             }
         }

@@ -10,33 +10,60 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
+
+                Usuario usuario = null;
+                string hashGuardado = null;
                 string sql = @"
                     SELECT IdUsuario, Nombre, LoginNombre, Pass, Rol, Activo
                     FROM Usuario
-                    WHERE LoginNombre = @login AND Pass = @pass AND Activo = 1;";
+                    WHERE LoginNombre = @login AND Activo = 1;";
 
                 using (var cmd = new SqliteCommand(sql, con))
                 {
                     cmd.Parameters.AddWithValue("@login", loginNombre);
-                    cmd.Parameters.AddWithValue("@pass", Seguridad.Hash(pass));
-
                     using (var reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            return new Usuario
+                            hashGuardado = reader.GetString(3);
+                            usuario = new Usuario
                             {
                                 IdUsuario = reader.GetInt32(0),
                                 Nombre = reader.GetString(1),
                                 LoginNombre = reader.GetString(2),
-                                Pass = reader.GetString(3),
+                                Pass = hashGuardado,
                                 Rol = reader.GetString(4),
                                 Activo = reader.GetInt32(5) == 1
                             };
                         }
-                        return null;
                     }
                 }
+
+                if (usuario == null || !Seguridad.Verificar(pass, hashGuardado))
+                {
+                    Log.Advertencia("Login FALLIDO para usuario '" + loginNombre + "'");
+                    return null;
+                }
+
+                // Migración transparente: si el hash es del formato antiguo, lo regeneramos con PBKDF2
+                if (Seguridad.NecesitaRehash(hashGuardado))
+                {
+                    ActualizarPass(con, usuario.IdUsuario, Seguridad.Hash(pass));
+                    Log.Info("Contraseña migrada a PBKDF2 para '" + loginNombre + "'");
+                }
+
+                Log.Info("Login exitoso: '" + usuario.LoginNombre + "' (rol " + usuario.Rol + ")");
+                return usuario;
+            }
+        }
+
+        private void ActualizarPass(SqliteConnection con, int idUsuario, string nuevoHash)
+        {
+            using (var cmd = new SqliteCommand("UPDATE Usuario SET Pass = @pass WHERE IdUsuario = @id;", con))
+            {
+                cmd.Parameters.AddWithValue("@pass", nuevoHash);
+                cmd.Parameters.AddWithValue("@id", idUsuario);
+                cmd.ExecuteNonQuery();
             }
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AccesoData;
 using AccesoData.DAO;
 using Dominio.Eventos;
 using Entidades;
@@ -45,6 +46,7 @@ namespace Dominio.Servicios
             if (monto > Activa.Subtotal) monto = Activa.Subtotal;
             Activa.Descuento = monto;
             Activa.UltimaActividad = DateTime.Now;
+            Log.Info("Descuento aplicado $" + monto.ToString("N0") + " (subtotal $" + Activa.Subtotal.ToString("N0") + ")");
         }
 
         public VentaEnCurso NuevaVenta()
@@ -91,6 +93,8 @@ namespace Dominio.Servicios
                 .Where(v => v != activa && (ahora - v.UltimaActividad) > limite)
                 .ToList();
             foreach (var v in aCerrar) enCurso.Remove(v);
+            if (aCerrar.Count > 0)
+                Log.Advertencia("Auto-cierre de " + aCerrar.Count + " venta(s) en pausa por inactividad");
             return aCerrar.Count;
         }
 
@@ -242,6 +246,7 @@ namespace Dominio.Servicios
         public void AnularVenta(int idVenta)
         {
             ventaDao.AnularVenta(idVenta);
+            Log.Advertencia("Venta anulada N°" + idVenta + " (stock devuelto al inventario)");
             logService.Registrar(ModuloLog.Ventas, "Anulación",
                 "Venta N°" + idVenta + " anulada (stock devuelto al inventario)");
             NotificadorCambios.Notificar(Entidad.Venta);
@@ -272,6 +277,12 @@ namespace Dominio.Servicios
             };
 
             int idVenta = ventaDao.RegistrarVenta(venta);
+            string itemsLog = string.Join(", ", actual.Detalles.Select(d => d.NombreProducto + " x" + d.Cantidad.ToString("0.##")));
+            Log.Info("VENTA N°" + idVenta + " | " + medioPago + " | Total $" + venta.Total.ToString("N0") +
+                     " | Neto $" + Impuestos.Neto(venta.Total).ToString("N0") +
+                     " | IVA $" + Impuestos.Iva(venta.Total).ToString("N0") +
+                     (venta.Descuento > 0 ? " | Desc $" + venta.Descuento.ToString("N0") : "") +
+                     " | usuario " + idUsuario + " | " + actual.Detalles.Count + " items: [" + itemsLog + "]");
             string detalleLog = "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + medioPago;
             if (venta.Descuento > 0) detalleLog += " | desc. $" + venta.Descuento.ToString("N0");
             logService.Registrar(ModuloLog.Ventas, "Venta", detalleLog);

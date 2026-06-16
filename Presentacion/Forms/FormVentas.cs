@@ -805,7 +805,10 @@ namespace Presentacion.Forms
                     "Neto $" + Impuestos.Neto(total).ToString("N0") + "   ·   IVA $" + Impuestos.Iva(total).ToString("N0") + "\n" +
                     "Medio de pago: " + medioPago;
                 if (medioPago == MedioPago.Efectivo && vuelto > 0)
+                {
                     msg += "\nVuelto: $" + vuelto.ToString("N0");
+                    AccesoData.Log.Info("Vuelto entregado $" + vuelto.ToString("N0") + " (venta N°" + idVenta + ")");
+                }
                 Aviso.Exito(this, msg, "Venta registrada");
                 RefrescarCarrito();
                 CargarGridProductos();

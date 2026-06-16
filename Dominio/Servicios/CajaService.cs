@@ -1,4 +1,5 @@
 using System;
+using AccesoData;
 using AccesoData.DAO;
 using Dominio.Eventos;
 using Entidades;
@@ -52,6 +53,7 @@ namespace Dominio.Servicios
             };
 
             int id = cajaDao.AbrirCaja(caja);
+            Log.Info("Caja abierta N°" + id + " | usuario " + idUsuario + " | fondo inicial $" + montoInicial.ToString("N0"));
             NotificadorCambios.Notificar(Entidad.Caja);
             return id;
         }
@@ -72,6 +74,9 @@ namespace Dominio.Servicios
             decimal diferencia = montoReal - efectivoEsperado;
 
             cajaDao.CerrarCaja(caja.IdCaja, efectivoEsperado, montoReal);
+            Log.Info("Caja cerrada N°" + caja.IdCaja + " | esperado $" + efectivoEsperado.ToString("N0") +
+                     " | contado $" + montoReal.ToString("N0") + " | diferencia $" + diferencia.ToString("N0") +
+                     (diferencia < 0 ? " (FALTANTE)" : diferencia > 0 ? " (sobrante)" : " (cuadrada)"));
             NotificadorCambios.Notificar(Entidad.Caja);
 
             return diferencia;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AccesoData;
 using AccesoData.DAO;
 using Entidades;
 
@@ -18,6 +19,7 @@ namespace Dominio.Servicios
             if (dao.Existe(nombre))
                 throw new InvalidOperationException("Ya existe una categoría con ese nombre.");
             dao.Insertar(nombre);
+            Log.Info("Categoría creada: " + nombre);
         }
 
         public void Eliminar(int idCategoria)
@@ -25,6 +27,7 @@ namespace Dominio.Servicios
             if (dao.TieneProductos(idCategoria))
                 throw new InvalidOperationException("No se puede eliminar: hay productos con esta categoría.");
             dao.Eliminar(idCategoria);
+            Log.Info("Categoría eliminada N°" + idCategoria);
         }
     }
 }

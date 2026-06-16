@@ -132,6 +132,7 @@ namespace Presentacion.Forms
         {
             timerReloj?.Stop();
             cerrandoSesion = true;
+            AccesoData.Log.Info("Cierre de sesión: " + (Sesion.UsuarioActual?.LoginNombre ?? "?"));
             VentaService.ReiniciarVentasEnCurso();   // las ventas en curso son del cajero que sale
             Sesion.Cerrar();
             var login = new FormLogin();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AccesoData;
 using AccesoData.DAO;
 using Dominio.Eventos;
 using Entidades;
@@ -78,6 +79,8 @@ namespace Dominio.Servicios
             string error = Validar(p, true);
             if (error != null) throw new InvalidOperationException(error);
             int id = productoDao.Insertar(p);
+            Log.Info("Producto creado N°" + id + ": " + p.Nombre + " | $" + p.Precio.ToString("N0") +
+                     " | stock " + p.Stock.ToString("0.##") + " " + p.UnidadMedida + " | cat: " + p.Categoria);
             logService.Registrar(ModuloLog.Productos, "Alta", "Producto: " + p.Nombre);
             NotificadorCambios.Notificar(Entidad.Producto);
             return id;
@@ -88,6 +91,8 @@ namespace Dominio.Servicios
             string error = Validar(p, false);
             if (error != null) throw new InvalidOperationException(error);
             productoDao.Actualizar(p);
+            Log.Info("Producto actualizado N°" + p.IdProducto + ": " + p.Nombre + " | $" + p.Precio.ToString("N0") +
+                     " | stock " + p.Stock.ToString("0.##"));
             logService.Registrar(ModuloLog.Productos, "Modificación", "Producto: " + p.Nombre);
             NotificadorCambios.Notificar(Entidad.Producto);
         }
@@ -96,6 +101,7 @@ namespace Dominio.Servicios
         {
             var p = productoDao.ObtenerPorId(idProducto);
             productoDao.Desactivar(idProducto);
+            Log.Info("Producto desactivado N°" + idProducto + " (" + (p?.Nombre ?? "?") + ")");
             logService.Registrar(ModuloLog.Productos, "Desactivación", "Producto: " + (p?.Nombre ?? idProducto.ToString()));
             NotificadorCambios.Notificar(Entidad.Producto);
         }
@@ -104,6 +110,7 @@ namespace Dominio.Servicios
         {
             var p = productoDao.ObtenerPorId(idProducto);
             productoDao.Activar(idProducto);
+            Log.Info("Producto activado N°" + idProducto + " (" + (p?.Nombre ?? "?") + ")");
             logService.Registrar(ModuloLog.Productos, "Activación", "Producto: " + (p?.Nombre ?? idProducto.ToString()));
             NotificadorCambios.Notificar(Entidad.Producto);
         }
@@ -116,6 +123,8 @@ namespace Dominio.Servicios
             if (nuevoStock < 0) throw new InvalidOperationException(
                 "Stock insuficiente. Stock actual: " + p.Stock.ToString("0.##") + " " + p.UnidadMedida + ".");
             productoDao.ActualizarStock(idProducto, nuevoStock);
+            Log.Info("Stock ajustado: " + p.Nombre + " | " + (delta >= 0 ? "+" : "") + delta.ToString("0.##") +
+                     " → " + nuevoStock.ToString("0.##"));
             string accion = delta >= 0 ? "Entrada de stock" : "Salida de stock";
             logService.Registrar(ModuloLog.Productos, accion,
                 p.Nombre + " | Δ" + (delta >= 0 ? "+" : "") + delta.ToString("0.##") + " → stock: " + nuevoStock.ToString("0.##"));
@@ -129,6 +138,7 @@ namespace Dominio.Servicios
                 "No se puede eliminar: el producto tiene ventas registradas. Usa Desactivar para conservar el historial.");
             var p = productoDao.ObtenerPorId(idProducto);
             productoDao.Eliminar(idProducto);
+            Log.Advertencia("Producto ELIMINADO N°" + idProducto + " (" + (p?.Nombre ?? "?") + ")");
             logService.Registrar(ModuloLog.Productos, "Eliminación", "Producto: " + (p?.Nombre ?? idProducto.ToString()));
             NotificadorCambios.Notificar(Entidad.Producto);
         }
