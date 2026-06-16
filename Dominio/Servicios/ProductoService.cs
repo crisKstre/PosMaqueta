@@ -64,6 +64,9 @@ namespace Dominio.Servicios
             if (p.StockMinimo < 0)
                 return "El stock mínimo no puede ser negativo.";
 
+            if (p.DescuentoPorcentaje < 0 || p.DescuentoPorcentaje > 100)
+                return "El descuento debe estar entre 0 y 100%.";
+
             if (!string.IsNullOrWhiteSpace(p.CodigoBarras))
             {
                 int idExcluir = esNuevo ? 0 : p.IdProducto;
@@ -77,10 +80,11 @@ namespace Dominio.Servicios
         public int Crear(Producto p)
         {
             string error = Validar(p, true);
-            if (error != null) throw new InvalidOperationException(error);
+            if (error != null) throw new NegocioException(error);
             int id = productoDao.Insertar(p);
             Log.Info("Producto creado N°" + id + ": " + p.Nombre + " | $" + p.Precio.ToString("N0") +
-                     " | stock " + p.Stock.ToString("0.##") + " " + p.UnidadMedida + " | cat: " + p.Categoria);
+                     " | stock " + p.Stock.ToString("0.##") + " " + p.UnidadMedida + " | cat: " + p.Categoria +
+                     (p.TieneDescuento ? " | desc " + p.DescuentoPorcentaje.ToString("0.##") + "%" : ""));
             logService.Registrar(ModuloLog.Productos, "Alta", "Producto: " + p.Nombre);
             NotificadorCambios.Notificar(Entidad.Producto);
             return id;
@@ -89,11 +93,35 @@ namespace Dominio.Servicios
         public void Actualizar(Producto p)
         {
             string error = Validar(p, false);
-            if (error != null) throw new InvalidOperationException(error);
+            if (error != null) throw new NegocioException(error);
             productoDao.Actualizar(p);
             Log.Info("Producto actualizado N°" + p.IdProducto + ": " + p.Nombre + " | $" + p.Precio.ToString("N0") +
-                     " | stock " + p.Stock.ToString("0.##"));
+                     " | stock " + p.Stock.ToString("0.##") +
+                     (p.TieneDescuento ? " | desc " + p.DescuentoPorcentaje.ToString("0.##") + "%" : ""));
             logService.Registrar(ModuloLog.Productos, "Modificación", "Producto: " + p.Nombre);
+            NotificadorCambios.Notificar(Entidad.Producto);
+        }
+
+        // Aplica (o quita, con 0) el descuento de oferta de un producto, sin tocar el resto de sus datos.
+        public void AplicarDescuento(int idProducto, decimal porcentaje)
+        {
+            if (porcentaje < 0 || porcentaje > 100)
+                throw new NegocioException("El descuento debe estar entre 0 y 100%.");
+            var p = productoDao.ObtenerPorId(idProducto);
+            if (p == null) throw new NegocioException("El producto no existe.");
+
+            productoDao.ActualizarDescuento(idProducto, porcentaje);
+
+            if (porcentaje > 0)
+            {
+                Log.Info("Descuento " + porcentaje.ToString("0.##") + "% aplicado a " + p.Nombre + " (N°" + idProducto + ")");
+                logService.Registrar(ModuloLog.Productos, "Descuento", p.Nombre + " | " + porcentaje.ToString("0.##") + "%");
+            }
+            else
+            {
+                Log.Info("Descuento quitado de " + p.Nombre + " (N°" + idProducto + ")");
+                logService.Registrar(ModuloLog.Productos, "Quitar descuento", "Producto: " + p.Nombre);
+            }
             NotificadorCambios.Notificar(Entidad.Producto);
         }
 
@@ -118,9 +146,9 @@ namespace Dominio.Servicios
         public decimal AjustarStock(int idProducto, decimal delta)
         {
             var p = productoDao.ObtenerPorId(idProducto);
-            if (p == null) throw new InvalidOperationException("El producto no existe.");
+            if (p == null) throw new NegocioException("El producto no existe.");
             decimal nuevoStock = p.Stock + delta;
-            if (nuevoStock < 0) throw new InvalidOperationException(
+            if (nuevoStock < 0) throw new NegocioException(
                 "Stock insuficiente. Stock actual: " + p.Stock.ToString("0.##") + " " + p.UnidadMedida + ".");
             productoDao.ActualizarStock(idProducto, nuevoStock);
             Log.Info("Stock ajustado: " + p.Nombre + " | " + (delta >= 0 ? "+" : "") + delta.ToString("0.##") +
@@ -134,7 +162,7 @@ namespace Dominio.Servicios
 
         public void Eliminar(int idProducto)
         {
-            if (productoDao.TieneVentas(idProducto)) throw new InvalidOperationException(
+            if (productoDao.TieneVentas(idProducto)) throw new NegocioException(
                 "No se puede eliminar: el producto tiene ventas registradas. Usa Desactivar para conservar el historial.");
             var p = productoDao.ObtenerPorId(idProducto);
             productoDao.Eliminar(idProducto);

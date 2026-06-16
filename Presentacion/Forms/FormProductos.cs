@@ -15,6 +15,7 @@ namespace Presentacion.Forms
         private readonly LogService         logService         = new LogService();
         private int  idEnEdicion = 0;
         private bool logVisible  = false;
+        private ContextMenuStrip menuDescuento;
 
         public FormProductos() { InitializeComponent(); }
 
@@ -32,6 +33,7 @@ namespace Presentacion.Forms
             dtpHasta.Value = DateTime.Today;
             NotificadorCambios.Cambio += OnCambioDatos;
             AplicarPermisos();
+            ConfigurarMenuDescuento();
             AcomodarFilaAcciones();
             CargarCategorias();
             CargarProductos();
@@ -218,6 +220,7 @@ namespace Presentacion.Forms
                 string estado = !p.Activo ? "Inactivo" : bajo ? "Bajo" : "OK";
                 int fila = dgvProductos.Rows.Add(p.IdProducto, p.CodigoBarras, p.Nombre,
                     p.Categoria, "$" + p.Precio.ToString("N0"),
+                    p.TieneDescuento ? "-" + p.DescuentoPorcentaje.ToString("0.##") + "%" : "—",
                     p.Stock.ToString("0.##") + " " + p.UnidadMedida, estado);
 
                 var row = dgvProductos.Rows[fila];
@@ -251,6 +254,88 @@ namespace Presentacion.Forms
             bool inactivo = dgvProductos.CurrentRow.Cells["colEstado"].Value?.ToString() == "Inactivo";
             btnDesactivar.Text = inactivo ? "Activar" : "Desactivar";
             btnDesactivar.ForeColor = inactivo ? Color.FromArgb(30, 120, 30) : Color.FromArgb(50, 50, 55);
+        }
+
+        // ── Descuento por producto (clic derecho sobre la fila) ───
+
+        private void ConfigurarMenuDescuento()
+        {
+            if (!Sesion.EsAdmin) return;   // solo el administrador gestiona descuentos
+
+            menuDescuento = new ContextMenuStrip { Font = EstiloPos.FontBody };
+            var miAplicar = new ToolStripMenuItem("Aplicar / editar descuento…");
+            var miQuitar  = new ToolStripMenuItem("Quitar descuento");
+            miAplicar.Click += (s, e) => AplicarDescuentoSeleccionado();
+            miQuitar.Click  += (s, e) => QuitarDescuentoSeleccionado();
+            menuDescuento.Items.Add(miAplicar);
+            menuDescuento.Items.Add(miQuitar);
+
+            // Clic derecho: selecciona la fila bajo el cursor y abre el menú sobre ella
+            dgvProductos.MouseDown += (s, e) =>
+            {
+                if (e.Button != MouseButtons.Right) return;
+                var hit = dgvProductos.HitTest(e.X, e.Y);
+                if (hit.RowIndex < 0) return;
+                dgvProductos.ClearSelection();
+                dgvProductos.Rows[hit.RowIndex].Selected = true;
+                dgvProductos.CurrentCell = dgvProductos.Rows[hit.RowIndex].Cells["colCodigo"];
+                menuDescuento.Show(dgvProductos, e.Location);
+            };
+        }
+
+        private void AplicarDescuentoSeleccionado()
+        {
+            if (dgvProductos.CurrentRow == null) return;
+            int    id     = Convert.ToInt32(dgvProductos.CurrentRow.Cells["colId"].Value);
+            string nombre = dgvProductos.CurrentRow.Cells["colNombre"].Value?.ToString();
+            var prod = productoService.ObtenerPorId(id);
+            if (prod == null) return;
+
+            string actual = prod.TieneDescuento ? prod.DescuentoPorcentaje.ToString("0.##") : "";
+            string input = Aviso.Prompt(this, "Descuento — " + nombre,
+                "Porcentaje de descuento (0 a 100) para \"" + nombre + "\":", actual);
+            if (input == null) return;   // canceló
+
+            if (!decimal.TryParse(input, out decimal pct) || pct < 0 || pct > 100)
+            { Aviso.Error(this, "Ingresa un número entre 0 y 100.", "Descuento inválido"); return; }
+
+            try
+            {
+                productoService.AplicarDescuento(id, pct);
+                if (pct > 0)
+                {
+                    decimal conDesc = System.Math.Round(prod.Precio * (1 - pct / 100m), 0, System.MidpointRounding.AwayFromZero);
+                    Aviso.Exito(this, "Se aplicó un " + pct.ToString("0.##") + "% a \"" + nombre + "\".\n" +
+                        "Precio: $" + prod.Precio.ToString("N0") + "  →  $" + conDesc.ToString("N0"),
+                        "Descuento actualizado");
+                }
+                else
+                {
+                    Aviso.Exito(this, "Se quitó el descuento de \"" + nombre + "\".", "Descuento actualizado");
+                }
+            }
+            catch (Exception ex) { Aviso.Error(this, Errores.Usuario(ex), "No se pudo aplicar"); }
+        }
+
+        private void QuitarDescuentoSeleccionado()
+        {
+            if (dgvProductos.CurrentRow == null) return;
+            int    id     = Convert.ToInt32(dgvProductos.CurrentRow.Cells["colId"].Value);
+            string nombre = dgvProductos.CurrentRow.Cells["colNombre"].Value?.ToString();
+            var prod = productoService.ObtenerPorId(id);
+            if (prod == null) return;
+            if (!prod.TieneDescuento)
+            { Aviso.Info(this, "\"" + nombre + "\" no tiene descuento.", "Sin descuento"); return; }
+
+            if (!Aviso.Confirmar(this, "Se quitará el " + prod.DescuentoPorcentaje.ToString("0.##") +
+                    "% de descuento de \"" + nombre + "\".", "¿Quitar descuento?", "Quitar"))
+                return;
+            try
+            {
+                productoService.AplicarDescuento(id, 0);
+                Aviso.Exito(this, "Descuento quitado de \"" + nombre + "\".", "Listo");
+            }
+            catch (Exception ex) { Aviso.Error(this, Errores.Usuario(ex), "No se pudo"); }
         }
 
         private void txtBuscar_TextChanged(object sender, EventArgs e) => CargarProductos();
@@ -292,7 +377,7 @@ namespace Presentacion.Forms
                         "Producto actualizado");
                 }
             }
-            catch (Exception ex) { MostrarError(ex.Message); }
+            catch (Exception ex) { MostrarError(Errores.Usuario(ex)); }
         }
 
         // ── Editar (doble clic) ───────────────────────────────────
@@ -340,7 +425,7 @@ namespace Presentacion.Forms
                     (esAgregar ? "Se agregó stock a" : "Se descontó stock de") + " \"" + nombre + "\".\nStock actual: " + nuevo.ToString("0.##"),
                     "Inventario actualizado");
             }
-            catch (Exception ex) { MostrarError(ex.Message); }
+            catch (Exception ex) { MostrarError(Errores.Usuario(ex)); }
         }
 
         // ── Activar / Desactivar ──────────────────────────────────
@@ -373,7 +458,7 @@ namespace Presentacion.Forms
             if (!Aviso.Confirmar(this, "Esta acción no se puede deshacer.",
                     "¿Eliminar \"" + nombre + "\"?", "Eliminar", TipoAviso.Error)) return;
             try { productoService.Eliminar(id); LimpiarFormulario(); }
-            catch (Exception ex) { Aviso.Error(this, ex.Message, "No se puede eliminar"); }
+            catch (Exception ex) { Aviso.Error(this, Errores.Usuario(ex), "No se puede eliminar"); }
         }
 
         // ── Log ───────────────────────────────────────────────────
@@ -404,6 +489,7 @@ namespace Presentacion.Forms
             idEnEdicion = 0;
             txtCodigo.Clear(); txtNombre.Clear(); comboCategoria.Text = "";
             txtPrecio.Clear(); txtStock.Clear(); txtStockMin.Clear();
+            // (el descuento se gestiona aparte, con clic derecho sobre el producto)
             comboUnidad.SelectedIndex = 0;
             lblModo.Text = "Nuevo producto";
             btnGuardar.Text = "Guardar";

@@ -86,7 +86,7 @@ namespace Presentacion.Forms
                 lblMensaje.Visible = false;
                 CargarLista();
             }
-            catch (Exception ex) { lblMensaje.Text = ex.Message; lblMensaje.Visible = true; }
+            catch (Exception ex) { lblMensaje.Text = Errores.Usuario(ex); lblMensaje.Visible = true; }
         }
 
         private void EliminarCategoria()
@@ -101,7 +101,7 @@ namespace Presentacion.Forms
                 lblMensaje.Visible = false;
                 CargarLista();
             }
-            catch (Exception ex) { lblMensaje.Text = ex.Message; lblMensaje.Visible = true; }
+            catch (Exception ex) { lblMensaje.Text = Errores.Usuario(ex); lblMensaje.Visible = true; }
         }
     }
 }

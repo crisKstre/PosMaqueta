@@ -13,6 +13,7 @@ namespace AccesoData
                 con.Open();
                 CrearTablas(con);
                 MigrarEsquema(con);
+                CrearIndices(con);
                 SembrarAdmin(con);
                 SembrarEmpleadoDemo(con);
                 SincronizarCategorias(con);
@@ -45,7 +46,8 @@ namespace AccesoData
                     Stock        REAL    NOT NULL DEFAULT 0,
                     StockMinimo  REAL    NOT NULL DEFAULT 0,
                     UnidadMedida TEXT    NOT NULL DEFAULT 'Unidad',
-                    Activo       INTEGER NOT NULL DEFAULT 1
+                    Activo       INTEGER NOT NULL DEFAULT 1,
+                    DescuentoPorcentaje REAL NOT NULL DEFAULT 0
                 );
 
                 CREATE TABLE IF NOT EXISTS Caja (
@@ -89,6 +91,8 @@ namespace AccesoData
                     IdProducto     INTEGER NOT NULL,
                     Cantidad       REAL    NOT NULL DEFAULT 1,
                     PrecioUnitario REAL    NOT NULL DEFAULT 0,
+                    PrecioOriginal REAL    NOT NULL DEFAULT 0,
+                    DescuentoPorcentaje REAL NOT NULL DEFAULT 0,
                     Subtotal       REAL    NOT NULL DEFAULT 0,
                     FOREIGN KEY (IdVenta)    REFERENCES Venta(IdVenta),
                     FOREIGN KEY (IdProducto) REFERENCES Producto(IdProducto)
@@ -112,6 +116,37 @@ namespace AccesoData
                 using (var cmd = new SqliteCommand(
                     "ALTER TABLE Venta ADD COLUMN Descuento REAL NOT NULL DEFAULT 0;", con))
                     cmd.ExecuteNonQuery();
+
+            // Descuento de oferta por producto y su rastro en cada línea de venta
+            if (!ColumnaExiste(con, "Producto", "DescuentoPorcentaje"))
+                using (var cmd = new SqliteCommand(
+                    "ALTER TABLE Producto ADD COLUMN DescuentoPorcentaje REAL NOT NULL DEFAULT 0;", con))
+                    cmd.ExecuteNonQuery();
+
+            if (!ColumnaExiste(con, "DetalleVenta", "PrecioOriginal"))
+                using (var cmd = new SqliteCommand(
+                    "ALTER TABLE DetalleVenta ADD COLUMN PrecioOriginal REAL NOT NULL DEFAULT 0;", con))
+                    cmd.ExecuteNonQuery();
+
+            if (!ColumnaExiste(con, "DetalleVenta", "DescuentoPorcentaje"))
+                using (var cmd = new SqliteCommand(
+                    "ALTER TABLE DetalleVenta ADD COLUMN DescuentoPorcentaje REAL NOT NULL DEFAULT 0;", con))
+                    cmd.ExecuteNonQuery();
+        }
+
+        // Índices para acelerar los filtros y uniones más usados: reportes por fecha,
+        // detalle por venta, productos por categoría, etc. Idempotente (IF NOT EXISTS).
+        private void CrearIndices(SqliteConnection con)
+        {
+            string sql = @"
+                CREATE INDEX IF NOT EXISTS idx_venta_fecha        ON Venta(Fecha);
+                CREATE INDEX IF NOT EXISTS idx_venta_caja         ON Venta(IdCaja);
+                CREATE INDEX IF NOT EXISTS idx_detalle_venta      ON DetalleVenta(IdVenta);
+                CREATE INDEX IF NOT EXISTS idx_detalle_producto   ON DetalleVenta(IdProducto);
+                CREATE INDEX IF NOT EXISTS idx_producto_categoria ON Producto(Categoria);
+                CREATE INDEX IF NOT EXISTS idx_log_fecha          ON LogMovimiento(Fecha);";
+            using (var cmd = new SqliteCommand(sql, con))
+                cmd.ExecuteNonQuery();
         }
 
         private bool ColumnaExiste(SqliteConnection con, string tabla, string columna)

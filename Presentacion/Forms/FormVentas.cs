@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using Microsoft.VisualBasic;
 using Dominio.Servicios;
 using Entidades;
 
@@ -15,7 +14,6 @@ namespace Presentacion.Forms
         private readonly CategoriaService categoriaService = new CategoriaService();
         private readonly LogService      logService      = new LogService();
         private bool logVentasVisible = false;
-        private List<Producto> sugerencias = new List<Producto>();
         private string categoriaActual = "";
         private FlowLayoutPanel pnlTabs;
         private Timer timerVentas;
@@ -101,12 +99,13 @@ namespace Presentacion.Forms
             { MostrarMensaje("Agrega productos antes de aplicar un descuento."); return; }
 
             string actual = ventaService.Descuento > 0 ? ventaService.Descuento.ToString("0") : "";
-            string input = Microsoft.VisualBasic.Interaction.InputBox(
-                "Descuento en $ sobre el subtotal ($" + ventaService.Subtotal.ToString("N0") + "):",
-                "Aplicar descuento", actual);
-            if (string.IsNullOrEmpty(input)) return;
-            if (!decimal.TryParse(input, out decimal monto) || monto < 0)
-            { MostrarMensaje("Descuento inválido."); return; }
+            string input = Aviso.Prompt(this, "Aplicar descuento",
+                "Descuento en $ sobre el subtotal ($" + ventaService.Subtotal.ToString("N0") + "):", actual);
+            if (input == null) return;   // canceló
+            input = input.Trim();
+            decimal monto = 0;
+            if (input.Length > 0 && (!decimal.TryParse(input, out monto) || monto < 0))
+            { Aviso.Error(this, "Ingresa un monto válido en pesos (o déjalo vacío para quitarlo).", "Descuento inválido"); return; }
 
             ventaService.AplicarDescuento(monto);
             RefrescarCarrito();
@@ -343,9 +342,9 @@ namespace Presentacion.Forms
             };
             var lblPrecio = new Label
             {
-                Text      = "$" + p.Precio.ToString("N0"),
+                Text      = "$" + p.PrecioConDescuento.ToString("N0"),
                 Font      = new Font("Segoe UI", 14F, FontStyle.Bold),
-                ForeColor = EstiloPos.Ink1,
+                ForeColor = p.TieneDescuento ? EstiloPos.Verde : EstiloPos.Ink1,
                 AutoSize  = true,
                 Location  = new Point(10, 48)
             };
@@ -383,6 +382,41 @@ namespace Presentacion.Forms
                 c.MouseLeave += salir;
             }
 
+            // Oferta: precio de lista tachado + badge "-X%" en la esquina
+            if (p.TieneDescuento)
+            {
+                int wPrecio = TextRenderer.MeasureText(lblPrecio.Text, lblPrecio.Font).Width;
+                var lblPrecioOrig = new Label
+                {
+                    Text      = "$" + p.Precio.ToString("N0"),
+                    Font      = new Font("Segoe UI", 9.5F, FontStyle.Strikeout),
+                    ForeColor = EstiloPos.Ink3,
+                    AutoSize  = true,
+                    Location  = new Point(10 + wPrecio + 8, 55)
+                };
+                var badge = new Label
+                {
+                    Text      = "-" + p.DescuentoPorcentaje.ToString("0.##") + "%",
+                    Font      = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    BackColor = EstiloPos.Verde,
+                    AutoSize  = false,
+                    Size      = new Size(48, 20),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Location  = new Point(tile.Width - 48 - 8, 8),
+                    Anchor    = AnchorStyles.Top | AnchorStyles.Right
+                };
+                foreach (var c in new Control[] { lblPrecioOrig, badge })
+                {
+                    c.Cursor      = Cursors.Hand;
+                    c.Click      += clickHandler;
+                    c.MouseEnter += entrar;
+                    c.MouseLeave += salir;
+                    tile.Controls.Add(c);
+                }
+                badge.BringToFront();
+            }
+
             return tile;
         }
 
@@ -395,7 +429,7 @@ namespace Presentacion.Forms
                 RefrescarCarrito();
                 txtCantidad.Text = "1";
             }
-            catch (Exception ex) { MostrarMensaje(ex.Message); }
+            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
         }
 
         // ── Scanner / Código de barras ─────────────────────────────────
@@ -421,7 +455,7 @@ namespace Presentacion.Forms
                 ventaService.AgregarPorCodigo(codigo, cant);
                 RefrescarCarrito();
             }
-            catch (Exception ex) { MostrarMensaje(ex.Message); }
+            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
             txtCodigo.Clear();
             txtCantidad.Text = "1";
             txtCodigo.Focus();
@@ -430,61 +464,30 @@ namespace Presentacion.Forms
         // ── Buscador por nombre ────────────────────────────────────────
 
         private void txtBuscar_TextChanged(object sender, EventArgs e)
-        {
-            string texto = txtBuscar.Text.Trim();
-            if (texto.Length == 0)
-            {
-                lstSugerencias.Visible = false;
-                CargarGridProductos();
-                return;
-            }
-            sugerencias = ventaService.BuscarProductos(texto);
-            lstSugerencias.Items.Clear();
-            foreach (var p in sugerencias)
-                lstSugerencias.Items.Add(p.Nombre + "   $" + p.Precio.ToString("N0")
-                    + "   stock: " + p.Stock.ToString("0.##") + " " + p.UnidadMedida);
-            lstSugerencias.Visible = sugerencias.Count > 0;
-            if (sugerencias.Count > 0) lstSugerencias.SelectedIndex = 0;
-            CargarGridProductos(texto);
-        }
+            => CargarGridProductos(txtBuscar.Text.Trim());   // filtra las tarjetas de productos
 
+        // Enter en el buscador: agrega la mejor coincidencia (las tarjetas ya muestran el resto)
         private void txtBuscar_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Down && lstSugerencias.Visible)
-            { lstSugerencias.Focus(); lstSugerencias.SelectedIndex = 0; e.SuppressKeyPress = true; }
-        }
+            if (e.KeyCode != Keys.Enter) return;
+            e.SuppressKeyPress = true;
 
-        private void lstSugerencias_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter) { PedirCantidadYAgregar(); e.SuppressKeyPress = true; }
-            else if (e.KeyCode == Keys.Escape) { lstSugerencias.Visible = false; txtBuscar.Focus(); }
-        }
-        private void lstSugerencias_Click(object sender, EventArgs e) { }
-        private void lstSugerencias_DoubleClick(object sender, EventArgs e) => PedirCantidadYAgregar();
+            string texto = txtBuscar.Text.Trim();
+            if (texto.Length == 0) return;
+            var encontrados = ventaService.BuscarProductos(texto);
+            if (encontrados.Count == 0) { MostrarMensaje("Sin resultados para \"" + texto + "\"."); return; }
 
-        private void PedirCantidadYAgregar()
-        {
-            int i = lstSugerencias.SelectedIndex;
-            if (i < 0 || i >= sugerencias.Count) return;
-            decimal cantidad = LeerCantidad();
-            if (txtCantidad.Text.Trim() == "" || txtCantidad.Text.Trim() == "1")
-            {
-                string input = Interaction.InputBox(
-                    "¿Cuántas unidades de \"" + sugerencias[i].Nombre + "\"?", "Cantidad", "1");
-                if (string.IsNullOrEmpty(input)) return;
-                if (!decimal.TryParse(input, out cantidad) || cantidad <= 0)
-                { MostrarMensaje("Cantidad inválida."); return; }
-            }
+            if (!decimal.TryParse(txtCantidad.Text, out decimal cant) || cant <= 0) cant = 1;
             try
             {
-                ventaService.AgregarPorId(sugerencias[i].IdProducto, cantidad);
+                ventaService.AgregarPorId(encontrados[0].IdProducto, cant);
                 RefrescarCarrito();
+                txtBuscar.Clear();
+                CargarGridProductos();
+                txtCantidad.Text = "1";
+                txtCodigo.Focus();
             }
-            catch (Exception ex) { MostrarMensaje(ex.Message); }
-            txtBuscar.Clear();
-            lstSugerencias.Visible = false;
-            txtCantidad.Text = "1";
-            txtCodigo.Focus();
+            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
         }
 
         // ── Pestañas de ventas (varias ventas en paralelo) ─────────────
@@ -699,7 +702,9 @@ namespace Presentacion.Forms
             foreach (var d in ventaService.Carrito)
                 dgvCarrito.Rows.Add(
                     d.IdProducto,
-                    d.NombreProducto,
+                    d.TieneDescuento
+                        ? d.NombreProducto + "  (-" + d.DescuentoPorcentaje.ToString("0.##") + "%)"
+                        : d.NombreProducto,
                     "−",
                     d.Cantidad.ToString("0.##"),
                     "+",
@@ -733,7 +738,7 @@ namespace Presentacion.Forms
                 else return;
                 RefrescarCarrito();
             }
-            catch (Exception ex) { MostrarMensaje(ex.Message); }
+            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
         }
 
         private void DgvCarrito_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
@@ -814,7 +819,7 @@ namespace Presentacion.Forms
                 CargarGridProductos();
                 txtCodigo.Focus();
             }
-            catch (Exception ex) { MostrarMensaje(ex.Message); }
+            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
         }
 
         private void btnCancelar_Click(object sender, EventArgs e)
@@ -878,11 +883,6 @@ namespace Presentacion.Forms
         private void btnFiltrarLogV_Click(object sender, EventArgs e) => CargarLogVentas();
 
         // ── Utilidades ─────────────────────────────────────────────────
-
-        private decimal LeerCantidad()
-        {
-            return decimal.TryParse(txtCantidad.Text, out decimal c) && c > 0 ? c : 1;
-        }
 
         private void MostrarMensaje(string msg) { lblMensaje.Text = msg; lblMensaje.Visible = true; }
     }

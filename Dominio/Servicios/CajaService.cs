@@ -39,10 +39,10 @@ namespace Dominio.Servicios
         public int AbrirCaja(int idUsuario, decimal montoInicial)
         {
             if (HayCajaAbierta())
-                throw new InvalidOperationException("Ya hay una caja abierta. Ciérrala antes de abrir otra.");
+                throw new NegocioException("Ya hay una caja abierta. Ciérrala antes de abrir otra.");
 
             if (montoInicial < 0)
-                throw new InvalidOperationException("El monto inicial no puede ser negativo.");
+                throw new NegocioException("El monto inicial no puede ser negativo.");
 
             var caja = new Caja
             {
@@ -64,10 +64,10 @@ namespace Dominio.Servicios
         {
             var caja = cajaDao.ObtenerCajaAbierta();
             if (caja == null)
-                throw new InvalidOperationException("No hay ninguna caja abierta.");
+                throw new NegocioException("No hay ninguna caja abierta.");
 
             if (montoReal < 0)
-                throw new InvalidOperationException("El monto contado no puede ser negativo.");
+                throw new NegocioException("El monto contado no puede ser negativo.");
 
             var resumen = cajaDao.ObtenerResumen(caja.IdCaja);
             decimal efectivoEsperado = CalcularEfectivoEsperado(caja, resumen);

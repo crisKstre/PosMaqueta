@@ -8,7 +8,11 @@ namespace Entidades
         public string CodigoBarras { get; set; }
         public string NombreProducto { get; set; }
         public decimal Cantidad { get; set; }
-        public decimal PrecioUnitario { get; set; }
+        public decimal PrecioUnitario { get; set; }   // precio efectivamente cobrado (ya con descuento)
+        public decimal PrecioOriginal { get; set; }   // precio de lista antes del descuento
+        public decimal DescuentoPorcentaje { get; set; } // % aplicado a esta línea (0 = sin descuento)
         public decimal Subtotal { get; set; }
+
+        public bool TieneDescuento => DescuentoPorcentaje > 0;
     }
 }

@@ -63,8 +63,8 @@ namespace AccesoData.DAO
         private void InsertarDetalle(SqliteConnection con, SqliteTransaction tran, int idVenta, DetalleVenta d)
         {
             string sql = @"
-                INSERT INTO DetalleVenta (IdVenta, IdProducto, Cantidad, PrecioUnitario, Subtotal)
-                VALUES (@idVenta, @idProducto, @cantidad, @precio, @subtotal);";
+                INSERT INTO DetalleVenta (IdVenta, IdProducto, Cantidad, PrecioUnitario, PrecioOriginal, DescuentoPorcentaje, Subtotal)
+                VALUES (@idVenta, @idProducto, @cantidad, @precio, @precioOrig, @descuento, @subtotal);";
 
             using (var cmd = new SqliteCommand(sql, con, tran))
             {
@@ -72,6 +72,8 @@ namespace AccesoData.DAO
                 cmd.Parameters.AddWithValue("@idProducto", d.IdProducto);
                 cmd.Parameters.AddWithValue("@cantidad", d.Cantidad);
                 cmd.Parameters.AddWithValue("@precio", d.PrecioUnitario);
+                cmd.Parameters.AddWithValue("@precioOrig", d.PrecioOriginal > 0 ? d.PrecioOriginal : d.PrecioUnitario);
+                cmd.Parameters.AddWithValue("@descuento", d.DescuentoPorcentaje);
                 cmd.Parameters.AddWithValue("@subtotal", d.Subtotal);
                 cmd.ExecuteNonQuery();
             }
@@ -216,7 +218,8 @@ namespace AccesoData.DAO
                     SELECT d.IdProducto,
                            COALESCE(p.CodigoBarras, ''),
                            COALESCE(p.Nombre, 'Producto #' || d.IdProducto),
-                           d.Cantidad, d.PrecioUnitario, d.Subtotal
+                           d.Cantidad, d.PrecioUnitario, d.Subtotal,
+                           d.PrecioOriginal, d.DescuentoPorcentaje
                     FROM DetalleVenta d
                     LEFT JOIN Producto p ON d.IdProducto = p.IdProducto
                     WHERE d.IdVenta = @id;";
@@ -232,7 +235,9 @@ namespace AccesoData.DAO
                                 NombreProducto = reader.GetString(2),
                                 Cantidad       = reader.GetDecimal(3),
                                 PrecioUnitario = reader.GetDecimal(4),
-                                Subtotal       = reader.GetDecimal(5)
+                                Subtotal       = reader.GetDecimal(5),
+                                PrecioOriginal = reader.GetDecimal(6),
+                                DescuentoPorcentaje = reader.GetDecimal(7)
                             });
                 }
             }

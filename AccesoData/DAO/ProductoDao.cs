@@ -14,7 +14,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
                     FROM Producto";
                 if (soloActivos)
                     sql += " WHERE Activo = 1";
@@ -38,7 +38,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
                     FROM Producto
                     WHERE (Nombre LIKE @texto OR CodigoBarras LIKE @texto)
                     ORDER BY Activo DESC, Nombre;";
@@ -61,7 +61,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
                     FROM Producto
                     WHERE CodigoBarras = @codigo AND Activo = 1;";
 
@@ -85,7 +85,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
                     FROM Producto
                     WHERE IdProducto = @id;";
 
@@ -125,7 +125,7 @@ namespace AccesoData.DAO
             {
                 con.Open();
                 string sql = @"SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                                      Stock, StockMinimo, UnidadMedida, Activo
+                                      Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
                                FROM Producto
                                WHERE Activo = 1 AND Categoria = @cat
                                ORDER BY Nombre;";
@@ -163,14 +163,15 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     INSERT INTO Producto (CodigoBarras, Nombre, Categoria, Precio,
-                                          Stock, StockMinimo, UnidadMedida, Activo)
+                                          Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje)
                     VALUES (@codigo, @nombre, @categoria, @precio,
-                            @stock, @stockMin, @unidad, 1);
+                            @stock, @stockMin, @unidad, 1, @descuento);
                     SELECT last_insert_rowid();";
 
                 using (var cmd = new SqliteCommand(sql, con))
                 {
                     AgregarParametros(cmd, p);
+                    cmd.Parameters.AddWithValue("@descuento", p.DescuentoPorcentaje);
                     long id = (long)cmd.ExecuteScalar();
                     return (int)id;
                 }
@@ -245,6 +246,21 @@ namespace AccesoData.DAO
             }
         }
 
+        public bool ActualizarDescuento(int idProducto, decimal porcentaje)
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = "UPDATE Producto SET DescuentoPorcentaje = @d WHERE IdProducto = @id;";
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@d", porcentaje);
+                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+        }
+
         public bool TieneVentas(int idProducto)
         {
             using (var con = GetConnection())
@@ -298,7 +314,8 @@ namespace AccesoData.DAO
                 Stock = reader.GetDecimal(5),
                 StockMinimo = reader.GetDecimal(6),
                 UnidadMedida = reader.GetString(7),
-                Activo = reader.GetInt32(8) == 1
+                Activo = reader.GetInt32(8) == 1,
+                DescuentoPorcentaje = reader.GetDecimal(9)
             };
         }
     }

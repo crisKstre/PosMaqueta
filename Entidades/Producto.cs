@@ -11,6 +11,17 @@ namespace Entidades
         public decimal StockMinimo { get; set; }
         public string UnidadMedida { get; set; }
         public bool Activo { get; set; }
+
+        // Descuento de oferta sobre el precio de lista (0–100). 0 = sin descuento.
+        public decimal DescuentoPorcentaje { get; set; }
+
+        public bool TieneDescuento => DescuentoPorcentaje > 0;
+
+        // Precio efectivo de venta tras aplicar el descuento, redondeado al peso (CLP sin decimales).
+        public decimal PrecioConDescuento =>
+            DescuentoPorcentaje <= 0
+                ? Precio
+                : System.Math.Round(Precio * (1 - DescuentoPorcentaje / 100m), 0, System.MidpointRounding.AwayFromZero);
     }
 
     public static class UnidadMedida

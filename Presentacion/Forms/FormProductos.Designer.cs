@@ -45,6 +45,7 @@ namespace Presentacion.Forms
         private DataGridViewTextBoxColumn colNombre;
         private DataGridViewTextBoxColumn colCategoria;
         private DataGridViewTextBoxColumn colPrecio;
+        private DataGridViewTextBoxColumn colDescuento;
         private DataGridViewTextBoxColumn colStock;
         private DataGridViewTextBoxColumn colEstado;
 
@@ -105,6 +106,7 @@ namespace Presentacion.Forms
             this.colNombre      = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCategoria   = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colPrecio      = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDescuento   = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colStock       = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colEstado      = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlFormulario.SuspendLayout();
@@ -381,7 +383,7 @@ namespace Presentacion.Forms
             this.dgvProductos.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.dgvProductos.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
                 this.colId, this.colCodigo, this.colNombre, this.colCategoria,
-                this.colPrecio, this.colStock, this.colEstado });
+                this.colPrecio, this.colDescuento, this.colStock, this.colEstado });
             this.dgvProductos.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvProductos.EnableHeadersVisualStyles = false;
             this.dgvProductos.MultiSelect = false;
@@ -394,6 +396,7 @@ namespace Presentacion.Forms
             this.colNombre.Name = "colNombre";     this.colNombre.HeaderText = "Nombre";     this.colNombre.FillWeight = 220;
             this.colCategoria.Name = "colCategoria"; this.colCategoria.HeaderText = "Categoría";
             this.colPrecio.Name = "colPrecio";     this.colPrecio.HeaderText = "Precio";
+            this.colDescuento.Name = "colDescuento"; this.colDescuento.HeaderText = "Desc.";   this.colDescuento.FillWeight = 60;
             this.colStock.Name = "colStock";       this.colStock.HeaderText = "Stock";
             this.colEstado.Name = "colEstado";     this.colEstado.HeaderText = "Estado";     this.colEstado.FillWeight = 80;
             this.dgvProductos.CellDoubleClick  += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvProductos_CellDoubleClick);

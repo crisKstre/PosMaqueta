@@ -32,6 +32,10 @@ namespace Presentacion
         public static bool Confirmar(IWin32Window owner, string mensaje, string titulo = "Confirmar",
             string textoConfirmar = "Sí", TipoAviso tipo = TipoAviso.Advertencia)
             => FormMensaje.Mostrar(owner, tipo, titulo, mensaje, textoConfirmar, "Cancelar") == DialogResult.Yes;
+
+        /// <summary>Diálogo estilizado para pedir un valor de texto. Devuelve null si se cancela.</summary>
+        public static string Prompt(IWin32Window owner, string titulo, string mensaje, string valorInicial = "")
+            => FormPrompt.Mostrar(owner, titulo, mensaje, valorInicial);
     }
 
     /// <summary>Diálogo modal estilizado. Privado al facade Aviso: se crea solo a través de él.</summary>
@@ -210,6 +214,146 @@ namespace Presentacion
                 case TipoAviso.Advertencia: return "!";
                 default:                    return "i";
             }
+        }
+    }
+
+    /// <summary>Diálogo modal estilizado con una entrada de texto. Privado al facade Aviso.</summary>
+    internal class FormPrompt : Form
+    {
+        private TextBox txt;
+        public string Valor => txt.Text.Trim();
+
+        private FormPrompt(string titulo, string mensaje, string valorInicial)
+        {
+            ConstruirUI(titulo, mensaje, valorInicial);
+        }
+
+        public static string Mostrar(IWin32Window owner, string titulo, string mensaje, string valorInicial)
+        {
+            using (var f = new FormPrompt(titulo, mensaje, valorInicial))
+                return f.ShowDialog(owner) == DialogResult.OK ? f.Valor : null;
+        }
+
+        private void ConstruirUI(string titulo, string mensaje, string valorInicial)
+        {
+            Color acento = EstiloPos.Azul, acentoBg = EstiloPos.AzulBg;
+
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false; this.MinimizeBox = false;
+            this.ShowIcon = false; this.ShowInTaskbar = false;
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.BackColor = EstiloPos.Surface;
+            this.Text = titulo;
+
+            const int ancho = 440;
+            const int margen = 32;
+            int anchoContenido = ancho - margen * 2;
+
+            var ico = new Panel
+            {
+                Size = new Size(64, 64),
+                Location = new Point((ancho - 64) / 2, 28),
+                BackColor = EstiloPos.Surface
+            };
+            ico.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var br = new SolidBrush(acentoBg))
+                    e.Graphics.FillEllipse(br, 0, 0, 63, 63);
+                using (var br = new SolidBrush(acento))
+                using (var f = new Font("Segoe UI", 24F, FontStyle.Bold))
+                using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                    e.Graphics.DrawString("%", f, br, new RectangleF(0, 0, 64, 64), sf);
+            };
+
+            var lblTitulo = new Label
+            {
+                Text = titulo,
+                Font = EstiloPos.FontSubtitulo,
+                ForeColor = EstiloPos.Ink1,
+                AutoSize = false,
+                Size = new Size(anchoContenido, 30),
+                Location = new Point(margen, 104),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            Size medido = TextRenderer.MeasureText(mensaje, EstiloPos.FontBody,
+                new Size(anchoContenido, 0),
+                TextFormatFlags.WordBreak | TextFormatFlags.HorizontalCenter);
+
+            var lblMensaje = new Label
+            {
+                Text = mensaje,
+                Font = EstiloPos.FontBody,
+                ForeColor = EstiloPos.Ink2,
+                AutoSize = false,
+                Size = new Size(anchoContenido, Math.Max(22, medido.Height)),
+                Location = new Point(margen, 142),
+                TextAlign = ContentAlignment.TopCenter
+            };
+
+            txt = new TextBox
+            {
+                Text = valorInicial,
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle,
+                TextAlign = HorizontalAlignment.Center,
+                ForeColor = EstiloPos.Ink1
+            };
+            int tw = 180, th = 44;
+            txt.Size = new Size(tw, th);
+            txt.Location = new Point((ancho - tw) / 2, lblMensaje.Bottom + 14);
+
+            int yBotones = txt.Bottom + 22;
+            const int altoBtn = 46;
+            var btnCancelar = CrearBoton("Cancelar", false);
+            var btnAceptar  = CrearBoton("Aceptar", true);
+            int bw = 150, gap = 14;
+            int x0 = (ancho - (bw * 2 + gap)) / 2;
+            btnCancelar.Size = new Size(bw, altoBtn); btnCancelar.Location = new Point(x0, yBotones);
+            btnAceptar.Size  = new Size(bw, altoBtn); btnAceptar.Location  = new Point(x0 + bw + gap, yBotones);
+            btnCancelar.DialogResult = DialogResult.Cancel;
+            btnAceptar.DialogResult  = DialogResult.OK;
+            this.AcceptButton = btnAceptar;
+            this.CancelButton = btnCancelar;
+
+            this.Controls.Add(ico);
+            this.Controls.Add(lblTitulo);
+            this.Controls.Add(lblMensaje);
+            this.Controls.Add(txt);
+            this.Controls.Add(btnCancelar);
+            this.Controls.Add(btnAceptar);
+
+            this.ClientSize = new Size(ancho, yBotones + altoBtn + 26);
+            this.Shown += (s, e) => { txt.Focus(); txt.SelectAll(); };
+        }
+
+        private Button CrearBoton(string texto, bool primario)
+        {
+            var b = new Button
+            {
+                Text = texto,
+                Font = EstiloPos.FontBoton,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            if (primario)
+            {
+                b.BackColor = EstiloPos.Ink1;
+                b.ForeColor = Color.White;
+                b.FlatAppearance.BorderSize = 0;
+                b.FlatAppearance.MouseOverBackColor = Color.FromArgb(35, 35, 40);
+            }
+            else
+            {
+                b.BackColor = EstiloPos.Surface;
+                b.ForeColor = EstiloPos.Ink2;
+                b.FlatAppearance.BorderSize = 1;
+                b.FlatAppearance.BorderColor = EstiloPos.Border;
+                b.FlatAppearance.MouseOverBackColor = EstiloPos.Fondo;
+            }
+            return b;
         }
     }
 }

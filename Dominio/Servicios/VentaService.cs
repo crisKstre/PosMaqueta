@@ -108,11 +108,11 @@ namespace Dominio.Servicios
         public void AgregarPorCodigo(string codigoBarras, decimal cantidad)
         {
             if (cantidad <= 0)
-                throw new InvalidOperationException("La cantidad debe ser mayor a cero.");
+                throw new NegocioException("La cantidad debe ser mayor a cero.");
 
             var producto = productoDao.ObtenerPorCodigo(codigoBarras);
             if (producto == null)
-                throw new InvalidOperationException("Producto no encontrado con ese código de barras.");
+                throw new NegocioException("Producto no encontrado con ese código de barras.");
 
             ValidarStock(producto, cantidad);
             AgregarProducto(producto, cantidad);
@@ -128,11 +128,11 @@ namespace Dominio.Servicios
         public void AgregarPorId(int idProducto, decimal cantidad)
         {
             if (cantidad <= 0)
-                throw new InvalidOperationException("La cantidad debe ser mayor a cero.");
+                throw new NegocioException("La cantidad debe ser mayor a cero.");
 
             var producto = productoDao.ObtenerPorId(idProducto);
             if (producto == null)
-                throw new InvalidOperationException("El producto no existe.");
+                throw new NegocioException("El producto no existe.");
 
             ValidarStock(producto, cantidad);
             AgregarProducto(producto, cantidad);
@@ -147,7 +147,7 @@ namespace Dominio.Servicios
 
             decimal disponible = producto.Stock - yaEnCarrito;
             if (cantidadAgregar > disponible)
-                throw new InvalidOperationException(
+                throw new NegocioException(
                     "Stock insuficiente para \"" + producto.Nombre + "\".\n" +
                     "Disponible: " + disponible.ToString("0.##") + " " + producto.UnidadMedida + ".");
         }
@@ -163,13 +163,17 @@ namespace Dominio.Servicios
             }
             else
             {
+                decimal precioEfectivo = producto.PrecioConDescuento;   // ya incluye el % de oferta del producto
                 carrito.Add(new DetalleVenta
                 {
                     IdProducto = producto.IdProducto,
                     NombreProducto = producto.Nombre,
+                    CodigoBarras = producto.CodigoBarras,
                     Cantidad = cantidad,
-                    PrecioUnitario = producto.Precio,
-                    Subtotal = cantidad * producto.Precio
+                    PrecioUnitario = precioEfectivo,
+                    PrecioOriginal = producto.Precio,
+                    DescuentoPorcentaje = producto.DescuentoPorcentaje,
+                    Subtotal = cantidad * precioEfectivo
                 });
             }
             Activa.UltimaActividad = DateTime.Now;
@@ -200,9 +204,9 @@ namespace Dominio.Servicios
 
             var producto = productoDao.ObtenerPorId(idProducto);
             if (producto == null)
-                throw new InvalidOperationException("El producto no existe.");
+                throw new NegocioException("El producto no existe.");
             if (nuevaCantidad > producto.Stock)
-                throw new InvalidOperationException(
+                throw new NegocioException(
                     "Stock insuficiente para \"" + producto.Nombre + "\".\n" +
                     "Disponible: " + producto.Stock.ToString("0.##") + " " + producto.UnidadMedida + ".");
 
@@ -257,7 +261,7 @@ namespace Dominio.Servicios
         {
             var actual = Activa;
             if (actual.Detalles.Count == 0)
-                throw new InvalidOperationException("El carrito está vacío.");
+                throw new NegocioException("El carrito está vacío.");
 
             if (idCaja == null)
             {
@@ -277,7 +281,9 @@ namespace Dominio.Servicios
             };
 
             int idVenta = ventaDao.RegistrarVenta(venta);
-            string itemsLog = string.Join(", ", actual.Detalles.Select(d => d.NombreProducto + " x" + d.Cantidad.ToString("0.##")));
+            string itemsLog = string.Join(", ", actual.Detalles.Select(d =>
+                d.NombreProducto + " x" + d.Cantidad.ToString("0.##") +
+                (d.TieneDescuento ? " (-" + d.DescuentoPorcentaje.ToString("0.##") + "%)" : "")));
             Log.Info("VENTA N°" + idVenta + " | " + medioPago + " | Total $" + venta.Total.ToString("N0") +
                      " | Neto $" + Impuestos.Neto(venta.Total).ToString("N0") +
                      " | IVA $" + Impuestos.Iva(venta.Total).ToString("N0") +

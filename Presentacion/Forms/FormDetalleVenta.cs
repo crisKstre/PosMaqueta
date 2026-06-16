@@ -77,11 +77,12 @@ namespace Presentacion.Forms
             };
 
             var dgv = new DataGridView { Dock = DockStyle.Fill };
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Código",   FillWeight = 75 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Producto", FillWeight = 130 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Cant.",    FillWeight = 38 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "P. Unit.", FillWeight = 55 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Subtotal", FillWeight = 60 });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Código",   FillWeight = 70 });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Producto", FillWeight = 120 });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Cant.",    FillWeight = 34 });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "P. Unit.", FillWeight = 50 });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Desc.",    FillWeight = 38 });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Subtotal", FillWeight = 55 });
             EstiloPos.AplicarGrid(dgv);
 
             foreach (var d in ventaService.ObtenerDetalleVenta(v.IdVenta))
@@ -90,6 +91,7 @@ namespace Presentacion.Forms
                     d.NombreProducto,
                     d.Cantidad.ToString("0.##"),
                     "$" + d.PrecioUnitario.ToString("N0"),
+                    d.TieneDescuento ? "-" + d.DescuentoPorcentaje.ToString("0.##") + "%" : "—",
                     "$" + d.Subtotal.ToString("N0"));
 
             inner.Controls.Add(dgv);

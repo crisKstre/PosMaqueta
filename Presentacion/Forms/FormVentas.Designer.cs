@@ -11,7 +11,6 @@ namespace Presentacion.Forms
         private Panel    pnlEscaneo;
         private Label    lblCodigo;       private TextBox  txtCodigo;
         private Label    lblBuscarNombre; private TextBox  txtBuscar;
-        private ListBox  lstSugerencias;
         private Label    lblCantidad;     private TextBox  txtCantidad;
         private Button   btnAgregar;
         private Label    lblMensaje;
@@ -74,7 +73,6 @@ namespace Presentacion.Forms
             this.txtCantidad = new System.Windows.Forms.TextBox();
             this.btnAgregar = new System.Windows.Forms.Button();
             this.lblMensaje = new System.Windows.Forms.Label();
-            this.lstSugerencias = new System.Windows.Forms.ListBox();
             this.pnlCentro = new System.Windows.Forms.Panel();
             this.pnlGridWrap = new System.Windows.Forms.Panel();
             this.pnlProdGrid = new System.Windows.Forms.FlowLayoutPanel();
@@ -237,22 +235,7 @@ namespace Presentacion.Forms
             this.lblMensaje.Size = new System.Drawing.Size(2033, 16);
             this.lblMensaje.TabIndex = 7;
             this.lblMensaje.Visible = false;
-            // 
-            // lstSugerencias
-            // 
-            this.lstSugerencias.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.lstSugerencias.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lstSugerencias.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(14)))), ((int)(((byte)(14)))), ((int)(((byte)(18)))));
-            this.lstSugerencias.ItemHeight = 21;
-            this.lstSugerencias.Location = new System.Drawing.Point(322, 88);
-            this.lstSugerencias.Name = "lstSugerencias";
-            this.lstSugerencias.Size = new System.Drawing.Size(290, 212);
-            this.lstSugerencias.TabIndex = 0;
-            this.lstSugerencias.Visible = false;
-            this.lstSugerencias.Click += new System.EventHandler(this.lstSugerencias_Click);
-            this.lstSugerencias.DoubleClick += new System.EventHandler(this.lstSugerencias_DoubleClick);
-            this.lstSugerencias.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstSugerencias_KeyDown);
-            // 
+            //
             // pnlCentro
             // 
             this.pnlCentro.Controls.Add(this.pnlGridWrap);
@@ -594,7 +577,6 @@ namespace Presentacion.Forms
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(244)))), ((int)(((byte)(241)))));
             this.ClientSize = new System.Drawing.Size(1335, 498);
-            this.Controls.Add(this.lstSugerencias);
             this.Controls.Add(this.pnlCentro);
             this.Controls.Add(this.pnlLogVentas);
             this.Controls.Add(this.splitterLogV);

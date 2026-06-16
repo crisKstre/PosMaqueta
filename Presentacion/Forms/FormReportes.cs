@@ -183,7 +183,7 @@ namespace Presentacion.Forms
                 Aviso.Exito(this, "La venta N°" + v.IdVenta + " fue anulada y el stock devuelto al inventario.", "Venta anulada");
                 Generar();
             }
-            catch (Exception ex) { Aviso.Error(this, ex.Message); }
+            catch (Exception ex) { Aviso.Error(this, Errores.Usuario(ex)); }
         }
 
         // ── Helpers visuales (mismo lenguaje que el Dashboard) ─────────────

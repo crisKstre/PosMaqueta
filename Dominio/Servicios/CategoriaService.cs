@@ -15,9 +15,9 @@ namespace Dominio.Servicios
         public void Agregar(string nombre)
         {
             if (string.IsNullOrWhiteSpace(nombre))
-                throw new InvalidOperationException("El nombre no puede estar vacío.");
+                throw new NegocioException("El nombre no puede estar vacío.");
             if (dao.Existe(nombre))
-                throw new InvalidOperationException("Ya existe una categoría con ese nombre.");
+                throw new NegocioException("Ya existe una categoría con ese nombre.");
             dao.Insertar(nombre);
             Log.Info("Categoría creada: " + nombre);
         }
@@ -25,7 +25,7 @@ namespace Dominio.Servicios
         public void Eliminar(int idCategoria)
         {
             if (dao.TieneProductos(idCategoria))
-                throw new InvalidOperationException("No se puede eliminar: hay productos con esta categoría.");
+                throw new NegocioException("No se puede eliminar: hay productos con esta categoría.");
             dao.Eliminar(idCategoria);
             Log.Info("Categoría eliminada N°" + idCategoria);
         }
