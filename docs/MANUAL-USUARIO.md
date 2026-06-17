@@ -15,9 +15,10 @@ Guía de operación del punto de venta para **cajeros** y **administradores**.
 6. [Productos (Inventario)](#6-productos-inventario)
 7. [Caja](#7-caja)
 8. [Reportes](#8-reportes)
-9. [Respaldos](#9-respaldos)
-10. [Atajos de teclado](#10-atajos-de-teclado)
-11. [Preguntas frecuentes](#11-preguntas-frecuentes)
+9. [Usuarios y contraseñas](#9-usuarios-y-contraseñas)
+10. [Respaldos](#10-respaldos)
+11. [Atajos de teclado](#11-atajos-de-teclado)
+12. [Preguntas frecuentes](#12-preguntas-frecuentes)
 
 ---
 
@@ -38,6 +39,10 @@ Usuarios de prueba que vienen configurados:
 
 Si la contraseña es incorrecta, el sistema lo avisa y el intento queda registrado en el log.
 
+**Cambio obligatorio:** la primera vez que entras con una contraseña asignada —el `admin` por
+defecto, una cuenta recién creada o una **reseteada** por un administrador— el sistema te pide
+**definir una contraseña nueva** (distinta de la anterior, mínimo 6 caracteres) antes de continuar.
+
 ---
 
 ## 2. Roles y permisos
@@ -54,6 +59,8 @@ Hay dos roles. El sistema **oculta** lo que cada rol no puede usar.
 | Histórico de cajas | ✅ | ❌ |
 | Módulo Reportes | ✅ | ❌ (no aparece) |
 | Autorizar un cierre con faltante | ✅ | ❌ |
+| Gestionar usuarios (crear, editar, resetear contraseñas) | ✅ | ❌ (no aparece) |
+| Cambiar su propia contraseña | ✅ | ✅ |
 
 ---
 
@@ -69,9 +76,10 @@ nombre/rol arriba y el reloj. Haz clic en un módulo para abrirlo, o usa **Ctrl 
 | **Ctrl + 3** | Productos |
 | **Ctrl + 4** | Caja |
 | **Ctrl + 5** | Reportes *(solo admin)* |
+| **Ctrl + 6** | Usuarios *(solo admin)* |
 
-Abajo del todo está **Cerrar sesión**, que vuelve a la pantalla de login (y descarta las
-ventas en curso del cajero).
+Abajo del todo están **🔑 Cambiar contraseña** (cualquier usuario) y **Cerrar sesión**, que
+vuelve a la pantalla de login (y descarta las ventas en curso del cajero).
 
 ---
 
@@ -258,7 +266,35 @@ Análisis del negocio por período.
 
 ---
 
-## 9. Respaldos
+## 9. Usuarios y contraseñas
+
+### Cambiar mi contraseña (cualquier usuario)
+
+En la barra lateral, abajo, el botón **🔑 Cambiar contraseña** abre un diálogo donde ingresas tu
+**contraseña actual** y la **nueva** (repetida para confirmar). La nueva debe tener al menos 6
+caracteres y ser distinta de la actual.
+
+### Gestión de usuarios *(solo administrador)*
+
+Módulo **👤 Usuarios** del menú lateral (**Ctrl + 6**). Permite:
+
+- **Crear** un usuario: nombre, *usuario* (login), **rol** (Administrador o Cajero) y una
+  contraseña inicial. El usuario nuevo **deberá cambiarla** en su primer ingreso.
+- **Editar** (doble clic en la fila): cambiar nombre, login, rol o estado. La contraseña no se
+  edita aquí.
+- **Activar / Desactivar**: un usuario inactivo no puede iniciar sesión, pero se conserva (con
+  su historial).
+- **Resetear contraseña**: define una contraseña temporal para alguien que la olvidó; esa
+  persona deberá cambiarla en su próximo ingreso.
+
+La columna **Cambio pendiente** muestra quién tiene un cambio de contraseña obligatorio sin hacer.
+
+**Protecciones:** el sistema no te deja **desactivar ni quitar el rol al último administrador
+activo**, ni **desactivar tu propio usuario** (para que nadie se quede sin acceso al sistema).
+
+---
+
+## 10. Respaldos
 
 El sistema crea un **respaldo automático** de la base de datos **una vez al día**, en la
 carpeta `Backups/` junto al programa (nombre con fecha y hora). Conserva los **15 respaldos**
@@ -267,13 +303,13 @@ que el sistema arranque.
 
 ---
 
-## 10. Atajos de teclado
+## 11. Atajos de teclado
 
 **Navegación (en cualquier pantalla)**
 
 | Tecla | Acción |
 |---|---|
-| Ctrl + 1 / 2 / 3 / 4 / 5 | Inicio / Ventas / Productos / Caja / Reportes |
+| Ctrl + 1 … 6 | Inicio / Ventas / Productos / Caja / Reportes / Usuarios *(últimos dos solo admin)* |
 
 **Ventas:** F2 buscar · F3 escáner · F4 descuento · F6 nueva venta · Esc cancelar · F12 cobrar
 **Productos:** F2 buscar · F5 recargar · Esc limpiar formulario
@@ -281,10 +317,14 @@ que el sistema arranque.
 
 ---
 
-## 11. Preguntas frecuentes
+## 12. Preguntas frecuentes
 
-**No me aparece el módulo Reportes / no puedo abrir la caja.**
+**No me aparece el módulo Reportes / Usuarios / no puedo abrir la caja.**
 Esas acciones son solo para administradores. Inicia sesión con una cuenta de administrador.
+
+**Olvidé mi contraseña.**
+Pídele a un administrador que la **resetee** desde *Usuarios*: te dará una temporal y el sistema
+te pedirá cambiarla al entrar.
 
 **Quiero vender un producto pero no aparece.**
 Puede estar **inactivo** o sin stock. Búscalo en Productos; el administrador puede activarlo o

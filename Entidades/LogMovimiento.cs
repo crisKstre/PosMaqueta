@@ -18,5 +18,6 @@ namespace Entidades
         public const string Productos = "Productos";
         public const string Ventas    = "Ventas";
         public const string Caja      = "Caja";
+        public const string Usuarios  = "Usuarios";
     }
 }

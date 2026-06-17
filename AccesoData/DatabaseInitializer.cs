@@ -71,7 +71,8 @@ namespace AccesoData
                 LoginNombre TEXT    NOT NULL UNIQUE,
                 Pass        TEXT    NOT NULL,
                 Rol         TEXT    NOT NULL,
-                Activo      INTEGER NOT NULL DEFAULT 1
+                Activo      INTEGER NOT NULL DEFAULT 1,
+                DebeCambiarPassword INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS Producto (
                 IdProducto   INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -144,7 +145,8 @@ namespace AccesoData
                 LoginNombre NVARCHAR(50)  NOT NULL UNIQUE,
                 Pass        NVARCHAR(200) NOT NULL,
                 Rol         NVARCHAR(20)  NOT NULL,
-                Activo      INT NOT NULL DEFAULT 1
+                Activo      INT NOT NULL DEFAULT 1,
+                DebeCambiarPassword INT NOT NULL DEFAULT 0
             );
             IF OBJECT_ID(N'dbo.Producto','U') IS NULL
             CREATE TABLE Producto (
@@ -223,6 +225,12 @@ namespace AccesoData
                 Ejecutar(con, "ALTER TABLE DetalleVenta ADD COLUMN PrecioOriginal REAL NOT NULL DEFAULT 0;");
             if (!ColumnaExiste(con, "DetalleVenta", "DescuentoPorcentaje"))
                 Ejecutar(con, "ALTER TABLE DetalleVenta ADD COLUMN DescuentoPorcentaje REAL NOT NULL DEFAULT 0;");
+            if (!ColumnaExiste(con, "Usuario", "DebeCambiarPassword"))
+            {
+                Ejecutar(con, "ALTER TABLE Usuario ADD COLUMN DebeCambiarPassword INTEGER NOT NULL DEFAULT 0;");
+                // BD ya existente: forzamos el cambio de la clave del admin por defecto en su próximo ingreso.
+                Ejecutar(con, "UPDATE Usuario SET DebeCambiarPassword = 1 WHERE LoginNombre = 'admin';");
+            }
         }
 
         private bool ColumnaExiste(DbConnection con, string tabla, string columna)
@@ -270,8 +278,8 @@ namespace AccesoData
                 if (Convert.ToInt64(cmd.ExecuteScalar()) > 0) return;
 
             using (var cmd = con.Comando(@"
-                INSERT INTO Usuario (Nombre, LoginNombre, Pass, Rol, Activo)
-                VALUES (@nombre, @login, @pass, @rol, 1);"))
+                INSERT INTO Usuario (Nombre, LoginNombre, Pass, Rol, Activo, DebeCambiarPassword)
+                VALUES (@nombre, @login, @pass, @rol, 1, 1);"))
             {
                 cmd.AddParam("@nombre", "Administrador");
                 cmd.AddParam("@login", "admin");

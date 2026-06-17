@@ -19,6 +19,8 @@ namespace Presentacion.Forms
         private Button btnProductos;
         private Button btnCaja;
         private Button btnReportes;
+        private Button btnUsuarios;
+        private Button btnCambiarPass;
         private Button btnCerrarSesion;
         private Panel  pnlTop;
         private Label  lblTituloSeccion;
@@ -45,6 +47,8 @@ namespace Presentacion.Forms
             this.btnProductos   = new Button();
             this.btnCaja        = new Button();
             this.btnReportes    = new Button();
+            this.btnUsuarios    = new Button();
+            this.btnCambiarPass = new Button();
             this.btnCerrarSesion = new Button();
             this.pnlTop         = new Panel();
             this.lblTituloSeccion = new Label();
@@ -61,7 +65,8 @@ namespace Presentacion.Forms
             this.pnlSidebar.Controls.AddRange(new System.Windows.Forms.Control[] {
                 lblAppNombre, lblAppSub, pnlSepUsuario,
                 lblUsuario, lblRol, pnlSepMenu,
-                btnDashboard, btnVentas, btnProductos, btnCaja, btnReportes, btnCerrarSesion });
+                btnDashboard, btnVentas, btnProductos, btnCaja, btnReportes, btnUsuarios,
+                btnCambiarPass, btnCerrarSesion });
 
             // Nombre de la app
             this.lblAppNombre.AutoSize  = false;
@@ -178,6 +183,35 @@ namespace Presentacion.Forms
             this.btnReportes.Cursor    = System.Windows.Forms.Cursors.Hand;
             this.btnReportes.UseVisualStyleBackColor = false;
             this.btnReportes.Click += new System.EventHandler(this.btnReportes_Click);
+            // btnUsuarios (solo admin; su visibilidad se fija en FormPrincipal_Load)
+            this.btnUsuarios.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.btnUsuarios.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUsuarios.FlatAppearance.BorderSize = 0;
+            this.btnUsuarios.Font      = new System.Drawing.Font("Segoe UI", 13F);
+            this.btnUsuarios.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
+            this.btnUsuarios.Location  = new System.Drawing.Point(0, 448);
+            this.btnUsuarios.Name      = "btnUsuarios";
+            this.btnUsuarios.Size      = new System.Drawing.Size(200, 58);
+            this.btnUsuarios.Text      = "Usuarios";
+            this.btnUsuarios.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnUsuarios.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnUsuarios.UseVisualStyleBackColor = false;
+            this.btnUsuarios.Click += new System.EventHandler(this.btnUsuarios_Click);
+
+            // Cambiar mi contraseña (disponible para todos los roles)
+            this.btnCambiarPass.BackColor  = Color.FromArgb(28, 28, 36);
+            this.btnCambiarPass.FlatStyle  = FlatStyle.Flat;
+            this.btnCambiarPass.FlatAppearance.BorderSize = 0;
+            this.btnCambiarPass.FlatAppearance.MouseOverBackColor = Color.FromArgb(50, 50, 62);
+            this.btnCambiarPass.Font       = new Font("Segoe UI", 11F);
+            this.btnCambiarPass.ForeColor  = Color.FromArgb(160, 160, 175);
+            this.btnCambiarPass.Dock       = DockStyle.Bottom;
+            this.btnCambiarPass.Height     = 46;
+            this.btnCambiarPass.Text       = "Cambiar contraseña";
+            this.btnCambiarPass.TextAlign  = ContentAlignment.MiddleCenter;
+            this.btnCambiarPass.Cursor     = Cursors.Hand;
+            this.btnCambiarPass.UseVisualStyleBackColor = false;
+            this.btnCambiarPass.Click      += new System.EventHandler(this.btnCambiarPass_Click);
 
             // Cerrar sesión
             this.btnCerrarSesion.BackColor  = Color.FromArgb(28, 28, 36);

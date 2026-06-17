@@ -24,13 +24,14 @@ Principios:
 
 ### Núcleo
 - Login con **roles** (Administrador / Cajero) y contraseñas con **PBKDF2 + sal**.
+- **Gestión de usuarios** (alta, edición, activar/desactivar, rol) y **cambio/reseteo de contraseña**; el admin por defecto **debe cambiar su clave** en el primer ingreso.
 - Base de datos SQLite **autocreada** al primer arranque, con **migraciones** incrementales.
 - **Respaldo automático** diario de la base de datos (carpeta `Backups/`, con rotación).
 - Shell con **sidebar estilo POS** (íconos, ítem activo resaltado).
 - Control de acceso por rol y diálogos de aviso unificados (éxito / error / confirmación).
 - Auditoría: registro de movimientos (altas, bajas, ventas, anulaciones…).
 - **Atajos de teclado** y navegación rápida (Ctrl + 1…5 entre módulos).
-- **105 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
+- **132 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
 
 ### 🏠 Inicio (Dashboard)
 - Métricas del día: ventas, total vendido, productos bajo stock y estado de la caja.

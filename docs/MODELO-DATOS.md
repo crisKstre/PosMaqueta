@@ -27,6 +27,7 @@ erDiagram
         text Pass "hash PBKDF2"
         text Rol "Admin | Cajero"
         int Activo
+        int DebeCambiarPassword "0/1 forzar cambio"
     }
     CATEGORIA {
         int IdCategoria PK
@@ -105,6 +106,7 @@ Cuentas que operan el sistema.
 | `Pass` | TEXT | hash **PBKDF2** (`iter$salt$hash`) |
 | `Rol` | TEXT | `Admin` o `Cajero` (constantes `RolUsuario`) |
 | `Activo` | INTEGER | 1 activo / 0 inactivo |
+| `DebeCambiarPassword` | INTEGER | 1 = obliga a cambiar la contraseña en el próximo ingreso |
 
 ### `Categoria`
 Lista maestra de categorías (filtros de Ventas).
@@ -212,7 +214,8 @@ idempotente**: `MigrarEsquema()` comprueba con `PRAGMA table_info` si una column
 no, ejecuta `ALTER TABLE ... ADD COLUMN`. Así una BD vieja se actualiza sin perder datos.
 
 Columnas agregadas por migración: `Venta.Anulada`, `Venta.Descuento`,
-`Producto.DescuentoPorcentaje`, `DetalleVenta.PrecioOriginal`, `DetalleVenta.DescuentoPorcentaje`.
+`Producto.DescuentoPorcentaje`, `DetalleVenta.PrecioOriginal`, `DetalleVenta.DescuentoPorcentaje`,
+`Usuario.DebeCambiarPassword` (al agregarla, marca al `admin` existente para forzar el cambio).
 
 ## Modo WAL
 

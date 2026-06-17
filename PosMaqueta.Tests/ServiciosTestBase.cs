@@ -22,6 +22,7 @@ namespace PosMaqueta.Tests
             ConfigBD.Proveedor = ProveedorBD.Sqlite;   // defensivo: por si un test de SQL Server corrió antes
             ConfigBD.CadenaConexion = "Data Source=" + rutaDb + ";Pooling=False;Foreign Keys=True";
             VentaService.ReiniciarVentasEnCurso();   // limpia el estado estático compartido
+            Sesion.UsuarioActual = null;              // evita que una sesión de otro test se filtre
             new DatabaseInitializer().Inicializar();  // esquema + admin/empleado + categorías
         }
 

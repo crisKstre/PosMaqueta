@@ -30,7 +30,7 @@ Sistema POS de escritorio para minimarket. Documento para desarrolladores y mant
 | **Lenguaje / runtime** | C# · .NET Framework **4.7.2** |
 | **UI** | Windows Forms (WinForms) |
 | **Base de datos** | **SQLite** (local, una caja) o **SQL Server** (central, varias cajas), elegible por configuración |
-| **Pruebas** | xUnit (105 casos: unitarios + integración) |
+| **Pruebas** | xUnit (132 casos: unitarios + integración) |
 | **Uso** | Interno (empleados + administrador). No de cara al cliente. |
 | **Mercado** | Chile (CLP, IVA 19 % incluido en precios) |
 
@@ -288,14 +288,16 @@ Optimizaciones aplicadas (sin cambios visuales):
 
 ## 13. Pruebas
 
-Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **114 casos**, agregado a la solución.
+Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **132 casos**, agregado a la solución.
 
 - **Unitarios** de lógica pura: `Impuestos` (IVA, invariante neto+iva==total, redondeo) y
   `Seguridad` (PBKDF2, sal única, compatibilidad legacy SHA256, hashes malformados, migración).
 - **Entidades:** `PrecioConDescuento`, totales y descuento acotado del carrito.
-- **Integración de los 4 servicios** contra una **BD SQLite temporal por test** (esquema y seed
+- **Integración de los 5 servicios** contra una **BD SQLite temporal por test** (esquema y seed
   reales). Incluye **regresión** de los bugs hallados en auditoría: sobreventa/stock negativo,
   anulación doble, descuento reacotado.
+- **Gestión de usuarios** (`UsuarioService`): alta con login único, contraseña mínima, cambio
+  propio (verifica la actual), reseteo por admin y protección del último administrador activo.
 - **Humo de SQL Server** (9 casos, `SkippableFact`) contra **LocalDB**: verifican el dialecto T-SQL
   real (DDL, IDENTITY, TOP, IN, transacciones). Se omiten si no hay LocalDB instalado.
 
@@ -358,7 +360,7 @@ PosMaqueta/
 │   ├── UI/                 # Aviso (+ FormMensaje/FormPrompt), Errores
 │   ├── EstiloPos.cs        # estilo centralizado
 │   └── Program.cs          # entrypoint + handlers globales
-├── PosMaqueta.Tests/       # xUnit (105 casos)
+├── PosMaqueta.Tests/       # xUnit (132 casos)
 ├── docs/                   # esta documentación
 └── PosMaqueta.sln
 ```

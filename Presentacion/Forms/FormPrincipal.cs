@@ -13,6 +13,7 @@ namespace Presentacion.Forms
         private bool   cerrandoSesion = false;
         private Timer  timerReloj;
         private ToolTip toolTipNav = new ToolTip();
+        private readonly UsuarioService usuarioService = new UsuarioService();
 
         public FormPrincipal()
         {
@@ -26,6 +27,7 @@ namespace Presentacion.Forms
 
             btnProductos.Visible = true;   // todos ven el inventario; los empleados en modo solo lectura
             btnReportes.Visible  = Sesion.EsAdmin;   // reportes de negocio: solo administrador
+            btnUsuarios.Visible  = Sesion.EsAdmin;   // gestión de usuarios: solo administrador
 
             EstilizarSidebar();
             IniciarReloj();
@@ -55,12 +57,20 @@ namespace Presentacion.Forms
             ConfigItemSidebar(btnProductos, "📦", "Productos");
             ConfigItemSidebar(btnCaja,      "💵", "Caja");
             ConfigItemSidebar(btnReportes,  "📊", "Reportes");
+            ConfigItemSidebar(btnUsuarios,  "👤", "Usuarios");
 
             toolTipNav.SetToolTip(btnDashboard, "Inicio (Ctrl+1)");
             toolTipNav.SetToolTip(btnVentas,    "Ventas (Ctrl+2)");
             toolTipNav.SetToolTip(btnProductos, "Productos (Ctrl+3)");
             toolTipNav.SetToolTip(btnCaja,      "Caja (Ctrl+4)");
             toolTipNav.SetToolTip(btnReportes,  "Reportes (Ctrl+5)");
+            toolTipNav.SetToolTip(btnUsuarios,  "Usuarios (Ctrl+6)");
+
+            btnCambiarPass.Text      = "🔑   Cambiar contraseña";
+            btnCambiarPass.TextAlign = ContentAlignment.MiddleLeft;
+            btnCambiarPass.Padding   = new Padding(16, 0, 0, 0);
+            btnCambiarPass.Font      = EstiloPos.FontSidebar;
+            btnCambiarPass.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 52, 64);
 
             btnCerrarSesion.Text      = "🚪   Cerrar sesión";
             btnCerrarSesion.TextAlign = ContentAlignment.MiddleLeft;
@@ -141,6 +151,32 @@ namespace Presentacion.Forms
         private void btnReportes_Click(object sender, EventArgs e)
             => AbrirFormHijo(new FormReportes(), btnReportes);
 
+        private void btnUsuarios_Click(object sender, EventArgs e)
+            => AbrirFormHijo(new FormUsuarios(), btnUsuarios);
+
+        // Cambio de la propia contraseña (cualquier rol). Reintenta si el servicio rechaza.
+        private void btnCambiarPass_Click(object sender, EventArgs e)
+        {
+            var u = Sesion.UsuarioActual;
+            if (u == null) return;
+            while (true)
+            {
+                using (var dlg = new FormCambiarPassword("Cambiar contraseña",
+                    "Cambia la contraseña de tu cuenta «" + u.LoginNombre + "».",
+                    pedirActual: true, obligatorio: false))
+                {
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                    try
+                    {
+                        usuarioService.CambiarPasswordPropia(u.IdUsuario, dlg.PasswordActual, dlg.PasswordNueva);
+                        Aviso.Exito(this, "Tu contraseña se cambió correctamente.", "Listo");
+                        return;
+                    }
+                    catch (Exception ex) { Aviso.Error(this, Errores.Usuario(ex), "No se pudo"); }
+                }
+            }
+        }
+
         private void btnCerrarSesion_Click(object sender, EventArgs e)
         {
             timerReloj?.Stop();
@@ -165,6 +201,7 @@ namespace Presentacion.Forms
                 case Keys.Control | Keys.D3: destino = btnProductos; break;
                 case Keys.Control | Keys.D4: destino = btnCaja;      break;
                 case Keys.Control | Keys.D5: destino = btnReportes;  break;
+                case Keys.Control | Keys.D6: destino = btnUsuarios;  break;
             }
             if (destino != null)
             {
