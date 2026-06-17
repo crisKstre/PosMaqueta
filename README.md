@@ -23,20 +23,22 @@ Principios:
 ##  Funcionalidades
 
 ### Núcleo
-- Login con **roles** (Administrador / Cajero) y contraseña con hash SHA256.
+- Login con **roles** (Administrador / Cajero) y contraseñas con **PBKDF2 + sal**.
 - Base de datos SQLite **autocreada** al primer arranque, con **migraciones** incrementales.
 - **Respaldo automático** diario de la base de datos (carpeta `Backups/`, con rotación).
 - Shell con **sidebar estilo POS** (íconos, ítem activo resaltado).
 - Control de acceso por rol y diálogos de aviso unificados (éxito / error / confirmación).
 - Auditoría: registro de movimientos (altas, bajas, ventas, anulaciones…).
+- **Atajos de teclado** y navegación rápida (Ctrl + 1…5 entre módulos).
+- **105 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
 
 ### 🏠 Inicio (Dashboard)
 - Métricas del día: ventas, total vendido, productos bajo stock y estado de la caja.
 
 ### 🛒 Ventas
-- Lector de **código de barras** y búsqueda por nombre con sugerencias.
+- Lector de **código de barras** y búsqueda por nombre en vivo (filtra las tarjetas).
 - Carrito editable (− / + por ítem) y **varias ventas en paralelo** (pestañas navegables).
-- **Descuento** sobre el total y **desglose de IVA** (neto + IVA 19 %).
+- **Descuentos** por producto (%, los fija el admin) y sobre el total ($), con **desglose de IVA** (neto + IVA 19 %).
 - Cobro con 3 medios de pago; en efectivo, **cálculo de vuelto**.
 - Registro de ventas con **detalle por código** (doble clic para ver los ítems).
 - Descuento de stock y registro de la venta en una transacción.
@@ -57,6 +59,16 @@ Principios:
 - Resumen por período: ventas, total, ticket promedio, IVA y desglose por medio de pago.
 - Ranking de **productos más vendidos** y listado de ventas con **detalle por código**.
 - **Anulación de ventas** (devolución): revierte el stock y queda auditada.
+
+---
+
+##  Documentación
+
+| Documento | Contenido |
+|---|---|
+| [Manual de Usuario](docs/MANUAL-USUARIO.md) | Operación de cada módulo, atajos de teclado, FAQ |
+| [Arquitectura](docs/ARQUITECTURA.md) | Capas, patrones, diagramas, seguridad, rendimiento, build, pruebas |
+| [Modelo de Datos](docs/MODELO-DATOS.md) | Tablas, diagrama ER, índices, migraciones |
 
 ---
 
@@ -118,8 +130,6 @@ por defecto y categorías de ejemplo.
 
 - Clientes y **fiado** (cuenta corriente por cliente).
 - **Movimientos de caja** (ingresos / egresos de efectivo en el turno).
-- Atajos de teclado para operación rápida sin mouse.
-- Descuento por porcentaje y por ítem.
 - Exportación de reportes (Excel / PDF) y gráficos.
 - Apertura de cajón de dinero (ESC/POS) e integración con terminal de pago.
 
@@ -127,6 +137,6 @@ por defecto y categorías de ejemplo.
 
 ##  Notas
 
-- Las contraseñas se guardan con hash SHA256; para producción conviene migrar a PBKDF2 con salt.
+- Las contraseñas se guardan con **PBKDF2 + sal** (con migración transparente desde el hash SHA256 antiguo).
 - Las boletas/DTE las emite la máquina de pago; este sistema registra la venta internamente.
 - La personalización por negocio (nombre, formato, etc.) se hace a nivel de instalación/código.
