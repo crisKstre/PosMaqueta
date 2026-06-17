@@ -81,12 +81,15 @@ namespace AccesoData.DAO
 
         private void DescontarStock(SqliteConnection con, SqliteTransaction tran, int idProducto, decimal cantidad)
         {
-            string sql = "UPDATE Producto SET Stock = Stock - @cantidad WHERE IdProducto = @id;";
+            // Descuento ATÓMICO: solo si hay stock suficiente. Si no afecta exactamente 1 fila,
+            // se aborta la venta (la transacción hace rollback) para no dejar stock negativo (defensa TOCTOU).
+            string sql = "UPDATE Producto SET Stock = Stock - @cantidad WHERE IdProducto = @id AND Stock >= @cantidad;";
             using (var cmd = new SqliteCommand(sql, con, tran))
             {
                 cmd.Parameters.AddWithValue("@cantidad", cantidad);
                 cmd.Parameters.AddWithValue("@id", idProducto);
-                cmd.ExecuteNonQuery();
+                if (cmd.ExecuteNonQuery() != 1)
+                    throw new InvalidOperationException("Stock insuficiente para el producto N°" + idProducto + " al registrar la venta.");
             }
         }
 
@@ -245,7 +248,8 @@ namespace AccesoData.DAO
         }
 
         // Anula una venta: devuelve su stock al inventario y la marca Anulada=1, en una transacción.
-        public void AnularVenta(int idVenta)
+        // IDEMPOTENTE: si la venta ya estaba anulada (o no existe) devuelve false sin tocar el stock.
+        public bool AnularVenta(int idVenta)
         {
             using (var con = GetConnection())
             {
@@ -254,6 +258,16 @@ namespace AccesoData.DAO
                 {
                     try
                     {
+                        // Marca anulada SOLO si aún no lo estaba: así el stock se devuelve una única vez.
+                        int filas;
+                        using (var cmd = new SqliteCommand(
+                            "UPDATE Venta SET Anulada = 1 WHERE IdVenta = @id AND Anulada = 0;", con, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@id", idVenta);
+                            filas = cmd.ExecuteNonQuery();
+                        }
+                        if (filas == 0) { tran.Rollback(); return false; }   // ya estaba anulada o no existe
+
                         var detalles = new List<KeyValuePair<int, decimal>>();
                         using (var cmd = new SqliteCommand(
                             "SELECT IdProducto, Cantidad FROM DetalleVenta WHERE IdVenta = @id;", con, tran))
@@ -273,14 +287,8 @@ namespace AccesoData.DAO
                                 cmd.ExecuteNonQuery();
                             }
 
-                        using (var cmd = new SqliteCommand(
-                            "UPDATE Venta SET Anulada = 1 WHERE IdVenta = @id;", con, tran))
-                        {
-                            cmd.Parameters.AddWithValue("@id", idVenta);
-                            cmd.ExecuteNonQuery();
-                        }
-
                         tran.Commit();
+                        return true;
                     }
                     catch
                     {

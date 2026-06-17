@@ -26,6 +26,8 @@ namespace Presentacion.Forms
             this.Text = "Inicio";
             InitUI();
             NotificadorCambios.Cambio += OnCambioDatos;
+            // Desuscribir al disponerse: como form hijo, Close() no dispara FormClosed (evita fuga + handler huérfano).
+            this.Disposed += (s, e) => NotificadorCambios.Cambio -= OnCambioDatos;
         }
 
         private void InitUI()

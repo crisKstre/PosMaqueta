@@ -14,8 +14,12 @@ namespace Entidades
         public string Etiqueta { get; set; }        // ej. "Venta 1"
         public List<DetalleVenta> Detalles { get; } = new List<DetalleVenta>();
         public DateTime UltimaActividad { get; set; }
-        public decimal Descuento { get; set; }
+
+        // Monto de descuento pedido por el cajero. El descuento EFECTIVO (Descuento) se acota
+        // dinámicamente al subtotal vigente: si luego se quitan ítems, baja con el carrito.
+        public decimal DescuentoSolicitado { get; set; }
         public decimal Subtotal => Detalles.Sum(d => d.Subtotal);
-        public decimal Total => System.Math.Max(0, Subtotal - Descuento);
+        public decimal Descuento => System.Math.Min(System.Math.Max(0m, DescuentoSolicitado), Subtotal);
+        public decimal Total => System.Math.Max(0m, Subtotal - Descuento);
     }
 }

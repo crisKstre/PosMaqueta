@@ -32,6 +32,8 @@ namespace Presentacion.Forms
             dtpDesde.Value = DateTime.Today;
             dtpHasta.Value = DateTime.Today;
             NotificadorCambios.Cambio += OnCambioDatos;
+            // Desuscribir al disponerse: como form hijo, Close() no dispara FormClosed (evita fuga + handler huérfano).
+            this.Disposed += (s, ev) => NotificadorCambios.Cambio -= OnCambioDatos;
             AplicarPermisos();
             ConfigurarMenuDescuento();
             AcomodarFilaAcciones();
@@ -184,6 +186,7 @@ namespace Presentacion.Forms
 
         private void OnCambioDatos(string entidad)
         {
+            if (IsDisposed || Disposing) return;
             if (entidad == Entidad.Producto) CargarProductos();
         }
 

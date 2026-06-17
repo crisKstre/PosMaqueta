@@ -521,6 +521,9 @@ namespace Presentacion.Forms
             timerVentas = new Timer { Interval = 30000 };   // revisa inactividad cada 30 s
             timerVentas.Tick += TimerVentas_Tick;
             timerVentas.Start();
+            // Como form hijo, Close() no dispara OnFormClosed: parar/disponer el timer al disponerse
+            // el form, o seguiría corriendo cada 30 s sobre una pantalla oculta (fuga + efectos invisibles).
+            this.Disposed += (s, e) => { timerVentas?.Stop(); timerVentas?.Dispose(); };
         }
 
         // Envuelve un FlowLayoutPanel en una barra con flechas ◄ ► que desplazan el contenido.

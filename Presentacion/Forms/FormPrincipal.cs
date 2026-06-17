@@ -98,7 +98,13 @@ namespace Presentacion.Forms
 
         private void AbrirFormHijo(Form formHijo, Button boton)
         {
-            formHijoActual?.Close();
+            // Los forms hijo son no-top-level: Close() NO dispara FormClosed ni los libera. Hay que
+            // quitarlos del panel y disponerlos a mano, o quedan vivos (fugas + handlers/timers huérfanos).
+            if (formHijoActual != null)
+            {
+                pnlContenido.Controls.Remove(formHijoActual);
+                formHijoActual.Dispose();
+            }
             ActivarBoton(boton);
 
             formHijo.TopLevel         = false;

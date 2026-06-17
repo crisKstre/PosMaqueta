@@ -18,6 +18,8 @@ namespace Presentacion.Forms
             AplicarEstilos();
             CrearBotonHistorial();
             NotificadorCambios.Cambio += OnCambioDatos;
+            // Desuscribir al disponerse: como form hijo, Close() no dispara FormClosed (evita fuga + handler huérfano).
+            this.Disposed += (s, ev) => NotificadorCambios.Cambio -= OnCambioDatos;
             RefrescarEstado();
         }
 
@@ -155,6 +157,7 @@ namespace Presentacion.Forms
 
         private void OnCambioDatos(string entidad)
         {
+            if (IsDisposed || Disposing) return;
             if (entidad == Entidad.Caja || entidad == Entidad.Venta)
                 RefrescarEstado();
         }

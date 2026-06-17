@@ -30,7 +30,21 @@ namespace AccesoData
                              Environment.NewLine + "    " + (ex.StackTrace ?? "");
 
                 lock (candado)
-                    File.AppendAllText(archivo, linea + Environment.NewLine);
+                {
+                    // FileShare.ReadWrite tolera que otra instancia/terminal escriba el mismo archivo;
+                    // con un par de reintentos ante bloqueos transitorios para no perder líneas en silencio.
+                    for (int intento = 0; ; intento++)
+                    {
+                        try
+                        {
+                            using (var fs = new FileStream(archivo, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                            using (var sw = new StreamWriter(fs))
+                                sw.WriteLine(linea);
+                            break;
+                        }
+                        catch (IOException) when (intento < 3) { System.Threading.Thread.Sleep(15); }
+                    }
+                }
             }
             catch
             {

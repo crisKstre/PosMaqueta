@@ -43,10 +43,12 @@ namespace Dominio.Servicios
         public void AplicarDescuento(decimal monto)
         {
             if (monto < 0) monto = 0;
-            if (monto > Activa.Subtotal) monto = Activa.Subtotal;
-            Activa.Descuento = monto;
+            // El descuento EFECTIVO se acota dinámicamente al subtotal (VentaEnCurso.Descuento),
+            // así que si luego se quitan ítems el descuento baja con el carrito.
+            Activa.DescuentoSolicitado = monto;
             Activa.UltimaActividad = DateTime.Now;
-            Log.Info("Descuento aplicado $" + monto.ToString("N0") + " (subtotal $" + Activa.Subtotal.ToString("N0") + ")");
+            Log.Info("Descuento aplicado $" + Activa.Descuento.ToString("N0") + " (solicitado $" + monto.ToString("N0") +
+                     ", subtotal $" + Activa.Subtotal.ToString("N0") + ")");
         }
 
         public VentaEnCurso NuevaVenta()
@@ -249,7 +251,8 @@ namespace Dominio.Servicios
         // Anula una venta registrada: devuelve el stock y la deja fuera de los reportes.
         public void AnularVenta(int idVenta)
         {
-            ventaDao.AnularVenta(idVenta);
+            if (!ventaDao.AnularVenta(idVenta))
+                throw new NegocioException("La venta N°" + idVenta + " ya estaba anulada.");
             Log.Advertencia("Venta anulada N°" + idVenta + " (stock devuelto al inventario)");
             logService.Registrar(ModuloLog.Ventas, "Anulación",
                 "Venta N°" + idVenta + " anulada (stock devuelto al inventario)");
@@ -262,6 +265,18 @@ namespace Dominio.Servicios
             var actual = Activa;
             if (actual.Detalles.Count == 0)
                 throw new NegocioException("El carrito está vacío.");
+
+            // Re-validar stock contra la BD actual: el carrito pudo quedar obsoleto (venta en pausa,
+            // otro cajero/módulo movió el stock). El descuento atómico de DescontarStock es la última defensa.
+            foreach (var d in actual.Detalles)
+            {
+                var prod = productoDao.ObtenerPorId(d.IdProducto);
+                if (prod == null)
+                    throw new NegocioException("El producto \"" + d.NombreProducto + "\" ya no existe.");
+                if (d.Cantidad > prod.Stock)
+                    throw new NegocioException("Stock insuficiente para \"" + d.NombreProducto +
+                        "\". Disponible: " + prod.Stock.ToString("0.##") + " " + prod.UnidadMedida + ".");
+            }
 
             if (idCaja == null)
             {
