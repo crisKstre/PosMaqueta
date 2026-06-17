@@ -5,7 +5,7 @@ using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class CategoriaDao : ConexionSqlite
+    public class CategoriaDao : ConexionBD
     {
         public List<Categoria> ObtenerTodas()
         {

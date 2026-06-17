@@ -5,7 +5,7 @@ using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class CajaDao : ConexionSqlite
+    public class CajaDao : ConexionBD
     {
         // Devuelve la caja abierta actual, o null si no hay ninguna.
         public Caja ObtenerCajaAbierta()

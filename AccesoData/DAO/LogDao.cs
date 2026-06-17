@@ -5,7 +5,7 @@ using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class LogDao : ConexionSqlite
+    public class LogDao : ConexionBD
     {
         public void Registrar(LogMovimiento log)
         {

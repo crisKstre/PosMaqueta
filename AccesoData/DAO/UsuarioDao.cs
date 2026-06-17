@@ -3,7 +3,7 @@ using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class UsuarioDao : ConexionSqlite
+    public class UsuarioDao : ConexionBD
     {
         public Usuario Login(string loginNombre, string pass)
         {

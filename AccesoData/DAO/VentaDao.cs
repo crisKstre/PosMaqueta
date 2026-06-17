@@ -6,7 +6,7 @@ using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class VentaDao : ConexionSqlite
+    public class VentaDao : ConexionBD
     {
         // Registra la venta completa (cabecera + detalle) y descuenta el stock,
         // todo dentro de una transacción. Devuelve el Id de la venta generada.

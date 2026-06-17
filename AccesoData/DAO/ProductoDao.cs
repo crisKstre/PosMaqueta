@@ -5,7 +5,7 @@ using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class ProductoDao : ConexionSqlite
+    public class ProductoDao : ConexionBD
     {
         public List<Producto> ObtenerTodos(bool soloActivos = false)
         {
