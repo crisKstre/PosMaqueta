@@ -28,6 +28,7 @@ namespace Presentacion.Forms
             btnProductos.Visible = true;   // todos ven el inventario; los empleados en modo solo lectura
             btnReportes.Visible  = Sesion.EsAdmin;   // reportes de negocio: solo administrador
             btnUsuarios.Visible  = Sesion.EsAdmin;   // gestión de usuarios: solo administrador
+            btnRespaldos.Visible = Sesion.EsAdmin;   // respaldos / restauración: solo administrador
 
             EstilizarSidebar();
             IniciarReloj();
@@ -58,6 +59,7 @@ namespace Presentacion.Forms
             ConfigItemSidebar(btnCaja,      "💵", "Caja");
             ConfigItemSidebar(btnReportes,  "📊", "Reportes");
             ConfigItemSidebar(btnUsuarios,  "👤", "Usuarios");
+            ConfigItemSidebar(btnRespaldos, "💾", "Respaldos");
 
             toolTipNav.SetToolTip(btnDashboard, "Inicio (Ctrl+1)");
             toolTipNav.SetToolTip(btnVentas,    "Ventas (Ctrl+2)");
@@ -65,6 +67,7 @@ namespace Presentacion.Forms
             toolTipNav.SetToolTip(btnCaja,      "Caja (Ctrl+4)");
             toolTipNav.SetToolTip(btnReportes,  "Reportes (Ctrl+5)");
             toolTipNav.SetToolTip(btnUsuarios,  "Usuarios (Ctrl+6)");
+            toolTipNav.SetToolTip(btnRespaldos, "Respaldos (Ctrl+7)");
 
             btnCambiarPass.Text      = "🔑   Cambiar contraseña";
             btnCambiarPass.TextAlign = ContentAlignment.MiddleLeft;
@@ -154,6 +157,9 @@ namespace Presentacion.Forms
         private void btnUsuarios_Click(object sender, EventArgs e)
             => AbrirFormHijo(new FormUsuarios(), btnUsuarios);
 
+        private void btnRespaldos_Click(object sender, EventArgs e)
+            => AbrirFormHijo(new FormRespaldos(), btnRespaldos);
+
         // Cambio de la propia contraseña (cualquier rol). Reintenta si el servicio rechaza.
         private void btnCambiarPass_Click(object sender, EventArgs e)
         {
@@ -202,6 +208,7 @@ namespace Presentacion.Forms
                 case Keys.Control | Keys.D4: destino = btnCaja;      break;
                 case Keys.Control | Keys.D5: destino = btnReportes;  break;
                 case Keys.Control | Keys.D6: destino = btnUsuarios;  break;
+                case Keys.Control | Keys.D7: destino = btnRespaldos; break;
             }
             if (destino != null)
             {

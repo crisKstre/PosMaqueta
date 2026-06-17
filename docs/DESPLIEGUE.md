@@ -21,6 +21,14 @@ El motor se elige en el archivo **`App.config`** de cada caja (`ProveedorBD`), s
 Al primer arranque se crea `pos.db` junto al ejecutable, con tablas, índices, el administrador
 por defecto y categorías. No hay que instalar nada más. Respaldos automáticos en `Backups/`.
 
+Para mayor seguridad, configura una **carpeta de respaldo externa** (red/USB/nube) en `App.config`
+(`CarpetaRespaldoExterno`): cada respaldo se copia también ahí, **fuera del disco**. Desde la app,
+el módulo **Respaldos** (admin) permite respaldar al instante y **restaurar** una copia.
+
+```xml
+<add key="CarpetaRespaldoExterno" value="\\SERVIDOR\Respaldos\POS" />
+```
+
 `App.config` (valor por defecto):
 
 ```xml

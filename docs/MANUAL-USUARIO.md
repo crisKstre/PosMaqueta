@@ -61,6 +61,7 @@ Hay dos roles. El sistema **oculta** lo que cada rol no puede usar.
 | Autorizar un cierre con faltante | ✅ | ❌ |
 | Gestionar usuarios (crear, editar, resetear contraseñas) | ✅ | ❌ (no aparece) |
 | Cambiar su propia contraseña | ✅ | ✅ |
+| Respaldos y restauración de la base | ✅ | ❌ (no aparece) |
 
 ---
 
@@ -77,6 +78,7 @@ nombre/rol arriba y el reloj. Haz clic en un módulo para abrirlo, o usa **Ctrl 
 | **Ctrl + 4** | Caja |
 | **Ctrl + 5** | Reportes *(solo admin)* |
 | **Ctrl + 6** | Usuarios *(solo admin)* |
+| **Ctrl + 7** | Respaldos *(solo admin)* |
 
 Abajo del todo están **🔑 Cambiar contraseña** (cualquier usuario) y **Cerrar sesión**, que
 vuelve a la pantalla de login (y descarta las ventas en curso del cajero).
@@ -301,6 +303,21 @@ carpeta `Backups/` junto al programa (nombre con fecha y hora). Conserva los **1
 más recientes y borra los más antiguos. El respaldo se hace en segundo plano y nunca impide
 que el sistema arranque.
 
+### Módulo Respaldos *(solo administrador)*
+
+En el menú lateral, **💾 Respaldos** (**Ctrl + 7**) permite:
+
+- **Respaldar ahora**: crea una copia al instante.
+- **Restaurar**: reemplaza la base actual por la de un respaldo (de la lista, o **desde un
+  archivo** como un pendrive). Pide confirmación, guarda una copia del estado actual (`.previo`)
+  y **reinicia** la aplicación. *Disponible solo con SQLite.*
+- **Abrir carpeta**: abre la carpeta de respaldos en el explorador.
+
+> **Copia externa (recomendado):** si se configura una **carpeta externa** (red, USB o nube) en
+> `App.config` (`CarpetaRespaldoExterno`), cada respaldo se copia también ahí, para sobrevivir a
+> una falla del disco. Con **SQL Server** los respaldos se gestionan en el servidor (ver la guía
+> de despliegue).
+
 ---
 
 ## 11. Atajos de teclado
@@ -309,7 +326,7 @@ que el sistema arranque.
 
 | Tecla | Acción |
 |---|---|
-| Ctrl + 1 … 6 | Inicio / Ventas / Productos / Caja / Reportes / Usuarios *(últimos dos solo admin)* |
+| Ctrl + 1 … 7 | Inicio / Ventas / Productos / Caja / Reportes / Usuarios / Respaldos *(últimos tres solo admin)* |
 
 **Ventas:** F2 buscar · F3 escáner · F4 descuento · F6 nueva venta · Esc cancelar · F12 cobrar
 **Productos:** F2 buscar · F5 recargar · Esc limpiar formulario

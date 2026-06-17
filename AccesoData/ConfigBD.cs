@@ -14,6 +14,13 @@ namespace AccesoData
         /// </summary>
         public static ProveedorBD Proveedor { get; set; } = ProveedorBD.Sqlite;
 
+        /// <summary>
+        /// Carpeta donde copiar los respaldos FUERA del disco local (red, USB, nube sincronizada),
+        /// para sobrevivir a una falla del disco. null/vacío = no copiar a ningún lado externo.
+        /// La fija la instalación (App.config) o los tests.
+        /// </summary>
+        public static string CarpetaRespaldoExterno { get; set; }
+
         public static string RutaBaseDatos
         {
             get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pos.db"); }

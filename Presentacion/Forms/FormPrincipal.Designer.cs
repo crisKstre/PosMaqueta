@@ -20,6 +20,7 @@ namespace Presentacion.Forms
         private Button btnCaja;
         private Button btnReportes;
         private Button btnUsuarios;
+        private Button btnRespaldos;
         private Button btnCambiarPass;
         private Button btnCerrarSesion;
         private Panel  pnlTop;
@@ -48,6 +49,7 @@ namespace Presentacion.Forms
             this.btnCaja        = new Button();
             this.btnReportes    = new Button();
             this.btnUsuarios    = new Button();
+            this.btnRespaldos   = new Button();
             this.btnCambiarPass = new Button();
             this.btnCerrarSesion = new Button();
             this.pnlTop         = new Panel();
@@ -65,7 +67,7 @@ namespace Presentacion.Forms
             this.pnlSidebar.Controls.AddRange(new System.Windows.Forms.Control[] {
                 lblAppNombre, lblAppSub, pnlSepUsuario,
                 lblUsuario, lblRol, pnlSepMenu,
-                btnDashboard, btnVentas, btnProductos, btnCaja, btnReportes, btnUsuarios,
+                btnDashboard, btnVentas, btnProductos, btnCaja, btnReportes, btnUsuarios, btnRespaldos,
                 btnCambiarPass, btnCerrarSesion });
 
             // Nombre de la app
@@ -197,6 +199,20 @@ namespace Presentacion.Forms
             this.btnUsuarios.Cursor    = System.Windows.Forms.Cursors.Hand;
             this.btnUsuarios.UseVisualStyleBackColor = false;
             this.btnUsuarios.Click += new System.EventHandler(this.btnUsuarios_Click);
+            // btnRespaldos (solo admin; su visibilidad se fija en FormPrincipal_Load)
+            this.btnRespaldos.BackColor = System.Drawing.Color.FromArgb(20, 20, 25);
+            this.btnRespaldos.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRespaldos.FlatAppearance.BorderSize = 0;
+            this.btnRespaldos.Font      = new System.Drawing.Font("Segoe UI", 13F);
+            this.btnRespaldos.ForeColor = System.Drawing.Color.FromArgb(160, 160, 175);
+            this.btnRespaldos.Location  = new System.Drawing.Point(0, 508);
+            this.btnRespaldos.Name      = "btnRespaldos";
+            this.btnRespaldos.Size      = new System.Drawing.Size(200, 58);
+            this.btnRespaldos.Text      = "Respaldos";
+            this.btnRespaldos.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnRespaldos.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnRespaldos.UseVisualStyleBackColor = false;
+            this.btnRespaldos.Click += new System.EventHandler(this.btnRespaldos_Click);
 
             // Cambiar mi contraseña (disponible para todos los roles)
             this.btnCambiarPass.BackColor  = Color.FromArgb(28, 28, 36);

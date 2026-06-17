@@ -61,6 +61,10 @@ namespace Presentacion
             if (!string.IsNullOrWhiteSpace(cad))
                 ConfigBD.CadenaConexion = cad;
 
+            var carpeta = System.Configuration.ConfigurationManager.AppSettings["CarpetaRespaldoExterno"];
+            if (!string.IsNullOrWhiteSpace(carpeta))
+                ConfigBD.CarpetaRespaldoExterno = carpeta.Trim();
+
             Log.Info("Motor de BD: " + ConfigBD.Proveedor);
         }
     }

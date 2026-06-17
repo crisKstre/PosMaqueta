@@ -15,12 +15,17 @@ namespace PosMaqueta.Tests
     public abstract class ServiciosTestBase : IDisposable
     {
         private readonly string rutaDb;
+        // Carpeta de trabajo propia del test (contiene la BD, sus Backups, etc.). Aislada por test.
+        protected readonly string DirTrabajo;
 
         protected ServiciosTestBase()
         {
-            rutaDb = Path.Combine(Path.GetTempPath(), "postest_" + Guid.NewGuid().ToString("N") + ".db");
+            DirTrabajo = Path.Combine(Path.GetTempPath(), "postest_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(DirTrabajo);
+            rutaDb = Path.Combine(DirTrabajo, "pos.db");
             ConfigBD.Proveedor = ProveedorBD.Sqlite;   // defensivo: por si un test de SQL Server corrió antes
             ConfigBD.CadenaConexion = "Data Source=" + rutaDb + ";Pooling=False;Foreign Keys=True";
+            ConfigBD.CarpetaRespaldoExterno = null;   // evita que la config de otro test se filtre
             VentaService.ReiniciarVentasEnCurso();   // limpia el estado estático compartido
             Sesion.UsuarioActual = null;              // evita que una sesión de otro test se filtre
             new DatabaseInitializer().Inicializar();  // esquema + admin/empleado + categorías
@@ -30,9 +35,11 @@ namespace PosMaqueta.Tests
         {
             VentaService.ReiniciarVentasEnCurso();
             ConfigBD.CadenaConexion = null;           // restaura la ubicación por defecto
-            // Borra la BD y sus sidecars de WAL (-wal/-shm)
-            foreach (var f in new[] { rutaDb, rutaDb + "-wal", rutaDb + "-shm" })
-                try { if (File.Exists(f)) File.Delete(f); } catch { /* archivos temporales */ }
+            ConfigBD.CarpetaRespaldoExterno = null;
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            // Borra toda la carpeta de trabajo (BD, sidecars WAL, Backups, copias .previo)
+            try { if (Directory.Exists(DirTrabajo)) Directory.Delete(DirTrabajo, recursive: true); }
+            catch { /* archivos temporales */ }
         }
 
         // Crea un producto activo y devuelve su id. Categoría "Bebidas" (sembrada por defecto).
