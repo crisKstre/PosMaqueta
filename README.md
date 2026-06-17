@@ -47,6 +47,7 @@ Principios:
 
 ###  Productos / Inventario
 - Alta, edición, baja y desactivación de productos; gestión de categorías.
+- **Importación de catálogo (CSV)**: alta masiva de productos (crea o actualiza por código de barras).
 - Búsqueda en vivo, control de stock (entrada / salida) y **alerta de stock mínimo**.
 - Soporte por unidad o por peso (kg).
 - **Solo lectura para empleados** (las modificaciones quedan para el administrador).

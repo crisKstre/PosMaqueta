@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 using Dominio.Eventos;
@@ -13,6 +14,7 @@ namespace Presentacion.Forms
         private readonly ProductoService    productoService    = new ProductoService();
         private readonly CategoriaService   categoriaService   = new CategoriaService();
         private readonly LogService         logService         = new LogService();
+        private readonly ImportacionService importacionService = new ImportacionService();
         private int  idEnEdicion = 0;
         private bool logVisible  = false;
         private ContextMenuStrip menuDescuento;
@@ -40,6 +42,7 @@ namespace Presentacion.Forms
             this.Disposed += (s, ev) => timerBuscar?.Dispose();
             AplicarPermisos();
             ConfigurarMenuDescuento();
+            ConfigurarImportacion();
             AcomodarFilaAcciones();
             CargarCategorias();
             CargarProductos();
@@ -214,6 +217,54 @@ namespace Presentacion.Forms
             {
                 f.ShowDialog(this);
                 CargarCategorias();
+            }
+        }
+
+        // ── Importación de catálogo (CSV) ─────────────────────────
+
+        // Botón "Importar CSV" (solo admin), creado en código junto a "Gestionar ▸".
+        private void ConfigurarImportacion()
+        {
+            if (!Sesion.EsAdmin) return;
+            var btn = new Button { Text = "Importar CSV", Size = new Size(130, btnGestionarCat.Height) };
+            EstiloPos.AplicarBotonSecundario(btn);
+            btn.Font     = EstiloPos.FontSmall;
+            btn.Location = new Point(btnGestionarCat.Right + 12, btnGestionarCat.Top);
+            btn.Click   += (s, e) => ImportarCsv();
+            pnlFormulario.Controls.Add(btn);
+            btn.BringToFront();
+        }
+
+        private void ImportarCsv()
+        {
+            using (var ofd = new OpenFileDialog
+            {
+                Title  = "Importar catálogo desde CSV",
+                Filter = "Archivos CSV (*.csv)|*.csv|Todos los archivos (*.*)|*.*"
+            })
+            {
+                if (ofd.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    var res = importacionService.ImportarProductos(ofd.FileName);
+                    CargarCategorias();
+                    CargarProductos();
+
+                    string msg = "Creados: " + res.Creados +
+                                 "\nActualizados: " + res.Actualizados +
+                                 "\nFilas con error: " + res.Errores.Count;
+                    if (res.HuboErrores)
+                    {
+                        msg += "\n\n" + string.Join("\n", res.Errores.Take(10));
+                        if (res.Errores.Count > 10) msg += "\n…y " + (res.Errores.Count - 10) + " más.";
+                        Aviso.Advertencia(this, msg, "Importación finalizada con avisos");
+                    }
+                    else
+                    {
+                        Aviso.Exito(this, msg, "Importación completa");
+                    }
+                }
+                catch (Exception ex) { Aviso.Error(this, Errores.Usuario(ex), "No se pudo importar"); }
             }
         }
 
