@@ -1,7 +1,7 @@
 # Sistema POS
 
 Punto de venta (POS) de escritorio para **minimarket / almacén**, desarrollado en
-**C# · WinForms · .NET Framework 4.7.2** con base de datos **SQLite local** (sin servidor).
+**C# · WinForms · .NET Framework 4.7.2** con base de datos **SQLite** (una caja) o **SQL Server** (varias cajas).
 
 ##  Objetivo del proyecto
 
@@ -69,6 +69,7 @@ Principios:
 | [Manual de Usuario](docs/MANUAL-USUARIO.md) | Operación de cada módulo, atajos de teclado, FAQ |
 | [Arquitectura](docs/ARQUITECTURA.md) | Capas, patrones, diagramas, seguridad, rendimiento, build, pruebas |
 | [Modelo de Datos](docs/MODELO-DATOS.md) | Tablas, diagrama ER, índices, migraciones |
+| [Despliegue](docs/DESPLIEGUE.md) | Instalación: una caja (SQLite) o varias (SQL Server Express) |
 
 ---
 

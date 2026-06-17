@@ -29,7 +29,7 @@ Sistema POS de escritorio para minimarket. Documento para desarrolladores y mant
 | **Tipo** | Aplicación de escritorio (un solo equipo, sin servidor) |
 | **Lenguaje / runtime** | C# · .NET Framework **4.7.2** |
 | **UI** | Windows Forms (WinForms) |
-| **Base de datos** | SQLite local vía **Microsoft.Data.Sqlite** 8.0.10 |
+| **Base de datos** | **SQLite** (local, una caja) o **SQL Server** (central, varias cajas), elegible por configuración |
 | **Pruebas** | xUnit (105 casos: unitarios + integración) |
 | **Uso** | Interno (empleados + administrador). No de cara al cliente. |
 | **Mercado** | Chile (CLP, IVA 19 % incluido en precios) |
@@ -288,7 +288,7 @@ Optimizaciones aplicadas (sin cambios visuales):
 
 ## 13. Pruebas
 
-Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **105 casos**, agregado a la solución.
+Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **114 casos**, agregado a la solución.
 
 - **Unitarios** de lógica pura: `Impuestos` (IVA, invariante neto+iva==total, redondeo) y
   `Seguridad` (PBKDF2, sal única, compatibilidad legacy SHA256, hashes malformados, migración).
@@ -296,6 +296,8 @@ Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **105 casos**, agregado a la
 - **Integración de los 4 servicios** contra una **BD SQLite temporal por test** (esquema y seed
   reales). Incluye **regresión** de los bugs hallados en auditoría: sobreventa/stock negativo,
   anulación doble, descuento reacotado.
+- **Humo de SQL Server** (9 casos, `SkippableFact`) contra **LocalDB**: verifican el dialecto T-SQL
+  real (DDL, IDENTITY, TOP, IN, transacciones). Se omiten si no hay LocalDB instalado.
 
 **Cómo correrlas:**
 
@@ -340,8 +342,9 @@ PosMaqueta/
 ├── Entidades/              # Modelos (POCOs), Impuestos, Sesion (usuario autenticado), RolUsuario
 ├── AccesoData/
 │   ├── DAO/                # ProductoDao, VentaDao, CajaDao, UsuarioDao, LogDao, CategoriaDao
-│   ├── ConexionSqlite.cs   # base de los DAOs
-│   ├── ConfigBD.cs         # cadena de conexión (redirigible en tests)
+│   ├── ConexionBD.cs       # base de los DAOs (SQLite o SQL Server)
+│   ├── ConfigBD.cs         # proveedor + cadena de conexión
+│   ├── ProveedorBD.cs      # enum del motor · Persistencia.cs (helpers + Dialecto)
 │   ├── DatabaseInitializer.cs  # crea tablas, migra esquema, índices, WAL, seed
 │   ├── RespaldoBD.cs       # respaldo diario con rotación
 │   ├── Seguridad.cs        # PBKDF2
@@ -362,4 +365,23 @@ PosMaqueta/
 
 ---
 
-Ver también: [MANUAL-USUARIO.md](MANUAL-USUARIO.md) · [MODELO-DATOS.md](MODELO-DATOS.md)
+## 16. Proveedores de base de datos (SQLite / SQL Server)
+
+La capa de datos es **agnóstica del motor**. `ConfigBD.Proveedor` elige entre **SQLite** (local,
+una caja) y **SQL Server** (central, varias cajas); se configura en `App.config` (`ProveedorBD` +
+`CadenaConexion`) sin recompilar — ver [DESPLIEGUE.md](DESPLIEGUE.md).
+
+- `ConexionBD` entrega la conexión del motor activo (`SqliteConnection` o `SqlConnection`).
+- Los DAOs usan las clases base de ADO.NET (`DbConnection`/`DbCommand`) vía los helpers de
+  `Persistencia` (`Comando`, `AddParam`); las pocas diferencias de SQL (identidad tras INSERT,
+  `TOP`/`LIMIT`, DDL, índices) se resuelven en `Dialecto` y en `DatabaseInitializer`.
+- Para máxima portabilidad, las **fechas se guardan como texto** y los **montos como `DECIMAL`** en
+  ambos motores, de modo que el código de lectura/escritura es idéntico.
+- En SQL Server, la unicidad de `CodigoBarras` (que admite varios NULL, como en SQLite) se logra con
+  un **índice único filtrado** (`WHERE CodigoBarras IS NOT NULL`).
+- El esquema y la base se crean solos al arrancar en ambos motores (en SQL Server, `CREATE DATABASE`
+  si no existe). El respaldo por archivo es solo de SQLite; en SQL Server lo gestiona el servidor.
+
+---
+
+Ver también: [MANUAL-USUARIO.md](MANUAL-USUARIO.md) · [MODELO-DATOS.md](MODELO-DATOS.md) · [DESPLIEGUE.md](DESPLIEGUE.md)
