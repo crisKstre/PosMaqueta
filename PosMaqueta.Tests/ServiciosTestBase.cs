@@ -19,6 +19,7 @@ namespace PosMaqueta.Tests
         protected ServiciosTestBase()
         {
             rutaDb = Path.Combine(Path.GetTempPath(), "postest_" + Guid.NewGuid().ToString("N") + ".db");
+            ConfigBD.Proveedor = ProveedorBD.Sqlite;   // defensivo: por si un test de SQL Server corrió antes
             ConfigBD.CadenaConexion = "Data Source=" + rutaDb + ";Pooling=False;Foreign Keys=True";
             VentaService.ReiniciarVentasEnCurso();   // limpia el estado estático compartido
             new DatabaseInitializer().Inicializar();  // esquema + admin/empleado + categorías

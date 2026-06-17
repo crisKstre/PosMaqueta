@@ -1,7 +1,12 @@
 # Modelo de datos
 
-Base de datos **SQLite** (`pos.db`), creada y migrada automáticamente al arrancar por
-`AccesoData/DatabaseInitializer.cs`. Todos los montos en **pesos chilenos** (sin decimales).
+Base de datos **SQLite** (`pos.db`, una caja) o **SQL Server** (base `PosMaqueta`, varias cajas),
+creada y migrada automáticamente al arrancar por `AccesoData/DatabaseInitializer.cs`. Todos los
+montos en **pesos chilenos** (sin decimales).
+
+> El mismo esquema corre en ambos motores. Equivalencias de tipos: `INTEGER`/`INT IDENTITY`,
+> `REAL`/`DECIMAL(18,4)`, `TEXT`/`NVARCHAR`. Las **fechas se guardan como texto** (`yyyy-MM-dd
+> HH:mm:ss`) en ambos para que el código sea portable. Ver [DESPLIEGUE.md](DESPLIEGUE.md).
 
 ## Diagrama entidad-relación
 

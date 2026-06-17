@@ -15,6 +15,7 @@ namespace Presentacion
 
             Log.Info("════════ Sistema POS iniciado ════════");
             Log.LimpiarAntiguos(30);
+            ConfigurarBaseDatos();
 
             // Captura global: cualquier error no manejado queda registrado
             Application.ThreadException += (s, e) =>
@@ -46,6 +47,21 @@ namespace Presentacion
 
             Application.Run(new FormLogin());
             Log.Info("════════ Sistema POS cerrado ════════");
+        }
+
+        // Lee el motor de BD y la cadena de conexión desde App.config (appSettings).
+        // Por defecto SQLite; para varias cajas se pone ProveedorBD=SqlServer + CadenaConexion.
+        private static void ConfigurarBaseDatos()
+        {
+            var prov = System.Configuration.ConfigurationManager.AppSettings["ProveedorBD"];
+            if (!string.IsNullOrWhiteSpace(prov) && prov.Trim().Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+                ConfigBD.Proveedor = ProveedorBD.SqlServer;
+
+            var cad = System.Configuration.ConfigurationManager.AppSettings["CadenaConexion"];
+            if (!string.IsNullOrWhiteSpace(cad))
+                ConfigBD.CadenaConexion = cad;
+
+            Log.Info("Motor de BD: " + ConfigBD.Proveedor);
         }
     }
 }

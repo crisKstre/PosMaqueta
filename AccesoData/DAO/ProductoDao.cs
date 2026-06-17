@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class ProductoDao : ConexionSqlite
+    public class ProductoDao : ConexionBD
     {
         public List<Producto> ObtenerTodos(bool soloActivos = false)
         {
@@ -20,12 +21,10 @@ namespace AccesoData.DAO
                     sql += " WHERE Activo = 1";
                 sql += " ORDER BY Activo DESC, Nombre;";
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 using (var reader = cmd.ExecuteReader())
-                {
                     while (reader.Read())
                         lista.Add(Mapear(reader));
-                }
             }
             return lista;
         }
@@ -43,9 +42,9 @@ namespace AccesoData.DAO
                     WHERE (Nombre LIKE @texto OR CodigoBarras LIKE @texto)
                     ORDER BY Activo DESC, Nombre;";
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@texto", "%" + texto + "%");
+                    cmd.AddParam("@texto", "%" + texto + "%");
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
                             lista.Add(Mapear(reader));
@@ -65,15 +64,11 @@ namespace AccesoData.DAO
                     FROM Producto
                     WHERE CodigoBarras = @codigo AND Activo = 1;";
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@codigo", codigoBarras);
+                    cmd.AddParam("@codigo", codigoBarras);
                     using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            return Mapear(reader);
-                        return null;
-                    }
+                        return reader.Read() ? Mapear(reader) : null;
                 }
             }
         }
@@ -89,15 +84,11 @@ namespace AccesoData.DAO
                     FROM Producto
                     WHERE IdProducto = @id;";
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    cmd.AddParam("@id", idProducto);
                     using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            return Mapear(reader);
-                        return null;
-                    }
+                        return reader.Read() ? Mapear(reader) : null;
                 }
             }
         }
@@ -111,8 +102,8 @@ namespace AccesoData.DAO
                 string sql = @"SELECT DISTINCT Categoria FROM Producto
                                WHERE Activo = 1 AND Categoria IS NOT NULL AND Categoria <> ''
                                ORDER BY Categoria;";
-                using (var cmd = new SqliteCommand(sql, con))
-                using (var r   = cmd.ExecuteReader())
+                using (var cmd = con.Comando(sql))
+                using (var r = cmd.ExecuteReader())
                     while (r.Read()) lista.Add(r.GetString(0));
             }
             return lista;
@@ -129,9 +120,9 @@ namespace AccesoData.DAO
                                FROM Producto
                                WHERE Activo = 1 AND Categoria = @cat
                                ORDER BY Nombre;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@cat", categoria);
+                    cmd.AddParam("@cat", categoria);
                     using (var r = cmd.ExecuteReader())
                         while (r.Read()) lista.Add(Mapear(r));
                 }
@@ -152,7 +143,7 @@ namespace AccesoData.DAO
                     FROM Producto
                     WHERE Activo = 1 AND Stock <= StockMinimo
                     ORDER BY Nombre;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 using (var reader = cmd.ExecuteReader())
                     while (reader.Read())
                         lista.Add(Mapear(reader));
@@ -167,12 +158,11 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"SELECT COUNT(*) FROM Producto
                                WHERE CodigoBarras = @codigo AND IdProducto <> @id;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@codigo", codigoBarras);
-                    cmd.Parameters.AddWithValue("@id", idExcluir);
-                    long count = (long)cmd.ExecuteScalar();
-                    return count > 0;
+                    cmd.AddParam("@codigo", codigoBarras);
+                    cmd.AddParam("@id", idExcluir);
+                    return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
                 }
             }
         }
@@ -187,14 +177,13 @@ namespace AccesoData.DAO
                                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje)
                     VALUES (@codigo, @nombre, @categoria, @precio,
                             @stock, @stockMin, @unidad, 1, @descuento);
-                    SELECT last_insert_rowid();";
+                    " + Dialecto.UltimoId;
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
                     AgregarParametros(cmd, p);
-                    cmd.Parameters.AddWithValue("@descuento", p.DescuentoPorcentaje);
-                    long id = (long)cmd.ExecuteScalar();
-                    return (int)id;
+                    cmd.AddParam("@descuento", p.DescuentoPorcentaje);
+                    return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
         }
@@ -215,10 +204,10 @@ namespace AccesoData.DAO
                         UnidadMedida = @unidad
                     WHERE IdProducto = @id;";
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
                     AgregarParametros(cmd, p);
-                    cmd.Parameters.AddWithValue("@id", p.IdProducto);
+                    cmd.AddParam("@id", p.IdProducto);
                     return cmd.ExecuteNonQuery() > 0;
                 }
             }
@@ -229,10 +218,9 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = "UPDATE Producto SET Activo = 0 WHERE IdProducto = @id;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando("UPDATE Producto SET Activo = 0 WHERE IdProducto = @id;"))
                 {
-                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    cmd.AddParam("@id", idProducto);
                     return cmd.ExecuteNonQuery() > 0;
                 }
             }
@@ -243,10 +231,9 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = "UPDATE Producto SET Activo = 1 WHERE IdProducto = @id;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando("UPDATE Producto SET Activo = 1 WHERE IdProducto = @id;"))
                 {
-                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    cmd.AddParam("@id", idProducto);
                     return cmd.ExecuteNonQuery() > 0;
                 }
             }
@@ -257,11 +244,10 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = "UPDATE Producto SET Stock = @stock WHERE IdProducto = @id;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando("UPDATE Producto SET Stock = @stock WHERE IdProducto = @id;"))
                 {
-                    cmd.Parameters.AddWithValue("@stock", nuevoStock);
-                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    cmd.AddParam("@stock", nuevoStock);
+                    cmd.AddParam("@id", idProducto);
                     return cmd.ExecuteNonQuery() > 0;
                 }
             }
@@ -272,11 +258,10 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = "UPDATE Producto SET DescuentoPorcentaje = @d WHERE IdProducto = @id;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando("UPDATE Producto SET DescuentoPorcentaje = @d WHERE IdProducto = @id;"))
                 {
-                    cmd.Parameters.AddWithValue("@d", porcentaje);
-                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    cmd.AddParam("@d", porcentaje);
+                    cmd.AddParam("@id", idProducto);
                     return cmd.ExecuteNonQuery() > 0;
                 }
             }
@@ -287,12 +272,10 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = "SELECT COUNT(*) FROM DetalleVenta WHERE IdProducto = @id;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando("SELECT COUNT(*) FROM DetalleVenta WHERE IdProducto = @id;"))
                 {
-                    cmd.Parameters.AddWithValue("@id", idProducto);
-                    long count = (long)cmd.ExecuteScalar();
-                    return count > 0;
+                    cmd.AddParam("@id", idProducto);
+                    return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
                 }
             }
         }
@@ -302,28 +285,26 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = "DELETE FROM Producto WHERE IdProducto = @id;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando("DELETE FROM Producto WHERE IdProducto = @id;"))
                 {
-                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    cmd.AddParam("@id", idProducto);
                     return cmd.ExecuteNonQuery() > 0;
                 }
             }
         }
 
-        private void AgregarParametros(SqliteCommand cmd, Producto p)
+        private void AgregarParametros(DbCommand cmd, Producto p)
         {
-            cmd.Parameters.AddWithValue("@codigo",
-                string.IsNullOrEmpty(p.CodigoBarras) ? (object)System.DBNull.Value : p.CodigoBarras);
-            cmd.Parameters.AddWithValue("@nombre", p.Nombre);
-            cmd.Parameters.AddWithValue("@categoria", (object)p.Categoria ?? System.DBNull.Value);
-            cmd.Parameters.AddWithValue("@precio", p.Precio);
-            cmd.Parameters.AddWithValue("@stock", p.Stock);
-            cmd.Parameters.AddWithValue("@stockMin", p.StockMinimo);
-            cmd.Parameters.AddWithValue("@unidad", p.UnidadMedida);
+            cmd.AddParam("@codigo", string.IsNullOrEmpty(p.CodigoBarras) ? null : p.CodigoBarras);
+            cmd.AddParam("@nombre", p.Nombre);
+            cmd.AddParam("@categoria", p.Categoria);
+            cmd.AddParam("@precio", p.Precio);
+            cmd.AddParam("@stock", p.Stock);
+            cmd.AddParam("@stockMin", p.StockMinimo);
+            cmd.AddParam("@unidad", p.UnidadMedida);
         }
 
-        private Producto Mapear(SqliteDataReader reader)
+        private Producto Mapear(DbDataReader reader)
         {
             return new Producto
             {

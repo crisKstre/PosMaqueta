@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 using Entidades;
 
 namespace AccesoData.DAO
 {
-    public class LogDao : ConexionSqlite
+    public class LogDao : ConexionBD
     {
         public void Registrar(LogMovimiento log)
         {
@@ -15,14 +15,14 @@ namespace AccesoData.DAO
                 string sql = @"
                     INSERT INTO LogMovimiento (Fecha, IdUsuario, NombreUsuario, Modulo, Accion, Detalle)
                     VALUES (@fecha, @idUsuario, @nombreUsuario, @modulo, @accion, @detalle);";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@fecha", log.Fecha.ToString("yyyy-MM-dd HH:mm:ss"));
-                    cmd.Parameters.AddWithValue("@idUsuario", log.IdUsuario);
-                    cmd.Parameters.AddWithValue("@nombreUsuario", log.NombreUsuario);
-                    cmd.Parameters.AddWithValue("@modulo", log.Modulo);
-                    cmd.Parameters.AddWithValue("@accion", log.Accion);
-                    cmd.Parameters.AddWithValue("@detalle", (object)log.Detalle ?? DBNull.Value);
+                    cmd.AddParam("@fecha", log.Fecha.ToString("yyyy-MM-dd HH:mm:ss"));
+                    cmd.AddParam("@idUsuario", log.IdUsuario);
+                    cmd.AddParam("@nombreUsuario", log.NombreUsuario);
+                    cmd.AddParam("@modulo", log.Modulo);
+                    cmd.AddParam("@accion", log.Accion);
+                    cmd.AddParam("@detalle", log.Detalle);   // AddParam convierte null en DBNull
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -43,12 +43,12 @@ namespace AccesoData.DAO
                 if (!string.IsNullOrEmpty(modulo)) sql += " AND Modulo = @modulo";
                 sql += " ORDER BY Fecha DESC;";
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
-                    cmd.Parameters.AddWithValue("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
-                    if (idUsuario > 0) cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
-                    if (!string.IsNullOrEmpty(modulo)) cmd.Parameters.AddWithValue("@modulo", modulo);
+                    cmd.AddParam("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
+                    cmd.AddParam("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
+                    if (idUsuario > 0) cmd.AddParam("@idUsuario", idUsuario);
+                    if (!string.IsNullOrEmpty(modulo)) cmd.AddParam("@modulo", modulo);
 
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -78,7 +78,7 @@ namespace AccesoData.DAO
             {
                 con.Open();
                 string sql = "SELECT DISTINCT NombreUsuario FROM LogMovimiento ORDER BY NombreUsuario;";
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 using (var reader = cmd.ExecuteReader())
                     while (reader.Read())
                         lista.Add(reader.GetString(0));

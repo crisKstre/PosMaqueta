@@ -15,6 +15,10 @@ namespace AccesoData
         {
             try
             {
+                // El respaldo por copia de archivo es solo para SQLite. En SQL Server lo gestiona
+                // el servidor (plan de mantenimiento / BACKUP DATABASE), no la aplicación.
+                if (ConfigBD.Proveedor != ProveedorBD.Sqlite) return;
+
                 string db = ConfigBD.RutaBaseDatos;
                 if (!File.Exists(db)) return;
 
