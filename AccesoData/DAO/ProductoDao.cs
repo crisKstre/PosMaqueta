@@ -139,6 +139,27 @@ namespace AccesoData.DAO
             return lista;
         }
 
+        // Productos activos en o bajo su stock mínimo, filtrados en SQL (no trae todo el catálogo).
+        public List<Producto> ObtenerBajoStock()
+        {
+            var lista = new List<Producto>();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"
+                    SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                    FROM Producto
+                    WHERE Activo = 1 AND Stock <= StockMinimo
+                    ORDER BY Nombre;";
+                using (var cmd = new SqliteCommand(sql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                        lista.Add(Mapear(reader));
+            }
+            return lista;
+        }
+
         public bool ExisteCodigo(string codigoBarras, int idExcluir = 0)
         {
             using (var con = GetConnection())

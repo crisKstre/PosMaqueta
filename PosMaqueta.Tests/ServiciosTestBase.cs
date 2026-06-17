@@ -28,7 +28,9 @@ namespace PosMaqueta.Tests
         {
             VentaService.ReiniciarVentasEnCurso();
             ConfigBD.CadenaConexion = null;           // restaura la ubicación por defecto
-            try { if (File.Exists(rutaDb)) File.Delete(rutaDb); } catch { /* archivo temporal */ }
+            // Borra la BD y sus sidecars de WAL (-wal/-shm)
+            foreach (var f in new[] { rutaDb, rutaDb + "-wal", rutaDb + "-shm" })
+                try { if (File.Exists(f)) File.Delete(f); } catch { /* archivos temporales */ }
         }
 
         // Crea un producto activo y devuelve su id. Categoría "Bebidas" (sembrada por defecto).

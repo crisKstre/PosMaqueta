@@ -266,12 +266,12 @@ namespace Dominio.Servicios
             if (actual.Detalles.Count == 0)
                 throw new NegocioException("El carrito está vacío.");
 
-            // Re-validar stock contra la BD actual: el carrito pudo quedar obsoleto (venta en pausa,
-            // otro cajero/módulo movió el stock). El descuento atómico de DescontarStock es la última defensa.
+            // Re-validar stock contra la BD actual en UNA sola consulta: el carrito pudo quedar obsoleto
+            // (venta en pausa, otro cajero/módulo movió el stock). DescontarStock es la última defensa atómica.
+            var stocks = ventaDao.ObtenerStocks(actual.Detalles.Select(d => d.IdProducto));
             foreach (var d in actual.Detalles)
             {
-                var prod = productoDao.ObtenerPorId(d.IdProducto);
-                if (prod == null)
+                if (!stocks.TryGetValue(d.IdProducto, out var prod))
                     throw new NegocioException("El producto \"" + d.NombreProducto + "\" ya no existe.");
                 if (d.Cantidad > prod.Stock)
                     throw new NegocioException("Stock insuficiente para \"" + d.NombreProducto +

@@ -173,8 +173,7 @@ namespace Dominio.Servicios
 
         public List<Producto> ObtenerBajoStock()
         {
-            return productoDao.ObtenerTodos(soloActivos: true)
-                .FindAll(p => p.Stock <= p.StockMinimo);
+            return productoDao.ObtenerBajoStock();   // filtrado en SQL, no materializa todo el catálogo
         }
 
         public bool EstaBajoStock(Producto p)

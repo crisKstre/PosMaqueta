@@ -31,8 +31,9 @@ namespace Presentacion
                 // Crea la base de datos y el admin por defecto si no existen
                 new DatabaseInitializer().Inicializar();
                 Log.Info("Base de datos inicializada");
-                // Respaldo automático de la base de datos (una copia por día)
-                RespaldoBD.RespaldarSiCorresponde();
+                // Respaldo automático en segundo plano: no debe retrasar la aparición del login.
+                // (RespaldarSiCorresponde captura sus propias excepciones, así que es seguro en Task.Run.)
+                System.Threading.Tasks.Task.Run(() => RespaldoBD.RespaldarSiCorresponde());
             }
             catch (Exception ex)
             {

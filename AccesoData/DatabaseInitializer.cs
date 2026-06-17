@@ -11,6 +11,10 @@ namespace AccesoData
             using (var con = GetConnection())
             {
                 con.Open();
+                // WAL: lecturas concurrentes sin bloquear escrituras y menos fsync por commit
+                // (synchronous=NORMAL es seguro con WAL). Es persistente a nivel de archivo.
+                using (var pragma = new SqliteCommand("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;", con))
+                    pragma.ExecuteNonQuery();
                 CrearTablas(con);
                 MigrarEsquema(con);
                 CrearIndices(con);

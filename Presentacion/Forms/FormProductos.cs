@@ -16,6 +16,7 @@ namespace Presentacion.Forms
         private int  idEnEdicion = 0;
         private bool logVisible  = false;
         private ContextMenuStrip menuDescuento;
+        private System.Windows.Forms.Timer timerBuscar;
 
         public FormProductos() { InitializeComponent(); }
 
@@ -34,6 +35,9 @@ namespace Presentacion.Forms
             NotificadorCambios.Cambio += OnCambioDatos;
             // Desuscribir al disponerse: como form hijo, Close() no dispara FormClosed (evita fuga + handler huérfano).
             this.Disposed += (s, ev) => NotificadorCambios.Cambio -= OnCambioDatos;
+            timerBuscar = new System.Windows.Forms.Timer { Interval = 180 };   // debounce del buscador
+            timerBuscar.Tick += (s, ev) => { timerBuscar.Stop(); CargarProductos(); };
+            this.Disposed += (s, ev) => timerBuscar?.Dispose();
             AplicarPermisos();
             ConfigurarMenuDescuento();
             AcomodarFilaAcciones();
@@ -218,6 +222,7 @@ namespace Presentacion.Forms
         private void CargarProductos()
         {
             var lista = productoService.Buscar(txtBuscar.Text);
+            dgvProductos.SuspendLayout();
             dgvProductos.Rows.Clear();
             foreach (var p in lista)
             {
@@ -245,6 +250,7 @@ namespace Presentacion.Forms
                     row.Cells["colEstado"].Style.SelectionForeColor = Color.FromArgb(30, 120, 30);
                 }
             }
+            dgvProductos.ResumeLayout();
             ActualizarBotonesSegunSeleccion();
         }
 
@@ -343,7 +349,11 @@ namespace Presentacion.Forms
             catch (Exception ex) { Aviso.Error(this, Errores.Usuario(ex), "No se pudo"); }
         }
 
-        private void txtBuscar_TextChanged(object sender, EventArgs e) => CargarProductos();
+        private void txtBuscar_TextChanged(object sender, EventArgs e)
+        {
+            timerBuscar?.Stop();    // debounce: recarga al dejar de teclear, no en cada tecla
+            timerBuscar?.Start();
+        }
 
         // Atajos: F2 = foco buscar, F5 = recargar, Esc = limpiar el formulario (solo admin)
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

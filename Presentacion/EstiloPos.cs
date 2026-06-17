@@ -43,21 +43,21 @@ namespace Presentacion
 
         // ── Tipografía ────────────────────────────────────────────────────
 
-        public static Font FontTitulo     => new Font("Segoe UI", 19F, FontStyle.Bold);       // título de módulo
-        public static Font FontSubtitulo  => new Font("Segoe UI", 15F, FontStyle.Bold);       // subtítulos / cards
-        public static Font FontBody       => new Font("Segoe UI", 13F, FontStyle.Regular);    // cuerpo general
-        public static Font FontSmall      => new Font("Segoe UI", 11F, FontStyle.Regular);    // hints / labels
-        public static Font FontMicro      => new Font("Segoe UI", 10F, FontStyle.Regular);    // meta / columnas
-        public static Font FontLabel      => new Font("Segoe UI", 11F, FontStyle.Bold);       // labels de campo
-        public static Font FontBoton      => new Font("Segoe UI", 13F, FontStyle.Bold);       // botones
-        public static Font FontBotonGrande=> new Font("Segoe UI", 15F, FontStyle.Bold);       // cobrar F12
-        public static Font FontPrecio     => new Font("Segoe UI", 28F, FontStyle.Bold);       // total carrito
-        public static Font FontInput      => new Font("Segoe UI", 13F, FontStyle.Regular);    // inputs estándar
-        public static Font FontInputGrande=> new Font("Segoe UI", 15F, FontStyle.Regular);    // scanner / monto
-        public static Font FontSidebar    => new Font("Segoe UI", 14F, FontStyle.Regular);    // botones sidebar
-        public static Font FontMetrica    => new Font("Segoe UI", 23F, FontStyle.Bold);       // métricas caja
-        public static Font FontTabla      => new Font("Segoe UI", 12.5F, FontStyle.Regular);  // filas tabla
-        public static Font FontTablaHead  => new Font("Segoe UI", 11F, FontStyle.Bold);       // cabeceras tabla
+        public static readonly Font FontTitulo     = new Font("Segoe UI", 19F, FontStyle.Bold);       // título de módulo
+        public static readonly Font FontSubtitulo  = new Font("Segoe UI", 15F, FontStyle.Bold);       // subtítulos / cards
+        public static readonly Font FontBody       = new Font("Segoe UI", 13F, FontStyle.Regular);    // cuerpo general
+        public static readonly Font FontSmall      = new Font("Segoe UI", 11F, FontStyle.Regular);    // hints / labels
+        public static readonly Font FontMicro      = new Font("Segoe UI", 10F, FontStyle.Regular);    // meta / columnas
+        public static readonly Font FontLabel      = new Font("Segoe UI", 11F, FontStyle.Bold);       // labels de campo
+        public static readonly Font FontBoton      = new Font("Segoe UI", 13F, FontStyle.Bold);       // botones
+        public static readonly Font FontBotonGrande= new Font("Segoe UI", 15F, FontStyle.Bold);       // cobrar F12
+        public static readonly Font FontPrecio     = new Font("Segoe UI", 28F, FontStyle.Bold);       // total carrito
+        public static readonly Font FontInput      = new Font("Segoe UI", 13F, FontStyle.Regular);    // inputs estándar
+        public static readonly Font FontInputGrande= new Font("Segoe UI", 15F, FontStyle.Regular);    // scanner / monto
+        public static readonly Font FontSidebar    = new Font("Segoe UI", 14F, FontStyle.Regular);    // botones sidebar
+        public static readonly Font FontMetrica    = new Font("Segoe UI", 23F, FontStyle.Bold);       // métricas caja
+        public static readonly Font FontTabla      = new Font("Segoe UI", 12.5F, FontStyle.Regular);  // filas tabla
+        public static readonly Font FontTablaHead  = new Font("Segoe UI", 11F, FontStyle.Bold);       // cabeceras tabla
 
         // ── Alturas estándar ─────────────────────────────────────────────
         public const int AlturaInput       = 38;
@@ -175,6 +175,8 @@ namespace Presentacion
             dgv.MultiSelect                    = false;
             dgv.AutoSizeColumnsMode            = DataGridViewAutoSizeColumnsMode.Fill;
 
+            HabilitarDobleBuffer(dgv);   // menos parpadeo y repintado más rápido (sin cambiar el aspecto)
+
             // Resaltado de fila al pasar el mouse (guarda el color base en Tag para restaurarlo)
             dgv.CellMouseEnter += (s, e) =>
             {
@@ -190,6 +192,15 @@ namespace Presentacion
                 var row = dgv.Rows[e.RowIndex];
                 if (row.Tag is Color c) row.DefaultCellStyle.BackColor = c;
             };
+        }
+
+        // Activa el doble buffer (propiedad protegida, vía reflexión) para reducir el parpadeo y
+        // acelerar el repintado de grids/paneles con mucho contenido. No altera el aspecto.
+        public static void HabilitarDobleBuffer(Control ctrl)
+        {
+            typeof(Control).GetProperty("DoubleBuffered",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(ctrl, true, null);
         }
     }
 }

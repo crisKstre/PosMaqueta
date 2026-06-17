@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Microsoft.Data.Sqlite;
 
 namespace AccesoData
 {
@@ -25,6 +26,15 @@ namespace AccesoData
                 if (Directory.GetFiles(dir, "pos_" + hoy + "_*.db").Any()) return;
 
                 string destino = Path.Combine(dir, "pos_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".db");
+
+                // Con WAL hay transacciones en el archivo -wal: volcarlas al .db antes de copiar
+                // para que el respaldo sea consistente (un simple File.Copy del .db las omitiría).
+                using (var con = new SqliteConnection(ConfigBD.CadenaConexion))
+                {
+                    con.Open();
+                    using (var cmd = new SqliteCommand("PRAGMA wal_checkpoint(TRUNCATE);", con))
+                        cmd.ExecuteNonQuery();
+                }
                 File.Copy(db, destino, overwrite: true);
                 Log.Info("Respaldo de base de datos creado: " + Path.GetFileName(destino));
 

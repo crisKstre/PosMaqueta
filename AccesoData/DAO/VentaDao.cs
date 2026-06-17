@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using Microsoft.Data.Sqlite;
 using Entidades;
 
@@ -245,6 +246,36 @@ namespace AccesoData.DAO
                 }
             }
             return lista;
+        }
+
+        // Trae Stock/Nombre/UnidadMedida de varios productos en UNA sola consulta
+        // (para re-validar el carrito al cobrar sin un round-trip por ítem).
+        public Dictionary<int, Producto> ObtenerStocks(IEnumerable<int> idsProducto)
+        {
+            var ids = idsProducto.Distinct().ToList();
+            var mapa = new Dictionary<int, Producto>();
+            if (ids.Count == 0) return mapa;
+
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string param = string.Join(",", ids.Select((id, i) => "@p" + i));
+                string sql = "SELECT IdProducto, Nombre, Stock, UnidadMedida FROM Producto WHERE IdProducto IN (" + param + ");";
+                using (var cmd = new SqliteCommand(sql, con))
+                {
+                    for (int i = 0; i < ids.Count; i++) cmd.Parameters.AddWithValue("@p" + i, ids[i]);
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read())
+                            mapa[r.GetInt32(0)] = new Producto
+                            {
+                                IdProducto   = r.GetInt32(0),
+                                Nombre       = r.GetString(1),
+                                Stock        = r.GetDecimal(2),
+                                UnidadMedida = r.GetString(3),
+                            };
+                }
+            }
+            return mapa;
         }
 
         // Anula una venta: devuelve su stock al inventario y la marca Anulada=1, en una transacción.

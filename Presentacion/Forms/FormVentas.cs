@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using Dominio.Servicios;
 using Entidades;
@@ -20,6 +21,11 @@ namespace Presentacion.Forms
         private Label lblDesgloseIva;
         private Button btnDescuento;
         private ToolTip toolTipAtajos = new ToolTip();
+        private Timer timerBuscar;
+        // Lápices del pintado del carrito (−/+/✕): constantes, se reutilizan en cada CellPainting.
+        private static readonly Pen PenAccionMenos  = new Pen(EstiloPos.Ink1,  2.6f);
+        private static readonly Pen PenAccionMas    = new Pen(EstiloPos.Verde, 2.6f);
+        private static readonly Pen PenAccionQuitar = new Pen(EstiloPos.Rojo,  2.6f);
         private List<Venta> ventasRegistro = new List<Venta>();
         private static readonly TimeSpan InactividadMax = TimeSpan.FromMinutes(10);
 
@@ -48,6 +54,7 @@ namespace Presentacion.Forms
         private void AplicarEstilos()
         {
             AplicarEstilosGrids();
+            EstiloPos.HabilitarDobleBuffer(pnlProdGrid);   // grilla de productos: repintado más fluido
 
             // Combo medio de pago
             EstiloPos.AplicarCombo(comboMedioPago);
@@ -275,8 +282,10 @@ namespace Presentacion.Forms
 
         private void CargarGridProductos(string busqueda = "")
         {
-            pnlProdGrid.Controls.Clear();
             pnlProdGrid.SuspendLayout();
+            var tilesViejos = pnlProdGrid.Controls.Cast<Control>().ToArray();
+            pnlProdGrid.Controls.Clear();
+            foreach (var c in tilesViejos) c.Dispose();   // libera Fonts/handlers GDI de las tarjetas previas
 
             List<Producto> productos;
             if (!string.IsNullOrEmpty(busqueda))
@@ -470,7 +479,10 @@ namespace Presentacion.Forms
         // ── Buscador por nombre ────────────────────────────────────────
 
         private void txtBuscar_TextChanged(object sender, EventArgs e)
-            => CargarGridProductos(txtBuscar.Text.Trim());   // filtra las tarjetas de productos
+        {
+            timerBuscar?.Stop();    // debounce: recarga la grilla al dejar de teclear, no en cada tecla
+            timerBuscar?.Start();
+        }
 
         // Enter en el buscador: agrega la mejor coincidencia (las tarjetas ya muestran el resto)
         private void txtBuscar_KeyDown(object sender, KeyEventArgs e)
@@ -524,12 +536,19 @@ namespace Presentacion.Forms
             pnlGridWrap.Controls.Add(hostCats);
             pnlProdGrid.BringToFront();
 
+            EstiloPos.HabilitarDobleBuffer(pnlTabs);
+            EstiloPos.HabilitarDobleBuffer(pnlCats);
+
+            // Debounce del buscador: colapsa la ráfaga de teclas en una sola recarga del grid (~180 ms)
+            timerBuscar = new Timer { Interval = 180 };
+            timerBuscar.Tick += (s, e) => { timerBuscar.Stop(); CargarGridProductos(txtBuscar.Text.Trim()); };
+
             timerVentas = new Timer { Interval = 30000 };   // revisa inactividad cada 30 s
             timerVentas.Tick += TimerVentas_Tick;
             timerVentas.Start();
-            // Como form hijo, Close() no dispara OnFormClosed: parar/disponer el timer al disponerse
-            // el form, o seguiría corriendo cada 30 s sobre una pantalla oculta (fuga + efectos invisibles).
-            this.Disposed += (s, e) => { timerVentas?.Stop(); timerVentas?.Dispose(); toolTipAtajos?.Dispose(); };
+            // Como form hijo, Close() no dispara OnFormClosed: parar/disponer los timers al disponerse
+            // el form, o seguirían corriendo sobre una pantalla oculta (fuga + efectos invisibles).
+            this.Disposed += (s, e) => { timerVentas?.Stop(); timerVentas?.Dispose(); timerBuscar?.Dispose(); toolTipAtajos?.Dispose(); };
         }
 
         // Envuelve un FlowLayoutPanel en una barra con flechas ◄ ► que desplazan el contenido.
@@ -771,25 +790,22 @@ namespace Presentacion.Forms
             int cx = e.CellBounds.Left + e.CellBounds.Width / 2;
             int cy = e.CellBounds.Top + e.CellBounds.Height / 2;
             int r = 7;
-            Color color = col == "colMenos" ? EstiloPos.Ink1
-                        : col == "colMas"   ? EstiloPos.Verde
-                        :                     EstiloPos.Rojo;
-            using (var pen = new Pen(color, 2.6f))
+            Pen pen = col == "colMenos" ? PenAccionMenos
+                    : col == "colMas"   ? PenAccionMas
+                    :                     PenAccionQuitar;
+            if (col == "colMenos")
             {
-                if (col == "colMenos")
-                {
-                    e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
-                }
-                else if (col == "colMas")
-                {
-                    e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
-                    e.Graphics.DrawLine(pen, cx, cy - r, cx, cy + r);
-                }
-                else // ✕
-                {
-                    e.Graphics.DrawLine(pen, cx - r, cy - r, cx + r, cy + r);
-                    e.Graphics.DrawLine(pen, cx - r, cy + r, cx + r, cy - r);
-                }
+                e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
+            }
+            else if (col == "colMas")
+            {
+                e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
+                e.Graphics.DrawLine(pen, cx, cy - r, cx, cy + r);
+            }
+            else // ✕
+            {
+                e.Graphics.DrawLine(pen, cx - r, cy - r, cx + r, cy + r);
+                e.Graphics.DrawLine(pen, cx - r, cy + r, cx + r, cy - r);
             }
             e.Handled = true;
         }
