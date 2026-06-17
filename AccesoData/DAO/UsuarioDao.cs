@@ -1,4 +1,4 @@
-using Microsoft.Data.Sqlite;
+using System.Data.Common;
 using Entidades;
 
 namespace AccesoData.DAO
@@ -18,9 +18,9 @@ namespace AccesoData.DAO
                     FROM Usuario
                     WHERE LoginNombre = @login AND Activo = 1;";
 
-                using (var cmd = new SqliteCommand(sql, con))
+                using (var cmd = con.Comando(sql))
                 {
-                    cmd.Parameters.AddWithValue("@login", loginNombre);
+                    cmd.AddParam("@login", loginNombre);
                     using (var reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
@@ -57,12 +57,12 @@ namespace AccesoData.DAO
             }
         }
 
-        private void ActualizarPass(SqliteConnection con, int idUsuario, string nuevoHash)
+        private void ActualizarPass(DbConnection con, int idUsuario, string nuevoHash)
         {
-            using (var cmd = new SqliteCommand("UPDATE Usuario SET Pass = @pass WHERE IdUsuario = @id;", con))
+            using (var cmd = con.Comando("UPDATE Usuario SET Pass = @pass WHERE IdUsuario = @id;"))
             {
-                cmd.Parameters.AddWithValue("@pass", nuevoHash);
-                cmd.Parameters.AddWithValue("@id", idUsuario);
+                cmd.AddParam("@pass", nuevoHash);
+                cmd.AddParam("@id", idUsuario);
                 cmd.ExecuteNonQuery();
             }
         }
