@@ -124,6 +124,13 @@ namespace Presentacion.Forms
             Generar();
         }
 
+        // Atajo: F5 vuelve a generar el reporte con el rango actual
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.F5) { Generar(); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         private void Generar()
         {
             DateTime desde = dtpDesde.Value.Date, hasta = dtpHasta.Value.Date;

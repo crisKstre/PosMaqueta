@@ -206,6 +206,13 @@ namespace Presentacion.Forms
 
         private void FormDashboard_Load(object sender, EventArgs e) => CargarDatos();
 
+        // Atajo: F5 refresca el dashboard
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.F5) { CargarDatos(); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         private void CargarDatos()
         {
             CargarVentasHoy();

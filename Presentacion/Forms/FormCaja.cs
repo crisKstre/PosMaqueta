@@ -59,6 +59,13 @@ namespace Presentacion.Forms
 
         private void FormCaja_Resize(object sender, EventArgs e) { CentrarContenido(); }
 
+        // Atajo: F5 refresca el estado de la caja
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.F5) { RefrescarEstado(); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         // ── Estilos runtime ───────────────────────────────────────────
 
         private void AplicarEstilos()

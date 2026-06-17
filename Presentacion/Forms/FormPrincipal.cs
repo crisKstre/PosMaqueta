@@ -12,6 +12,7 @@ namespace Presentacion.Forms
         private Form   formHijoActual;
         private bool   cerrandoSesion = false;
         private Timer  timerReloj;
+        private ToolTip toolTipNav = new ToolTip();
 
         public FormPrincipal()
         {
@@ -54,6 +55,12 @@ namespace Presentacion.Forms
             ConfigItemSidebar(btnProductos, "📦", "Productos");
             ConfigItemSidebar(btnCaja,      "💵", "Caja");
             ConfigItemSidebar(btnReportes,  "📊", "Reportes");
+
+            toolTipNav.SetToolTip(btnDashboard, "Inicio (Ctrl+1)");
+            toolTipNav.SetToolTip(btnVentas,    "Ventas (Ctrl+2)");
+            toolTipNav.SetToolTip(btnProductos, "Productos (Ctrl+3)");
+            toolTipNav.SetToolTip(btnCaja,      "Caja (Ctrl+4)");
+            toolTipNav.SetToolTip(btnReportes,  "Reportes (Ctrl+5)");
 
             btnCerrarSesion.Text      = "🚪   Cerrar sesión";
             btnCerrarSesion.TextAlign = ContentAlignment.MiddleLeft;
@@ -146,8 +153,31 @@ namespace Presentacion.Forms
             this.Close();
         }
 
+        // Navegación global entre módulos con Ctrl+1..5 (desde cualquier pantalla).
+        // Los forms hijo procesan sus propias teclas primero; estas combinaciones no chocan.
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            Button destino = null;
+            switch (keyData)
+            {
+                case Keys.Control | Keys.D1: destino = btnDashboard; break;
+                case Keys.Control | Keys.D2: destino = btnVentas;    break;
+                case Keys.Control | Keys.D3: destino = btnProductos; break;
+                case Keys.Control | Keys.D4: destino = btnCaja;      break;
+                case Keys.Control | Keys.D5: destino = btnReportes;  break;
+            }
+            if (destino != null)
+            {
+                if (destino.Visible && destino != botonActivo)   // no reabrir el módulo actual
+                    destino.PerformClick();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         private void FormPrincipal_FormClosed(object sender, FormClosedEventArgs e)
         {
+            toolTipNav?.Dispose();
             if (!cerrandoSesion)
                 Application.Exit();
         }

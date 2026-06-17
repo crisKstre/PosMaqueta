@@ -19,6 +19,7 @@ namespace Presentacion.Forms
         private Timer timerVentas;
         private Label lblDesgloseIva;
         private Button btnDescuento;
+        private ToolTip toolTipAtajos = new ToolTip();
         private List<Venta> ventasRegistro = new List<Venta>();
         private static readonly TimeSpan InactividadMax = TimeSpan.FromMinutes(10);
 
@@ -79,7 +80,7 @@ namespace Presentacion.Forms
             // Botón para aplicar un descuento al total de la venta
             btnDescuento = new Button
             {
-                Text = "Descuento", AutoSize = false, Size = new Size(112, 28),
+                Text = "Descuento (F4)", AutoSize = false, Size = new Size(128, 28),
                 Font = EstiloPos.FontSmall, FlatStyle = FlatStyle.Flat,
                 BackColor = EstiloPos.Surface, ForeColor = EstiloPos.Ink2,
                 Cursor = Cursors.Hand, UseVisualStyleBackColor = false
@@ -91,6 +92,11 @@ namespace Presentacion.Forms
             btnDescuento.BringToFront();
 
             pnlCobro.Resize += (s, e) => AcomodarCobro();   // reajusta el ancho de los controles del cobro
+
+            // Pistas visuales de los atajos de teclado (descubribilidad)
+            lblCodigo.Text       = "CÓDIGO DE BARRAS (F3)";
+            lblBuscarNombre.Text = "BUSCAR POR NOMBRE (F2)";
+            btnCancelar.Text     = "Cancelar (Esc)";
         }
 
         private void BtnDescuento_Click(object sender, EventArgs e)
@@ -523,7 +529,7 @@ namespace Presentacion.Forms
             timerVentas.Start();
             // Como form hijo, Close() no dispara OnFormClosed: parar/disponer el timer al disponerse
             // el form, o seguiría corriendo cada 30 s sobre una pantalla oculta (fuga + efectos invisibles).
-            this.Disposed += (s, e) => { timerVentas?.Stop(); timerVentas?.Dispose(); };
+            this.Disposed += (s, e) => { timerVentas?.Stop(); timerVentas?.Dispose(); toolTipAtajos?.Dispose(); };
         }
 
         // Envuelve un FlowLayoutPanel en una barra con flechas ◄ ► que desplazan el contenido.
@@ -662,6 +668,7 @@ namespace Presentacion.Forms
                 RefrescarCarrito();
                 txtCodigo.Focus();
             };
+            toolTipAtajos.SetToolTip(btnMas, "Nueva venta (F6)");
             pnlTabs.Controls.Add(btnMas);
 
             pnlTabs.ResumeLayout();
@@ -842,9 +849,18 @@ namespace Presentacion.Forms
             txtCodigo.Focus();
         }
 
+        // Atajos de teclado del flujo de venta (interceptados antes que los controles)
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == Keys.F12) { btnCobrar_Click(this, EventArgs.Empty); return true; }
+            switch (keyData)
+            {
+                case Keys.F12:    btnCobrar_Click(this, EventArgs.Empty); return true;          // Cobrar
+                case Keys.F2:     txtBuscar.Focus(); txtBuscar.SelectAll(); return true;        // Buscar por nombre
+                case Keys.F3:     txtCodigo.Focus(); txtCodigo.SelectAll(); return true;        // Código de barras / escáner
+                case Keys.F4:     BtnDescuento_Click(this, EventArgs.Empty); return true;       // Descuento al total
+                case Keys.F6:     ventaService.NuevaVenta(); RefrescarCarrito(); txtCodigo.Focus(); return true; // Nueva venta
+                case Keys.Escape: btnCancelar_Click(this, EventArgs.Empty); return true;        // Cancelar venta (con confirmación)
+            }
             return base.ProcessCmdKey(ref msg, keyData);
         }
 

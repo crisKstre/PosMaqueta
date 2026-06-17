@@ -117,6 +117,8 @@ namespace Presentacion.Forms
             // Grids
             EstiloPos.AplicarGrid(dgvLog);
             EstiloPos.AplicarGrid(dgvProductos);
+
+            lblBuscar.Text = "BUSCAR (F2)";   // pista de atajo
         }
 
         private void AplicarBtnAccion(System.Windows.Forms.Button b, System.Drawing.Color fg)
@@ -342,6 +344,20 @@ namespace Presentacion.Forms
         }
 
         private void txtBuscar_TextChanged(object sender, EventArgs e) => CargarProductos();
+
+        // Atajos: F2 = foco buscar, F5 = recargar, Esc = limpiar el formulario (solo admin)
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.F2: txtBuscar.Focus(); txtBuscar.SelectAll(); return true;
+                case Keys.F5: CargarProductos(); return true;
+                case Keys.Escape:
+                    if (Sesion.EsAdmin) { LimpiarFormulario(); return true; }
+                    break;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
 
         // ── Crear / Actualizar ────────────────────────────────────
 
