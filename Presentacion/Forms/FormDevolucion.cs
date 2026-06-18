@@ -42,19 +42,33 @@ namespace Presentacion.Forms
             var lblTit = new Label { Text = "Indica cuánto devolver de cada producto", Font = EstiloPos.FontSubtitulo,
                 ForeColor = EstiloPos.Ink1, AutoSize = false, Size = new Size(580, 30), Location = new Point(20, 16) };
 
-            dgv = new DataGridView { Location = new Point(20, 52), Size = new Size(580, 300) };
+            dgv = new DataGridView { Location = new Point(20, 52), Size = new Size(580, 286) };
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colId", Visible = false });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colNombre", HeaderText = "Producto",   FillWeight = 46, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDisp",   HeaderText = "Disponible", FillWeight = 18, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrecio", HeaderText = "Precio",     FillWeight = 18, ReadOnly = true });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDevolver", HeaderText = "Devolver", FillWeight = 18 });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDevolver", HeaderText = "Devolver *", FillWeight = 18 });
             EstiloPos.AplicarGrid(dgv);
             dgv.ReadOnly = false;                       // se edita SOLO la columna "Devolver" (las demás son ReadOnly)
             dgv.EditMode = DataGridViewEditMode.EditOnEnter;
             dgv.CellEndEdit += (s, e) => Recalcular();
 
+            // Resalta la ÚNICA columna editable (fondo ámbar claro), para que no parezca que se
+            // puede editar toda la tabla.
+            var estiloEdit = dgv.Columns["colDevolver"].DefaultCellStyle;
+            estiloEdit.BackColor          = Color.FromArgb(255, 248, 225);
+            estiloEdit.SelectionBackColor = Color.FromArgb(255, 236, 179);
+            estiloEdit.ForeColor          = EstiloPos.Ink1;
+            estiloEdit.SelectionForeColor = EstiloPos.Ink1;
+            estiloEdit.Alignment          = DataGridViewContentAlignment.MiddleRight;
+            estiloEdit.Font               = new Font("Segoe UI", 12.5F, FontStyle.Bold);
+
+            var lblHint = new Label { Text = "* Escribe en la columna resaltada «Devolver» cuánto devolver de cada producto (0 = ninguno).",
+                Font = EstiloPos.FontSmall, ForeColor = EstiloPos.Ink3, AutoSize = false,
+                Size = new Size(580, 20), Location = new Point(20, 344) };
+
             lblTotal = new Label { Text = "A reembolsar: $0", Font = new Font("Segoe UI", 15F, FontStyle.Bold),
-                ForeColor = EstiloPos.Ink1, AutoSize = false, Size = new Size(560, 30), Location = new Point(20, 366) };
+                ForeColor = EstiloPos.Ink1, AutoSize = false, Size = new Size(560, 30), Location = new Point(20, 372) };
 
             btnConfirmar = new Button { Text = "Confirmar devolución", Size = new Size(200, 46), Location = new Point(296, 408) };
             EstiloPos.AplicarBotonPrimario(btnConfirmar);
@@ -63,7 +77,7 @@ namespace Presentacion.Forms
             btnConfirmar.Click += (s, e) => Confirmar();
             btnCancelar.Click  += (s, e) => { DialogResult = DialogResult.Cancel; Close(); };
 
-            this.Controls.AddRange(new Control[] { lblTit, dgv, lblTotal, btnConfirmar, btnCancelar });
+            this.Controls.AddRange(new Control[] { lblTit, dgv, lblHint, lblTotal, btnConfirmar, btnCancelar });
             this.CancelButton = btnCancelar;
         }
 

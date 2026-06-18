@@ -69,15 +69,17 @@ namespace Presentacion.Forms
             toolTipNav.SetToolTip(btnUsuarios,  "Usuarios (Ctrl+6)");
             toolTipNav.SetToolTip(btnRespaldos, "Respaldos (Ctrl+7)");
 
-            btnCambiarPass.Text      = "🔑   Cambiar contraseña";
-            btnCambiarPass.TextAlign = ContentAlignment.MiddleLeft;
-            btnCambiarPass.Padding   = new Padding(16, 0, 0, 0);
+            // Acciones del pie: CENTRADAS (a diferencia de los ítems de navegación, que van a la
+            // izquierda). "Cambiar contraseña" es largo, así centrado queda prolijo y no se corta.
+            btnCambiarPass.Text      = "🔑  Cambiar contraseña";
+            btnCambiarPass.TextAlign = ContentAlignment.MiddleCenter;
+            btnCambiarPass.Padding   = new Padding(0);
             btnCambiarPass.Font      = EstiloPos.FontSidebar;
             btnCambiarPass.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 52, 64);
 
-            btnCerrarSesion.Text      = "🚪   Cerrar sesión";
-            btnCerrarSesion.TextAlign = ContentAlignment.MiddleLeft;
-            btnCerrarSesion.Padding   = new Padding(16, 0, 0, 0);
+            btnCerrarSesion.Text      = "🚪  Cerrar sesión";
+            btnCerrarSesion.TextAlign = ContentAlignment.MiddleCenter;
+            btnCerrarSesion.Padding   = new Padding(0);
             btnCerrarSesion.Font      = EstiloPos.FontSidebar;
             btnCerrarSesion.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 52, 64);
         }
