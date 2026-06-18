@@ -224,7 +224,7 @@ namespace Presentacion.Forms
                 }
                 LimpiarFormulario();
             }
-            catch (Exception ex) { MostrarError(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         private void btnEstado_Click(object sender, EventArgs e)

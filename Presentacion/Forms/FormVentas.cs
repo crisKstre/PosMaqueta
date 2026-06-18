@@ -444,7 +444,7 @@ namespace Presentacion.Forms
                 RefrescarCarrito();
                 txtCantidad.Text = "1";
             }
-            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         // ── Scanner / Código de barras ─────────────────────────────────
@@ -470,7 +470,7 @@ namespace Presentacion.Forms
                 ventaService.AgregarPorCodigo(codigo, cant);
                 RefrescarCarrito();
             }
-            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
             txtCodigo.Clear();
             txtCantidad.Text = "1";
             txtCodigo.Focus();
@@ -505,7 +505,7 @@ namespace Presentacion.Forms
                 txtCantidad.Text = "1";
                 txtCodigo.Focus();
             }
-            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         // ── Pestañas de ventas (varias ventas en paralelo) ─────────────
@@ -767,7 +767,7 @@ namespace Presentacion.Forms
                 else return;
                 RefrescarCarrito();
             }
-            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         private void DgvCarrito_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
@@ -863,7 +863,7 @@ namespace Presentacion.Forms
                 CargarGridProductos();
                 txtCodigo.Focus();
             }
-            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         private void btnCancelar_Click(object sender, EventArgs e)

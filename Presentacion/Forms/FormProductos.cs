@@ -457,7 +457,7 @@ namespace Presentacion.Forms
                         "Producto actualizado");
                 }
             }
-            catch (Exception ex) { MostrarError(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         // ── Editar (doble clic) ───────────────────────────────────
@@ -505,7 +505,7 @@ namespace Presentacion.Forms
                     (esAgregar ? "Se agregó stock a" : "Se descontó stock de") + " \"" + nombre + "\".\nStock actual: " + nuevo.ToString("0.##"),
                     "Inventario actualizado");
             }
-            catch (Exception ex) { MostrarError(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         // ── Activar / Desactivar ──────────────────────────────────

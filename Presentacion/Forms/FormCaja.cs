@@ -306,7 +306,7 @@ namespace Presentacion.Forms
                 txtMontoInicial.Clear();
                 RefrescarEstado();
             }
-            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         // ── Cerrar caja con arqueo ────────────────────────────────────
@@ -344,7 +344,7 @@ namespace Presentacion.Forms
                 txtMontoReal.Clear();
                 RefrescarEstado();
             }
-            catch (Exception ex) { MostrarMensaje(Errores.Usuario(ex)); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
         }
 
         private void MostrarArqueo(decimal diferencia)
