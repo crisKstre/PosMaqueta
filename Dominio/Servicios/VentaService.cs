@@ -261,11 +261,21 @@ namespace Dominio.Servicios
             NotificadorCambios.Notificar(Entidad.Producto);
         }
 
+        // Conveniencia: pago con un solo medio por el total.
         public int CobrarVenta(int idUsuario, string medioPago, int? idCaja = null)
+        {
+            return CobrarVenta(idUsuario,
+                new List<PagoVenta> { new PagoVenta { MedioPago = medioPago, Monto = Total } }, idCaja);
+        }
+
+        // Pago mixto (4.C): 'pagos' reparte el total entre uno o varios medios.
+        public int CobrarVenta(int idUsuario, List<PagoVenta> pagos, int? idCaja = null)
         {
             var actual = Activa;
             if (actual.Detalles.Count == 0)
                 throw new NegocioException("El carrito está vacío.");
+
+            ValidarPagos(pagos, actual.Total);
 
             // Re-validar stock contra la BD actual en UNA sola consulta: el carrito pudo quedar obsoleto
             // (venta en pausa, otro cajero/módulo movió el stock). DescontarStock es la última defensa atómica.
@@ -296,7 +306,8 @@ namespace Dominio.Servicios
                 Fecha = DateTime.Now,
                 Total = actual.Total,
                 Descuento = actual.Descuento,
-                MedioPago = medioPago,
+                MedioPago = pagos.Count == 1 ? pagos[0].MedioPago : MedioPago.Mixto,
+                Pagos = pagos,
                 Detalles = new List<DetalleVenta>(actual.Detalles)
             };
 
@@ -304,12 +315,12 @@ namespace Dominio.Servicios
             string itemsLog = string.Join(", ", actual.Detalles.Select(d =>
                 d.NombreProducto + " x" + d.Cantidad.ToString("0.##") +
                 (d.TieneDescuento ? " (-" + d.DescuentoPorcentaje.ToString("0.##") + "%)" : "")));
-            Log.Info("VENTA N°" + idVenta + " | " + medioPago + " | Total $" + venta.Total.ToString("N0") +
+            Log.Info("VENTA N°" + idVenta + " | " + venta.MedioPago + " | Total $" + venta.Total.ToString("N0") +
                      " | Neto $" + Impuestos.Neto(venta.Total).ToString("N0") +
                      " | IVA $" + Impuestos.Iva(venta.Total).ToString("N0") +
                      (venta.Descuento > 0 ? " | Desc $" + venta.Descuento.ToString("N0") : "") +
                      " | usuario " + idUsuario + " | " + actual.Detalles.Count + " items: [" + itemsLog + "]");
-            string detalleLog = "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + medioPago;
+            string detalleLog = "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + venta.MedioPago;
             if (venta.Descuento > 0) detalleLog += " | desc. $" + venta.Descuento.ToString("N0");
             logService.Registrar(ModuloLog.Ventas, "Venta", detalleLog);
 
@@ -317,6 +328,28 @@ namespace Dominio.Servicios
             NotificadorCambios.Notificar(Entidad.Venta);
             NotificadorCambios.Notificar(Entidad.Producto);
             return idVenta;
+        }
+
+        private static void ValidarPagos(List<PagoVenta> pagos, decimal total)
+        {
+            if (pagos == null || pagos.Count == 0)
+                throw new NegocioException("Debe indicar el medio de pago.");
+            foreach (var p in pagos)
+            {
+                if (p.Monto < 0)
+                    throw new NegocioException("Un pago no puede ser negativo.");
+                if (p.MedioPago != MedioPago.Efectivo && p.MedioPago != MedioPago.Tarjeta &&
+                    p.MedioPago != MedioPago.Transferencia)
+                    throw new NegocioException("Medio de pago inválido: " + p.MedioPago + ".");
+            }
+            // Con algo que pagar, cada línea debe ser > 0 (sin pagos en cero); una venta de $0
+            // (totalmente descontada) admite el pago en cero.
+            if (total > 0 && pagos.Any(p => p.Monto <= 0))
+                throw new NegocioException("Cada pago debe ser mayor a cero.");
+            decimal suma = Dinero.Redondear(pagos.Sum(p => p.Monto));
+            if (suma != total)
+                throw new NegocioException("Los pagos ($" + suma.ToString("N0") +
+                    ") no cuadran con el total ($" + total.ToString("N0") + ").");
         }
     }
 }

@@ -81,32 +81,33 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = @"
-                    SELECT
-                        COUNT(*),
-                        COALESCE(SUM(Total), 0),
-                        COALESCE(SUM(CASE WHEN MedioPago = @efectivo      THEN Total ELSE 0 END), 0),
-                        COALESCE(SUM(CASE WHEN MedioPago = @tarjeta       THEN Total ELSE 0 END), 0),
-                        COALESCE(SUM(CASE WHEN MedioPago = @transferencia THEN Total ELSE 0 END), 0)
-                    FROM Venta
-                    WHERE IdCaja = @idCaja AND Anulada = 0;";
-                using (var cmd = con.Comando(sql))
+                using (var cmd = con.Comando(
+                    "SELECT COUNT(*), COALESCE(SUM(Total), 0) FROM Venta WHERE IdCaja = @idCaja AND Anulada = 0;"))
                 {
                     cmd.AddParam("@idCaja", idCaja);
-                    cmd.AddParam("@efectivo", MedioPago.Efectivo);
-                    cmd.AddParam("@tarjeta", MedioPago.Tarjeta);
-                    cmd.AddParam("@transferencia", MedioPago.Transferencia);
                     using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
+                        if (reader.Read()) { r.CantidadVentas = reader.GetInt32(0); r.TotalVendido = reader.GetDecimal(1); }
+                }
+
+                // Desglose por medio de pago desde PagoVenta (soporta pago mixto en el arqueo).
+                using (var cmd = con.Comando(@"
+                    SELECT pv.MedioPago, COALESCE(SUM(pv.Monto), 0)
+                    FROM PagoVenta pv JOIN Venta v ON pv.IdVenta = v.IdVenta
+                    WHERE v.IdCaja = @idCaja AND v.Anulada = 0
+                    GROUP BY pv.MedioPago;"))
+                {
+                    cmd.AddParam("@idCaja", idCaja);
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
                         {
-                            r.CantidadVentas = reader.GetInt32(0);
-                            r.TotalVendido = reader.GetDecimal(1);
-                            r.TotalEfectivo = reader.GetDecimal(2);
-                            r.TotalTarjeta = reader.GetDecimal(3);
-                            r.TotalTransferencia = reader.GetDecimal(4);
+                            decimal monto = reader.GetDecimal(1);
+                            switch (reader.GetString(0))
+                            {
+                                case MedioPago.Efectivo:      r.TotalEfectivo      = monto; break;
+                                case MedioPago.Tarjeta:       r.TotalTarjeta       = monto; break;
+                                case MedioPago.Transferencia: r.TotalTransferencia = monto; break;
+                            }
                         }
-                    }
                 }
             }
             return r;

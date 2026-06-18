@@ -153,11 +153,14 @@ IVA**: el sistema separa cuánto es neto y cuánto es impuesto, de forma que sie
 
 ### Cobrar
 
-1. Elige el **medio de pago**: *Efectivo*, *Tarjeta* o *Transferencia*.
+1. Elige el **medio de pago**: *Efectivo*, *Tarjeta*, *Transferencia* o **Pago mixto**.
 2. Presiona **Cobrar** (atajo **F12**).
 3. Si es **Efectivo**, se abre un diálogo donde ingresas **con cuánto paga** el cliente y el
    sistema calcula el **vuelto** (con montos rápidos).
-4. Aparece el comprobante interno con el N° de venta, total, neto/IVA y el vuelto.
+4. Si es **Pago mixto**, repartes el total entre **tarjeta**, **transferencia** y **efectivo** (el
+   efectivo es el resto; si el cliente paga ese resto con más efectivo, se calcula el vuelto). Solo
+   la parte en **efectivo** cuenta para el cajón en el arqueo.
+5. Aparece el comprobante interno con el N° de venta, total, neto/IVA y el vuelto.
 
 Al cobrar, se **descuenta el stock** y se registra la venta en una sola operación. Antes de
 registrar, el sistema **re-valida el stock**: si otro cajero o ajuste lo dejó sin existencias,

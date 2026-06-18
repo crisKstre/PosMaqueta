@@ -27,6 +27,9 @@ namespace AccesoData.DAO
                             DescontarStock(con, tran, d.IdProducto, d.Cantidad);
                         }
 
+                        foreach (var pago in venta.Pagos)
+                            InsertarPago(con, tran, idVenta, pago);
+
                         tran.Commit();
                         return idVenta;
                     }
@@ -77,6 +80,18 @@ namespace AccesoData.DAO
             }
         }
 
+        private void InsertarPago(DbConnection con, DbTransaction tran, int idVenta, PagoVenta pago)
+        {
+            using (var cmd = con.Comando(
+                "INSERT INTO PagoVenta (IdVenta, MedioPago, Monto) VALUES (@idVenta, @medio, @monto);", tran))
+            {
+                cmd.AddParam("@idVenta", idVenta);
+                cmd.AddParam("@medio", pago.MedioPago);
+                cmd.AddParam("@monto", pago.Monto);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         private void DescontarStock(DbConnection con, DbTransaction tran, int idProducto, decimal cantidad)
         {
             // Descuento ATÓMICO: solo si hay stock suficiente. Si no afecta exactamente 1 fila,
@@ -98,34 +113,38 @@ namespace AccesoData.DAO
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = @"
-                    SELECT
-                        COUNT(*),
-                        COALESCE(SUM(Total), 0),
-                        COALESCE(SUM(CASE WHEN MedioPago = @efectivo      THEN Total ELSE 0 END), 0),
-                        COALESCE(SUM(CASE WHEN MedioPago = @tarjeta       THEN Total ELSE 0 END), 0),
-                        COALESCE(SUM(CASE WHEN MedioPago = @transferencia THEN Total ELSE 0 END), 0)
-                    FROM Venta
-                    WHERE Fecha BETWEEN @desde AND @hasta AND Anulada = 0;";
+                string d = desde.ToString("yyyy-MM-dd 00:00:00");
+                string h = hasta.ToString("yyyy-MM-dd 23:59:59");
 
-                using (var cmd = con.Comando(sql))
+                using (var cmd = con.Comando(
+                    "SELECT COUNT(*), COALESCE(SUM(Total), 0) FROM Venta WHERE Fecha BETWEEN @desde AND @hasta AND Anulada = 0;"))
                 {
-                    cmd.AddParam("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
-                    cmd.AddParam("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
-                    cmd.AddParam("@efectivo", MedioPago.Efectivo);
-                    cmd.AddParam("@tarjeta", MedioPago.Tarjeta);
-                    cmd.AddParam("@transferencia", MedioPago.Transferencia);
+                    cmd.AddParam("@desde", d);
+                    cmd.AddParam("@hasta", h);
                     using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
+                        if (reader.Read()) { r.CantidadVentas = reader.GetInt32(0); r.TotalVendido = reader.GetDecimal(1); }
+                }
+
+                // Desglose por medio de pago desde PagoVenta (soporta pago mixto).
+                using (var cmd = con.Comando(@"
+                    SELECT pv.MedioPago, COALESCE(SUM(pv.Monto), 0)
+                    FROM PagoVenta pv JOIN Venta v ON pv.IdVenta = v.IdVenta
+                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0
+                    GROUP BY pv.MedioPago;"))
+                {
+                    cmd.AddParam("@desde", d);
+                    cmd.AddParam("@hasta", h);
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
                         {
-                            r.CantidadVentas     = reader.GetInt32(0);
-                            r.TotalVendido       = reader.GetDecimal(1);
-                            r.TotalEfectivo      = reader.GetDecimal(2);
-                            r.TotalTarjeta       = reader.GetDecimal(3);
-                            r.TotalTransferencia = reader.GetDecimal(4);
+                            decimal monto = reader.GetDecimal(1);
+                            switch (reader.GetString(0))
+                            {
+                                case MedioPago.Efectivo:      r.TotalEfectivo      = monto; break;
+                                case MedioPago.Tarjeta:       r.TotalTarjeta       = monto; break;
+                                case MedioPago.Transferencia: r.TotalTransferencia = monto; break;
+                            }
                         }
-                    }
                 }
             }
             return r;

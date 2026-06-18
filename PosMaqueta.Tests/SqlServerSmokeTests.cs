@@ -44,13 +44,15 @@ namespace PosMaqueta.Tests
                 using (var cmd = con.CreateCommand())
                 {
                     cmd.CommandText = @"
+                        DROP TABLE IF EXISTS PagoVenta;
                         DROP TABLE IF EXISTS DetalleVenta;
                         DROP TABLE IF EXISTS Venta;
                         DROP TABLE IF EXISTS Caja;
                         DROP TABLE IF EXISTS LogMovimiento;
                         DROP TABLE IF EXISTS Producto;
                         DROP TABLE IF EXISTS Categoria;
-                        DROP TABLE IF EXISTS Usuario;";
+                        DROP TABLE IF EXISTS Usuario;
+                        DROP TABLE IF EXISTS SchemaVersion;";
                     cmd.ExecuteNonQuery();
                 }
             }

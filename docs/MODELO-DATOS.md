@@ -222,6 +222,11 @@ arrancar, si la BD trae una versión **mayor** que la del binario (otra caja se 
 app **se niega a arrancar** con un mensaje claro, en vez de operar contra un esquema desconocido.
 La versión actual es `DatabaseInitializer.ESQUEMA_VERSION`.
 
+**v2 (pago mixto):** tabla **`PagoVenta(IdVenta, MedioPago, Monto)`** — una venta puede tener varios
+pagos (efectivo + tarjeta, etc.). El **arqueo** y los **reportes** desglosan efectivo/tarjeta/
+transferencia desde `PagoVenta` (no desde `Venta.MedioPago`, que pasa a ser un resumen: el medio
+único, o `"Mixto"`). Solo la parte en efectivo cuenta para el cajón.
+
 ## Modo WAL
 
 Al inicializar se fija una vez `PRAGMA journal_mode=WAL` (persistente en el archivo) y

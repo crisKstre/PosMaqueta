@@ -38,7 +38,7 @@ namespace Presentacion.Forms
             AcomodarCobro();
 
             comboMedioPago.Items.AddRange(new object[] {
-                MedioPago.Efectivo, MedioPago.Tarjeta, MedioPago.Transferencia });
+                MedioPago.Efectivo, MedioPago.Tarjeta, MedioPago.Transferencia, MedioPago.Mixto });
             comboMedioPago.SelectedIndex = 0;
             dtpDesdeV.Value = DateTime.Today;
             dtpHastaV.Value = DateTime.Today;
@@ -818,24 +818,42 @@ namespace Presentacion.Forms
             string  medioPago = comboMedioPago.SelectedItem.ToString();
             decimal total     = ventaService.Total;
 
-            // En efectivo: pedir con cuánto paga y calcular el vuelto antes de registrar
+            // Arma los pagos según el medio: mixto (varios medios), efectivo (con vuelto) o uno solo.
+            var pagos = new List<PagoVenta>();
             decimal vuelto = 0;
-            if (medioPago == MedioPago.Efectivo)
+            if (medioPago == MedioPago.Mixto)
+            {
+                using (var dlg = new FormCobroMixto(total))
+                {
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                    pagos  = dlg.Pagos;
+                    vuelto = dlg.Vuelto;
+                }
+            }
+            else if (medioPago == MedioPago.Efectivo)
             {
                 using (var dlg = new FormCobroEfectivo(total))
                 {
                     if (dlg.ShowDialog(this) != DialogResult.OK) return;
                     vuelto = dlg.Vuelto;
                 }
+                pagos.Add(new PagoVenta { MedioPago = MedioPago.Efectivo, Monto = total });
+            }
+            else
+            {
+                pagos.Add(new PagoVenta { MedioPago = medioPago, Monto = total });
             }
 
             try
             {
-                int idVenta = ventaService.CobrarVenta(Sesion.UsuarioActual.IdUsuario, medioPago);
+                int idVenta = ventaService.CobrarVenta(Sesion.UsuarioActual.IdUsuario, pagos);
+                string detalleMedio = pagos.Count > 1
+                    ? string.Join(" + ", pagos.Select(p => p.MedioPago + " $" + p.Monto.ToString("N0")))
+                    : pagos[0].MedioPago;
                 string msg = "Venta N° " + idVenta + "  ·  $" + total.ToString("N0") + "\n" +
                     "Neto $" + Impuestos.Neto(total).ToString("N0") + "   ·   IVA $" + Impuestos.Iva(total).ToString("N0") + "\n" +
-                    "Medio de pago: " + medioPago;
-                if (medioPago == MedioPago.Efectivo && vuelto > 0)
+                    "Medio de pago: " + detalleMedio;
+                if (vuelto > 0)
                 {
                     msg += "\nVuelto: $" + vuelto.ToString("N0");
                     AccesoData.Log.Info("Vuelto entregado $" + vuelto.ToString("N0") + " (venta N°" + idVenta + ")");

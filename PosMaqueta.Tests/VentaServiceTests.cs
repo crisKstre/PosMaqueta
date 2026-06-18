@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dominio;
 using Dominio.Servicios;
 using Entidades;
@@ -96,6 +97,38 @@ namespace PosMaqueta.Tests
             var v = Assert.Single(ventas.ObtenerVentas(DateTime.Today, DateTime.Today), x => x.IdVenta == idVenta);
             Assert.Equal(1047m, v.Total);
             Assert.Equal(v.Total, decimal.Truncate(v.Total));   // sin fracción de peso
+        }
+
+        // 4.C — pago mixto: el total se reparte entre medios; el arqueo solo cuenta la parte en efectivo.
+        [Fact]
+        public void CobrarVenta_pago_mixto_registra_y_desglosa_en_el_arqueo()
+        {
+            int idCaja = AbrirCaja(0m);
+            int id = CrearProducto(productos, "Cola", 1000m, 10m);
+            ventas.AgregarPorId(id, 1m);     // total 1000
+            var pagos = new List<PagoVenta>
+            {
+                new PagoVenta { MedioPago = MedioPago.Efectivo, Monto = 600m },
+                new PagoVenta { MedioPago = MedioPago.Tarjeta,  Monto = 400m },
+            };
+            int idVenta = ventas.CobrarVenta(1, pagos);
+
+            var v = Assert.Single(ventas.ObtenerVentas(DateTime.Today, DateTime.Today), x => x.IdVenta == idVenta);
+            Assert.Equal(MedioPago.Mixto, v.MedioPago);
+
+            var resumen = new CajaService().ObtenerResumen(idCaja);
+            Assert.Equal(600m, resumen.TotalEfectivo);   // solo el efectivo va al cajón
+            Assert.Equal(400m, resumen.TotalTarjeta);
+        }
+
+        [Fact]
+        public void CobrarVenta_pagos_que_no_cuadran_con_el_total_lanza()
+        {
+            AbrirCaja();
+            int id = CrearProducto(productos, "Cola", 1000m, 10m);
+            ventas.AgregarPorId(id, 1m);     // total 1000
+            var pagos = new List<PagoVenta> { new PagoVenta { MedioPago = MedioPago.Efectivo, Monto = 800m } };
+            Assert.Throws<NegocioException>(() => ventas.CobrarVenta(1, pagos));   // faltan $200
         }
 
         [Fact]
