@@ -32,7 +32,9 @@ Principios:
 - Control de acceso por rol y diálogos de aviso unificados (éxito / error / confirmación).
 - Auditoría: registro de movimientos (altas, bajas, ventas, anulaciones…).
 - **Atajos de teclado** y navegación rápida (Ctrl + 1…5 entre módulos).
-- **137 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
+- **Telemetría de fallos (opcional)**: los errores técnicos (ERROR/FATAL) se envían a una **sede**
+  central para monitoreo remoto, en segundo plano y tolerante a cortes de red (opt-in por config).
+- **149 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
 
 ### 🏠 Inicio (Dashboard)
 - Métricas del día: ventas, total vendido, productos bajo stock y estado de la caja.

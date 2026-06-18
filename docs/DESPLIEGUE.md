@@ -90,6 +90,34 @@ BACKUP DATABASE PosMaqueta TO DISK = 'D:\Backups\PosMaqueta.bak' WITH INIT, COMP
 
 ---
 
+## C. Telemetría de fallos a la sede (opcional, cualquier modo)
+
+Para **monitorear remotamente** los fallos técnicos (errores ERROR/FATAL) de todas las cajas desde
+una **sede** central, sin tocar la operación. Es **independiente** del modo (SQLite o SQL Server):
+la caja sigue vendiendo aunque la sede esté caída; los fallos se acumulan local y se reenvían solos.
+
+> La sede solo recibe **telemetría de fallos** (tabla `PosCentral.LogFallo`), nunca datos
+> operativos. Usa un login de **bajo privilegio** (`pos_log`, solo INSERT). Es un servidor
+> **distinto** del de la tienda.
+
+En el `App.config` de cada caja (vacío = desactivado):
+
+```xml
+<add key="TiendaId" value="BotilleriaEOS" />   <!-- identifica la tienda -->
+<add key="CajaId" value="caja-01" />           <!-- vacío = nombre del equipo -->
+<add key="LogCentralConexion"
+     value="Server=100.93.168.1,1433;Database=PosCentral;User ID=pos_log;Password=...;TrustServerCertificate=true;Connect Timeout=5" />
+<add key="LogCentralNivelMinimo" value="ERROR" />   <!-- ERROR (def) o WARN -->
+```
+
+- El envío es **en segundo plano** (no traba la caja) y **nunca lanza**. Si la sede no responde,
+  los fallos quedan en `Logs/outbox-fallos.jsonl` y se reintentan (también tras reiniciar la app).
+- La conexión a la sede suele ir por **Tailscale** (IP `100.93.168.x`), sin exponer el puerto 1433
+  a internet. Si la caja no tiene red a la sede, simplemente no envía (se acumula y reintenta).
+- La clave de `pos_log` va en el `App.config` de cada instalación; **no** se commitea al repo.
+
+---
+
 ## Requisitos
 
 - **Todas:** Windows 10/11, .NET Framework 4.7.2, permiso de escritura en la carpeta del ejecutable

@@ -45,6 +45,10 @@ namespace AccesoData
                         catch (IOException) when (intento < 3) { System.Threading.Thread.Sleep(15); }
                     }
                 }
+
+                // Telemetría a la sede: solo encola (la red va en segundo plano) y nunca lanza.
+                // LogRemoto filtra por nivel (ERROR/FATAL por defecto) y queda inactivo si no se configuró.
+                try { LogRemoto.Encolar(nivel.Trim(), mensaje, ex); } catch { }
             }
             catch
             {

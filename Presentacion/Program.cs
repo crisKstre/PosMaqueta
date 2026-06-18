@@ -16,6 +16,7 @@ namespace Presentacion
             Log.Info("════════ Sistema POS iniciado ════════");
             Log.LimpiarAntiguos(30);
             ConfigurarBaseDatos();
+            ConfigurarLogRemoto();
 
             // Captura global: cualquier error no manejado queda registrado
             Application.ThreadException += (s, e) =>
@@ -45,8 +46,15 @@ namespace Presentacion
                 return;
             }
 
-            Application.Run(new FormLogin());
-            Log.Info("════════ Sistema POS cerrado ════════");
+            try
+            {
+                Application.Run(new FormLogin());
+            }
+            finally
+            {
+                AccesoData.LogRemoto.Flush();   // persiste pendientes; no espera a la red
+                Log.Info("════════ Sistema POS cerrado ════════");
+            }
         }
 
         // Lee el motor de BD y la cadena de conexión desde App.config (appSettings).
@@ -66,6 +74,24 @@ namespace Presentacion
                 ConfigBD.CarpetaRespaldoExterno = carpeta.Trim();
 
             Log.Info("Motor de BD: " + ConfigBD.Proveedor);
+        }
+
+        // Inicializa la telemetría de fallos a la sede. Opt-in: si no hay LogCentralConexion en
+        // App.config, queda desactivado y la app no cambia en nada (instalación de 1 caja sin monitoreo).
+        private static void ConfigurarLogRemoto()
+        {
+            try
+            {
+                var tienda  = System.Configuration.ConfigurationManager.AppSettings["TiendaId"] ?? "";
+                var caja    = System.Configuration.ConfigurationManager.AppSettings["CajaId"] ?? "";
+                var cadLog  = System.Configuration.ConfigurationManager.AppSettings["LogCentralConexion"] ?? "";
+                var nivel   = System.Configuration.ConfigurationManager.AppSettings["LogCentralNivelMinimo"] ?? "ERROR";
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
+                AccesoData.LogRemoto.Configurar(tienda, caja, cadLog, version, nivel);
+                if (!string.IsNullOrWhiteSpace(cadLog))
+                    Log.Info("Telemetría de fallos a la sede: ACTIVA");
+            }
+            catch (Exception ex) { Log.Error("No se pudo inicializar la telemetría de fallos", ex); }
         }
     }
 }

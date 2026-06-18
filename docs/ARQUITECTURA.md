@@ -30,7 +30,7 @@ Sistema POS de escritorio para minimarket. Documento para desarrolladores y mant
 | **Lenguaje / runtime** | C# · .NET Framework **4.7.2** |
 | **UI** | Windows Forms (WinForms) |
 | **Base de datos** | **SQLite** (local, una caja) o **SQL Server** (central, varias cajas), elegible por configuración |
-| **Pruebas** | xUnit (143 casos: unitarios + integración) |
+| **Pruebas** | xUnit (149 casos: unitarios + integración) |
 | **Uso** | Interno (empleados + administrador). No de cara al cliente. |
 | **Mercado** | Chile (CLP, IVA 19 % incluido en precios) |
 
@@ -233,6 +233,23 @@ Hay **dos** registros complementarios:
 `Program.cs` captura además las excepciones **globales** (`Application.ThreadException` y
 `AppDomain.UnhandledException`) y las registra como ERROR/FATAL.
 
+### Telemetría central de fallos (opt-in)
+
+Cuando se configura `LogCentralConexion` en `App.config`, los fallos **ERROR/FATAL** se envían
+*además* a la **sede** (tabla `PosCentral.LogFallo`) para monitoreo remoto, vía `AccesoData/LogRemoto`:
+
+- **No bloquea ni lanza:** `Log.Escribir` solo **encola**; un worker de fondo (cada 20 s) hace el
+  `INSERT`. La caja nunca espera por la red.
+- **Tolerante a offline:** los eventos se persisten en `Logs/outbox-fallos.jsonl` y se reintentan;
+  sobreviven a reinicios. Tope de 5000 (descarta los más viejos, dejando aviso en el log local).
+- **Independiente de la operación:** usa su propia conexión y un login de **bajo privilegio**
+  (`pos_log`, solo INSERT). El servidor de la **sede** (telemetría) es **distinto** del servidor de
+  la **tienda** (`ConfigBD.CadenaConexion`, ventas/stock); **la venta no depende de la sede**.
+- **Opt-in:** sin `LogCentralConexion`, queda inactivo (instalación de 1 caja sin monitoreo).
+
+> Es el log **técnico** (`Log.cs`) el que se replica a la sede, no la auditoría de negocio
+> (`LogMovimiento`). Ver [DESPLIEGUE.md](DESPLIEGUE.md) para activarlo.
+
 ---
 
 ## 10. Notificación de cambios (Observer)
@@ -288,7 +305,7 @@ Optimizaciones aplicadas (sin cambios visuales):
 
 ## 13. Pruebas
 
-Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **143 casos**, agregado a la solución.
+Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **149 casos**, agregado a la solución.
 
 - **Unitarios** de lógica pura: `Impuestos` (IVA, invariante neto+iva==total, redondeo) y
   `Seguridad` (PBKDF2, sal única, compatibilidad legacy SHA256, hashes malformados, migración).
@@ -302,6 +319,9 @@ Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **143 casos**, agregado a la
   **restauración** que revierte los cambios posteriores (contra una BD temporal aislada por test).
 - **Importación CSV** (`ImportacionService`): alta y actualización por código de barras, detección
   del separador (coma/`;`), reporte de filas inválidas y creación de categorías nuevas.
+- **Telemetría de fallos** (`LogRemoto`): filtro por nivel, persistencia y recarga de la bandeja,
+  tope con descarte de los más viejos y tolerancia a líneas corruptas (el envío real a la sede se
+  valida aparte, requiere la sede accesible).
 - **Humo de SQL Server** (9 casos, `SkippableFact`) contra **LocalDB**: verifican el dialecto T-SQL
   real (DDL, IDENTITY, TOP, IN, transacciones). Se omiten si no hay LocalDB instalado.
 
@@ -349,14 +369,15 @@ PosMaqueta/
 ├── AccesoData/
 │   ├── DAO/                # ProductoDao, VentaDao, CajaDao, UsuarioDao, LogDao, CategoriaDao
 │   ├── ConexionBD.cs       # base de los DAOs (SQLite o SQL Server)
-│   ├── ConfigBD.cs         # proveedor + cadena de conexión
+│   ├── ConfigBD.cs         # proveedor + cadena de conexión + carpeta de respaldo externa
 │   ├── ProveedorBD.cs      # enum del motor · Persistencia.cs (helpers + Dialecto)
 │   ├── DatabaseInitializer.cs  # crea tablas, migra esquema, índices, WAL, seed
-│   ├── RespaldoBD.cs       # respaldo diario con rotación
+│   ├── RespaldoBD.cs       # respaldo diario/manual + restauración + copia externa
 │   ├── Seguridad.cs        # PBKDF2
-│   └── Log.cs              # log técnico a archivo
+│   ├── Log.cs              # log técnico a archivo
+│   └── LogRemoto.cs        # telemetría de fallos a la sede (opt-in)
 ├── Dominio/
-│   ├── Servicios/          # VentaService, ProductoService, CajaService, CategoriaService, LogService
+│   ├── Servicios/          # Venta, Producto, Caja, Categoria, Usuario, Log, Respaldo, Importacion
 │   ├── Eventos/            # NotificadorCambios (Observer)
 │   └── NegocioException.cs
 ├── Presentacion/
@@ -364,7 +385,7 @@ PosMaqueta/
 │   ├── UI/                 # Aviso (+ FormMensaje/FormPrompt), Errores
 │   ├── EstiloPos.cs        # estilo centralizado
 │   └── Program.cs          # entrypoint + handlers globales
-├── PosMaqueta.Tests/       # xUnit (143 casos)
+├── PosMaqueta.Tests/       # xUnit (149 casos)
 ├── docs/                   # esta documentación
 └── PosMaqueta.sln
 ```
