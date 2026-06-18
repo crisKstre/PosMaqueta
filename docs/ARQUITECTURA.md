@@ -276,6 +276,9 @@ Esto evita fugas de memoria y trabajo sobre formularios ya cerrados.
 - **No se vende sin caja abierta:** `VentaService.CobrarVenta` exige una caja abierta (si no,
   lanza `NegocioException`), para que ninguna venta quede fuera del arqueo. Abrir y cerrar caja lo
   puede hacer cualquier usuario; un **faltante** al cerrar exige autorización de un administrador.
+- **Dinero en pesos enteros:** cada subtotal y total se redondea al peso (`Dinero.Redondear`,
+  *AwayFromZero*), también vendiendo por **kilo** (cantidades fraccionarias), para que nada quede
+  con fracciones de peso y el arqueo/reportes cuadren.
 - **IVA chileno (19 %):** los precios **incluyen** IVA. `Impuestos.Neto(total) = round(total/1.19)`
   e `Iva = total − Neto` (así el desglose siempre cuadra). Redondeo al peso, *AwayFromZero*.
 - **Descuentos (dos niveles que se combinan):**

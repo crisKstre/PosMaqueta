@@ -161,7 +161,7 @@ namespace Dominio.Servicios
             if (existente != null)
             {
                 existente.Cantidad += cantidad;
-                existente.Subtotal = existente.Cantidad * existente.PrecioUnitario;
+                existente.Subtotal = Dinero.Redondear(existente.Cantidad * existente.PrecioUnitario);
             }
             else
             {
@@ -175,7 +175,7 @@ namespace Dominio.Servicios
                     PrecioUnitario = precioEfectivo,
                     PrecioOriginal = producto.Precio,
                     DescuentoPorcentaje = producto.DescuentoPorcentaje,
-                    Subtotal = cantidad * precioEfectivo
+                    Subtotal = Dinero.Redondear(cantidad * precioEfectivo)
                 });
             }
             Activa.UltimaActividad = DateTime.Now;
@@ -213,7 +213,7 @@ namespace Dominio.Servicios
                     "Disponible: " + producto.Stock.ToString("0.##") + " " + producto.UnidadMedida + ".");
 
             item.Cantidad = nuevaCantidad;
-            item.Subtotal = item.Cantidad * item.PrecioUnitario;
+            item.Subtotal = Dinero.Redondear(item.Cantidad * item.PrecioUnitario);
             Activa.UltimaActividad = DateTime.Now;
         }
 

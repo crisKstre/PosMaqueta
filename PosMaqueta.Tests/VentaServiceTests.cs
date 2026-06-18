@@ -77,6 +77,27 @@ namespace PosMaqueta.Tests
             Assert.Single(ventas.ObtenerDetalleVenta(idVenta));
         }
 
+        // 0.C — venta por kilo: el subtotal/total se redondean al peso (sin medios pesos), para
+        // que el arqueo y los reportes cuadren.
+        [Fact]
+        public void Venta_por_kilo_redondea_los_montos_al_peso()
+        {
+            AbrirCaja();
+            int id = productos.Crear(new Producto
+            {
+                Nombre = "Tomate", Precio = 2990m, Stock = 100m,
+                UnidadMedida = UnidadMedida.Kilogramo, Categoria = "Bebidas"
+            });
+            ventas.AgregarPorId(id, 0.350m);                 // 0.350 Kg × 2990 = 1046.5
+            Assert.Equal(1047m, ventas.Subtotal);            // redondeo AwayFromZero
+            Assert.Equal(1047m, ventas.Total);
+
+            int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
+            var v = Assert.Single(ventas.ObtenerVentas(DateTime.Today, DateTime.Today), x => x.IdVenta == idVenta);
+            Assert.Equal(1047m, v.Total);
+            Assert.Equal(v.Total, decimal.Truncate(v.Total));   // sin fracción de peso
+        }
+
         [Fact]
         public void CobrarVenta_con_carrito_vacio_lanza()
             => Assert.Throws<NegocioException>(() => ventas.CobrarVenta(1, MedioPago.Efectivo));

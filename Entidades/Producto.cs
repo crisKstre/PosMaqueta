@@ -19,9 +19,7 @@ namespace Entidades
 
         // Precio efectivo de venta tras aplicar el descuento, redondeado al peso (CLP sin decimales).
         public decimal PrecioConDescuento =>
-            DescuentoPorcentaje <= 0
-                ? Precio
-                : System.Math.Round(Precio * (1 - DescuentoPorcentaje / 100m), 0, System.MidpointRounding.AwayFromZero);
+            DescuentoPorcentaje <= 0 ? Precio : Dinero.Redondear(Precio * (1 - DescuentoPorcentaje / 100m));
     }
 
     public static class UnidadMedida
