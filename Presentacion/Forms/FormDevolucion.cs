@@ -43,15 +43,29 @@ namespace Presentacion.Forms
                 ForeColor = EstiloPos.Ink1, AutoSize = false, Size = new Size(580, 30), Location = new Point(20, 16) };
 
             dgv = new DataGridView { Location = new Point(20, 52), Size = new Size(580, 286) };
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colId", Visible = false });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colId", Visible = false, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colNombre", HeaderText = "Producto",   FillWeight = 46, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDisp",   HeaderText = "Disponible", FillWeight = 18, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrecio", HeaderText = "Precio",     FillWeight = 18, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDevolver", HeaderText = "Devolver *", FillWeight = 18 });
             EstiloPos.AplicarGrid(dgv);
-            dgv.ReadOnly = false;                       // se edita SOLO la columna "Devolver" (las demás son ReadOnly)
+
+            // SOLO la columna resaltada "Devolver" es editable. AplicarGrid deja el grid en
+            // ReadOnly=true; lo reabrimos y forzamos explícitamente el ReadOnly de CADA columna,
+            // sin depender del orden de alta ni de cómo el framework restaura los flags al togglear
+            // el ReadOnly del grid (gotcha clásico de WinForms que dejaba celdas editables).
+            dgv.ReadOnly = false;
+            foreach (DataGridViewColumn col in dgv.Columns)
+                col.ReadOnly = (col.Name != "colDevolver");
             dgv.EditMode = DataGridViewEditMode.EditOnEnter;
             dgv.CellEndEdit += (s, e) => Recalcular();
+
+            // Defensa en profundidad: aunque por cualquier motivo una celda quedara editable, se
+            // cancela la edición de toda columna que no sea "Devolver". Imposible editar otra cosa.
+            dgv.CellBeginEdit += (s, e) =>
+            {
+                if (dgv.Columns[e.ColumnIndex].Name != "colDevolver") e.Cancel = true;
+            };
 
             // Resalta la ÚNICA columna editable (fondo ámbar claro), para que no parezca que se
             // puede editar toda la tabla.
