@@ -217,6 +217,11 @@ Columnas agregadas por migración: `Venta.Anulada`, `Venta.Descuento`,
 `Producto.DescuentoPorcentaje`, `DetalleVenta.PrecioOriginal`, `DetalleVenta.DescuentoPorcentaje`,
 `Usuario.DebeCambiarPassword` (al agregarla, marca al `admin` existente para forzar el cambio).
 
+**Versionado de esquema.** La tabla `SchemaVersion(Version)` guarda la versión del esquema. Al
+arrancar, si la BD trae una versión **mayor** que la del binario (otra caja se actualizó antes), la
+app **se niega a arrancar** con un mensaje claro, en vez de operar contra un esquema desconocido.
+La versión actual es `DatabaseInitializer.ESQUEMA_VERSION`.
+
 ## Modo WAL
 
 Al inicializar se fija una vez `PRAGMA journal_mode=WAL` (persistente en el archivo) y

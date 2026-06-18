@@ -25,11 +25,12 @@ namespace PosMaqueta.Tests
         }
 
         [Fact]
-        public void Empleado_sembrado_no_requiere_cambio()
+        public void Empleado_sembrado_tambien_requiere_cambio()
         {
+            // 3.D: el usuario demo ya no queda operable con su clave pública; nace forzado a cambiarla.
             var emp = svc.Login("empleado", "empleado123");
             Assert.NotNull(emp);
-            Assert.False(svc.RequiereCambioPassword(emp));
+            Assert.True(svc.RequiereCambioPassword(emp));
         }
 
         [Fact]

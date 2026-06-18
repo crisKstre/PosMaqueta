@@ -38,6 +38,7 @@ namespace Dominio.Servicios
         // Alta. El usuario nace obligado a cambiar la contraseña que le asignó el administrador.
         public int Crear(Usuario u, string passwordPlano)
         {
+            Autorizacion.ExigirAdmin();
             u.Nombre = (u.Nombre ?? "").Trim();
             u.LoginNombre = (u.LoginNombre ?? "").Trim();
             ValidarPerfil(u, esNuevo: true);
@@ -57,6 +58,7 @@ namespace Dominio.Servicios
         // Edición de perfil (nombre, login, rol, activo). No cambia la contraseña.
         public void Actualizar(Usuario u)
         {
+            Autorizacion.ExigirAdmin();
             u.Nombre = (u.Nombre ?? "").Trim();
             u.LoginNombre = (u.LoginNombre ?? "").Trim();
             ValidarPerfil(u, esNuevo: false);
@@ -93,6 +95,7 @@ namespace Dominio.Servicios
 
         private void CambiarEstado(int idUsuario, bool activo)
         {
+            Autorizacion.ExigirAdmin();
             var u = usuarioDao.ObtenerPorId(idUsuario);
             if (u == null) throw new NegocioException("El usuario no existe.");
 
@@ -129,6 +132,7 @@ namespace Dominio.Servicios
         // Reseteo por un administrador: deja una contraseña temporal que el usuario deberá cambiar.
         public void ResetearPassword(int idUsuario, string passwordNueva)
         {
+            Autorizacion.ExigirAdmin();
             var u = usuarioDao.ObtenerPorId(idUsuario);
             if (u == null) throw new NegocioException("El usuario no existe.");
             ValidarPassword(passwordNueva);

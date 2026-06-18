@@ -14,6 +14,7 @@ namespace Dominio.Servicios
 
         public void Agregar(string nombre)
         {
+            Autorizacion.ExigirAdmin();
             if (string.IsNullOrWhiteSpace(nombre))
                 throw new NegocioException("El nombre no puede estar vacío.");
             if (dao.Existe(nombre))
@@ -24,6 +25,7 @@ namespace Dominio.Servicios
 
         public void Eliminar(int idCategoria)
         {
+            Autorizacion.ExigirAdmin();
             if (dao.TieneProductos(idCategoria))
                 throw new NegocioException("No se puede eliminar: hay productos con esta categoría.");
             dao.Eliminar(idCategoria);

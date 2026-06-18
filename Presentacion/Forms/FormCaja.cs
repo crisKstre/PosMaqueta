@@ -172,7 +172,6 @@ namespace Presentacion.Forms
         private void RefrescarEstado()
         {
             var caja    = cajaService.ObtenerCajaAbierta();
-            bool esAdmin = Sesion.EsAdmin;
 
             if (caja == null)
             {
@@ -180,10 +179,12 @@ namespace Presentacion.Forms
                 pnlAbrir.Visible   = true;
                 lblTituloEstado.Text = "Caja — sin turno abierto";
 
-                lblPermisoAbrir.Visible  = !esAdmin;
-                txtMontoInicial.Enabled  = esAdmin;
-                btnAbrir.Enabled         = esAdmin;
-                btnAbrir.BackColor       = esAdmin ? EstiloPos.Ink1 : EstiloPos.Ink3;
+                // Cualquier usuario (cajero o admin) puede abrir caja: así una tienda chica opera
+                // sin depender de que un admin abra el turno.
+                lblPermisoAbrir.Visible  = false;
+                txtMontoInicial.Enabled  = true;
+                btnAbrir.Enabled         = true;
+                btnAbrir.BackColor       = EstiloPos.Ink1;
             }
             else
             {
@@ -207,10 +208,12 @@ namespace Presentacion.Forms
                     "     Tarjeta: $"  + resumen.TotalTarjeta.ToString("N0") +
                     "     Transferencia: $" + resumen.TotalTransferencia.ToString("N0");
 
-                lblPermisoCerrar.Visible = !esAdmin;
-                txtMontoReal.Enabled     = esAdmin;
-                btnCerrar.Enabled        = esAdmin;
-                btnCerrar.BackColor      = esAdmin ? EstiloPos.Ink1 : EstiloPos.Ink3;
+                // El cierre con arqueo también lo puede hacer el cajero; un FALTANTE sigue
+                // exigiendo autorización de un administrador (ver btnCerrar_Click).
+                lblPermisoCerrar.Visible = false;
+                txtMontoReal.Enabled     = true;
+                btnCerrar.Enabled        = true;
+                btnCerrar.BackColor      = EstiloPos.Ink1;
             }
 
             lblMensaje.Visible = false;

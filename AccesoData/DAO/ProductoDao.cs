@@ -93,6 +93,28 @@ namespace AccesoData.DAO
             }
         }
 
+        // Primer producto con ese nombre exacto (prefiere activos). Para reimportar productos SIN
+        // código de barras sin duplicarlos (5.c del roadmap).
+        public Producto ObtenerPorNombre(string nombre)
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string sql = @"
+                    SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                    FROM Producto
+                    WHERE Nombre = @nombre
+                    ORDER BY Activo DESC, IdProducto;";
+                using (var cmd = con.Comando(sql))
+                {
+                    cmd.AddParam("@nombre", nombre);
+                    using (var reader = cmd.ExecuteReader())
+                        return reader.Read() ? Mapear(reader) : null;
+                }
+            }
+        }
+
         public List<string> ObtenerCategorias()
         {
             var lista = new List<string>();

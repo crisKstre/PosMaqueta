@@ -251,6 +251,7 @@ namespace Dominio.Servicios
         // Anula una venta registrada: devuelve el stock y la deja fuera de los reportes.
         public void AnularVenta(int idVenta)
         {
+            Autorizacion.ExigirAdmin();
             if (!ventaDao.AnularVenta(idVenta))
                 throw new NegocioException("La venta N°" + idVenta + " ya estaba anulada.");
             Log.Advertencia("Venta anulada N°" + idVenta + " (stock devuelto al inventario)");
@@ -278,10 +279,14 @@ namespace Dominio.Servicios
                         "\". Disponible: " + prod.Stock.ToString("0.##") + " " + prod.UnidadMedida + ".");
             }
 
+            // 0.A — Control interno: no se puede vender sin caja abierta (la venta quedaría
+            // fuera de todo arqueo). Si no se pasó idCaja, debe haber una caja abierta.
             if (idCaja == null)
             {
                 var cajaAbierta = cajaDao.ObtenerCajaAbierta();
-                if (cajaAbierta != null) idCaja = cajaAbierta.IdCaja;
+                if (cajaAbierta == null)
+                    throw new NegocioException("Debe abrir caja antes de vender.");
+                idCaja = cajaAbierta.IdCaja;
             }
 
             var venta = new Venta

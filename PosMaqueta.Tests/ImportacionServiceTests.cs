@@ -72,6 +72,19 @@ namespace PosMaqueta.Tests
         }
 
         [Fact]
+        public void Importa_sin_codigo_actualiza_por_nombre_sin_duplicar()
+        {
+            svc.ImportarProductos(Csv(",Manzana Roja,Frutas,1000,10,0,Kg\n"));        // crea (sin código)
+            var res = svc.ImportarProductos(Csv(",Manzana Roja,Frutas,1200,5,0,Kg\n")); // mismo nombre, sin código
+
+            Assert.Equal(0, res.Creados);
+            Assert.Equal(1, res.Actualizados);            // actualiza, no duplica
+            var manzanas = productos.Buscar("Manzana Roja");
+            Assert.Single(manzanas);
+            Assert.Equal(1200m, manzanas[0].Precio);
+        }
+
+        [Fact]
         public void El_encabezado_no_se_importa_como_producto()
         {
             var res = svc.ImportarProductos(Csv(

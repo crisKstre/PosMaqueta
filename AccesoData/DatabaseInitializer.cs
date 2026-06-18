@@ -12,6 +12,11 @@ namespace AccesoData
     /// </summary>
     public class DatabaseInitializer : ConexionBD
     {
+        // Versión del esquema que maneja ESTA app. Se sube al agregar una migración nueva (0.B).
+        // Si la BD trae una versión MAYOR (otra caja con binario más nuevo ya migró), se aborta el
+        // arranque con un mensaje claro, en vez de operar contra un esquema desconocido.
+        public const int ESQUEMA_VERSION = 1;
+
         public void Inicializar()
         {
             if (ConfigBD.Proveedor == ProveedorBD.SqlServer)
@@ -26,11 +31,13 @@ namespace AccesoData
                         pragma.ExecuteNonQuery();
 
                 CrearTablas(con);
+                VerificarVersionEsquema(con);   // aborta si la BD es más nueva que esta app (multi-caja)
                 MigrarEsquema(con);
                 CrearIndices(con);
                 SembrarAdmin(con);
                 SembrarEmpleadoDemo(con);
                 SincronizarCategorias(con);
+                ActualizarVersionEsquema(con);   // deja la BD marcada con la versión de esta app
             }
         }
 
@@ -61,6 +68,9 @@ namespace AccesoData
         }
 
         private const string DDL_Sqlite = @"
+            CREATE TABLE IF NOT EXISTS SchemaVersion (
+                Version INTEGER NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS Categoria (
                 IdCategoria INTEGER PRIMARY KEY AUTOINCREMENT,
                 Nombre      TEXT    NOT NULL UNIQUE
@@ -133,6 +143,10 @@ namespace AccesoData
 
         // Esquema completo (incluye Anulada). Orden respetando las claves foráneas.
         private const string DDL_SqlServer = @"
+            IF OBJECT_ID(N'dbo.SchemaVersion','U') IS NULL
+            CREATE TABLE SchemaVersion (
+                Version INT NOT NULL
+            );
             IF OBJECT_ID(N'dbo.Categoria','U') IS NULL
             CREATE TABLE Categoria (
                 IdCategoria INT IDENTITY(1,1) PRIMARY KEY,
@@ -302,8 +316,8 @@ namespace AccesoData
             }
 
             using (var cmd = con.Comando(@"
-                INSERT INTO Usuario (Nombre, LoginNombre, Pass, Rol, Activo)
-                VALUES (@nombre, @login, @pass, @rol, 1);"))
+                INSERT INTO Usuario (Nombre, LoginNombre, Pass, Rol, Activo, DebeCambiarPassword)
+                VALUES (@nombre, @login, @pass, @rol, 1, 1);"))
             {
                 cmd.AddParam("@nombre", "Empleado Demo");
                 cmd.AddParam("@login", "empleado");
@@ -340,6 +354,37 @@ namespace AccesoData
                 ins.AddParam("@n", nombre);
                 ins.ExecuteNonQuery();
             }
+        }
+
+        // Aborta el arranque si la BD fue migrada por una versión MÁS NUEVA de la app (multi-caja:
+        // otra caja con binario más nuevo ya migró el esquema central). 0.B del roadmap.
+        private void VerificarVersionEsquema(DbConnection con)
+        {
+            int v = LeerVersionEsquema(con);
+            if (v > ESQUEMA_VERSION)
+                throw new InvalidOperationException(
+                    "Esta caja está DESACTUALIZADA: la base de datos es versión " + v + " y esta " +
+                    "aplicación maneja la versión " + ESQUEMA_VERSION + ". Actualiza la aplicación de " +
+                    "esta caja antes de continuar.");
+        }
+
+        // 0 = sin registro de versión (BD nueva o anterior al versionado).
+        private int LeerVersionEsquema(DbConnection con)
+        {
+            using (var cmd = con.Comando("SELECT Version FROM SchemaVersion;"))
+            {
+                var r = cmd.ExecuteScalar();
+                return (r == null || r == DBNull.Value) ? 0 : Convert.ToInt32(r);
+            }
+        }
+
+        private void ActualizarVersionEsquema(DbConnection con)
+        {
+            int actual = LeerVersionEsquema(con);
+            if (actual == 0)
+                Ejecutar(con, "INSERT INTO SchemaVersion (Version) VALUES (" + ESQUEMA_VERSION + ");");
+            else if (actual < ESQUEMA_VERSION)
+                Ejecutar(con, "UPDATE SchemaVersion SET Version = " + ESQUEMA_VERSION + ";");
         }
 
         private static void Ejecutar(DbConnection con, string sql)

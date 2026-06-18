@@ -9,6 +9,15 @@ namespace PosMaqueta.Tests
     {
         private readonly ProductoService svc = new ProductoService();
 
+        // 3.A — autorización en la capa de servicio: un cajero no puede crear productos aunque
+        // invoque el servicio directamente (la UI ya lo oculta; esto es defensa en profundidad).
+        [Fact]
+        public void Crear_como_cajero_lanza_NegocioException()
+        {
+            Sesion.UsuarioActual = new UsuarioService().ObtenerTodos().Find(u => u.LoginNombre == "empleado");
+            Assert.Throws<NegocioException>(() => CrearProducto(svc, "X", 100m, 1m));
+        }
+
         [Fact]
         public void Crear_persiste_y_devuelve_id()
         {

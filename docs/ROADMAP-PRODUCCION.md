@@ -6,6 +6,17 @@
 > **Trabaja en orden de fases.** Dentro de cada fase, respeta el orden (hay dependencias).
 > Stack: C# WinForms · .NET Framework 4.7.2 · ADO.NET crudo · SQLite (1 caja) / SQL Server (varias).
 
+> **Actualización (2026-06-17) — implementado por Claude Code, con tests:** 0.A (caja obligatoria
+> para vender; los cajeros pueden abrir/cerrar caja), 0.B (versionado de esquema `SchemaVersion` +
+> aborto si la BD es más nueva; `esquema.sql` eliminado), 1.A (falla al arrancar en `SqlServer` sin
+> `CadenaConexion`), 1.E (docs de backup con sufijo de fecha + restauración probada), 3.A
+> (autorización en la capa de servicio), 3.D (sanitización de telemetría + usuario demo forzado a
+> cambiar clave), 5.b (fechas con `InvariantCulture`), 5.c (importación sin código por nombre, sin
+> duplicar). **Pendiente / a decidir:** 0.C (dinero entero, relevante si se vende por Kg), 1.B
+> (`Microsoft.Data.SqlClient`), 1.C / 1.D (idempotencia de venta / race de caja — para multi-caja),
+> 1.E-infra (job real de backup), 2.x (instalador, config por caja), 3.B / 3.C (timeout de sesión,
+> cifrado de secretos), 4.B / 4.C (devolución parcial, pago mixto). **4.A (DTE) fuera de alcance.**
+
 ## Reglas para el implementador
 - No rompas lo que ya está bien: descuento de stock atómico (`VentaDao.cs:80-92`), anulación
   idempotente, hashing PBKDF2 (`Seguridad.cs`), SQL 100% parametrizado, IVA incluido (`Impuestos.cs`).

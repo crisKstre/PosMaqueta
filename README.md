@@ -34,7 +34,8 @@ Principios:
 - **Atajos de teclado** y navegación rápida (Ctrl + 1…5 entre módulos).
 - **Telemetría de fallos (opcional)**: los errores técnicos (ERROR/FATAL) se envían a una **sede**
   central para monitoreo remoto, en segundo plano y tolerante a cortes de red (opt-in por config).
-- **149 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
+- **Autorización por rol** en la capa de servicio (no solo en la UI) y **versionado de esquema** de BD.
+- **155 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
 
 ### 🏠 Inicio (Dashboard)
 - Métricas del día: ventas, total vendido, productos bajo stock y estado de la caja.

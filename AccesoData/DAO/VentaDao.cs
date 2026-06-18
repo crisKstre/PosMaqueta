@@ -196,7 +196,7 @@ namespace AccesoData.DAO
                                 IdVenta = reader.GetInt32(0),
                                 IdCaja = reader.IsDBNull(1) ? (int?)null : reader.GetInt32(1),
                                 IdUsuario = reader.GetInt32(2),
-                                Fecha = DateTime.Parse(reader.GetString(3)),
+                                Fecha = Persistencia.LeerFecha(reader.GetString(3)),
                                 Total = reader.GetDecimal(4),
                                 Descuento = reader.GetDecimal(5),
                                 MedioPago = reader.IsDBNull(6) ? "" : reader.GetString(6)

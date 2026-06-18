@@ -29,6 +29,9 @@ namespace PosMaqueta.Tests
             VentaService.ReiniciarVentasEnCurso();   // limpia el estado estático compartido
             Sesion.UsuarioActual = null;              // evita que una sesión de otro test se filtre
             new DatabaseInitializer().Inicializar();  // esquema + admin/empleado + categorías
+            // Las operaciones sensibles exigen rol admin (defensa en profundidad): los tests corren
+            // como el admin sembrado, que además es un IdUsuario real (FK válida para los logs).
+            Sesion.UsuarioActual = new UsuarioService().ObtenerTodos().Find(u => u.LoginNombre == "admin");
         }
 
         public void Dispose()
@@ -40,6 +43,12 @@ namespace PosMaqueta.Tests
             // Borra toda la carpeta de trabajo (BD, sidecars WAL, Backups, copias .previo)
             try { if (Directory.Exists(DirTrabajo)) Directory.Delete(DirTrabajo, recursive: true); }
             catch { /* archivos temporales */ }
+        }
+
+        // Abre una caja para los tests que necesitan cobrar (0.A exige caja abierta).
+        protected int AbrirCaja(decimal montoInicial = 0)
+        {
+            return new CajaService().AbrirCaja(Sesion.UsuarioActual.IdUsuario, montoInicial);
         }
 
         // Crea un producto activo y devuelve su id. Categoría "Bebidas" (sembrada por defecto).

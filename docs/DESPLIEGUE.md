@@ -78,15 +78,17 @@ el módulo **Respaldos** (admin) permite respaldar al instante y **restaurar** u
 La copia automática a `Backups/` **solo aplica a SQLite**. Con SQL Server, configurar el respaldo
 en el **servidor**:
 
-- Un **plan de mantenimiento** o un job de SQL Agent (en Express, usar el Programador de tareas de
-  Windows con `sqlcmd`), p. ej.:
+- Un **job programado** (Programador de tareas de Windows con `sqlcmd`) que cree un archivo con
+  **sufijo de fecha** — **no** `WITH INIT`, que pisa la copia anterior:
 
-```sql
-BACKUP DATABASE PosMaqueta TO DISK = 'D:\Backups\PosMaqueta.bak' WITH INIT, COMPRESSION;
+```bat
+sqlcmd -S . -Q "BACKUP DATABASE PosMaqueta TO DISK='D:\Backups\PosMaqueta_%date%.bak' WITH COMPRESSION"
 ```
 
-- Guardar los respaldos **fuera del disco del servidor** (otra unidad / red / nube) para
-  sobrevivir a una falla de disco.
+- **Retención + copia externa:** conservar N copias y replicarlas **fuera del disco del servidor**
+  (otra unidad / red / nube) para sobrevivir a una falla de disco.
+- **Probar la restauración** en limpio al menos una vez (un backup sin restauración probada no es
+  un backup): `RESTORE DATABASE PosMaqueta FROM DISK='...' WITH REPLACE`.
 
 ---
 

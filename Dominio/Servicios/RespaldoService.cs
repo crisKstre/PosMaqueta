@@ -27,6 +27,7 @@ namespace Dominio.Servicios
         // Crea un respaldo inmediato y devuelve su ruta.
         public string RespaldarAhora()
         {
+            Autorizacion.ExigirAdmin();
             VerificarSoporte();
             try
             {
@@ -45,6 +46,7 @@ namespace Dominio.Servicios
         // Restaura desde un respaldo. Tras esto, la aplicación debe reiniciarse.
         public void Restaurar(string rutaBackup)
         {
+            Autorizacion.ExigirAdmin();
             VerificarSoporte();
             try
             {

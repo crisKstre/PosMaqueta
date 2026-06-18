@@ -57,7 +57,7 @@ namespace AccesoData.DAO
                             lista.Add(new LogMovimiento
                             {
                                 IdLog = reader.GetInt32(0),
-                                Fecha = DateTime.Parse(reader.GetString(1)),
+                                Fecha = Persistencia.LeerFecha(reader.GetString(1)),
                                 IdUsuario = reader.GetInt32(2),
                                 NombreUsuario = reader.GetString(3),
                                 Modulo = reader.GetString(4),

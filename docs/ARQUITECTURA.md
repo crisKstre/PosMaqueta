@@ -30,7 +30,7 @@ Sistema POS de escritorio para minimarket. Documento para desarrolladores y mant
 | **Lenguaje / runtime** | C# · .NET Framework **4.7.2** |
 | **UI** | Windows Forms (WinForms) |
 | **Base de datos** | **SQLite** (local, una caja) o **SQL Server** (central, varias cajas), elegible por configuración |
-| **Pruebas** | xUnit (149 casos: unitarios + integración) |
+| **Pruebas** | xUnit (155 casos: unitarios + integración) |
 | **Uso** | Interno (empleados + administrador). No de cara al cliente. |
 | **Mercado** | Chile (CLP, IVA 19 % incluido en precios) |
 
@@ -191,8 +191,13 @@ limpieza (desuscripción de `NotificadorCambios`, parada de timers) se hace en `
   note nada.
 - **Verificación en código, no en SQL:** el login trae el usuario por nombre y compara el hash
   en C# (no se compara la contraseña dentro de la consulta).
-- **Autorización por rol:** la UI oculta lo que el rol no puede usar (ver Manual §2). El cierre
-  de caja con **faltante** exige re-autenticación de un administrador (`FormVerificarAdmin`).
+- **Autorización por rol en dos capas:** la UI oculta lo que el rol no puede usar **y además los
+  servicios sensibles** (alta/edición de usuarios y productos, reseteo de contraseña, anulación de
+  venta, respaldos, importación) lo **exigen** con `Autorizacion.ExigirAdmin()` — defensa en
+  profundidad, no saltable invocando el servicio directamente. El cierre de caja con **faltante**
+  exige re-autenticación de un administrador (`FormVerificarAdmin`).
+- **Sin credenciales operables por defecto:** el `admin` sembrado y el `empleado` demo nacen
+  **forzados a cambiar la contraseña** en el primer ingreso.
 
 ---
 
@@ -268,6 +273,9 @@ Esto evita fugas de memoria y trabajo sobre formularios ya cerrados.
 
 ## 11. Reglas de negocio
 
+- **No se vende sin caja abierta:** `VentaService.CobrarVenta` exige una caja abierta (si no,
+  lanza `NegocioException`), para que ninguna venta quede fuera del arqueo. Abrir y cerrar caja lo
+  puede hacer cualquier usuario; un **faltante** al cerrar exige autorización de un administrador.
 - **IVA chileno (19 %):** los precios **incluyen** IVA. `Impuestos.Neto(total) = round(total/1.19)`
   e `Iva = total − Neto` (así el desglose siempre cuadra). Redondeo al peso, *AwayFromZero*.
 - **Descuentos (dos niveles que se combinan):**
@@ -305,7 +313,7 @@ Optimizaciones aplicadas (sin cambios visuales):
 
 ## 13. Pruebas
 
-Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **149 casos**, agregado a la solución.
+Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **155 casos**, agregado a la solución.
 
 - **Unitarios** de lógica pura: `Impuestos` (IVA, invariante neto+iva==total, redondeo) y
   `Seguridad` (PBKDF2, sal única, compatibilidad legacy SHA256, hashes malformados, migración).
@@ -385,7 +393,7 @@ PosMaqueta/
 │   ├── UI/                 # Aviso (+ FormMensaje/FormPrompt), Errores
 │   ├── EstiloPos.cs        # estilo centralizado
 │   └── Program.cs          # entrypoint + handlers globales
-├── PosMaqueta.Tests/       # xUnit (149 casos)
+├── PosMaqueta.Tests/       # xUnit (155 casos)
 ├── docs/                   # esta documentación
 └── PosMaqueta.sln
 ```

@@ -85,6 +85,17 @@ namespace PosMaqueta.Tests
         }
 
         [Fact]
+        public void Sanitiza_contrasenas_antes_de_enviar()
+        {
+            LogRemoto.Configurar("T", "C", ConnInactiva, "1.0", "ERROR", dir);
+            LogRemoto.Encolar("ERROR", "fallo de conexión",
+                new Exception("Server=x;Password=secreto123;User ID=u"));
+            string contenido = File.ReadAllText(Outbox);
+            Assert.DoesNotContain("secreto123", contenido);   // la clave no viaja
+            Assert.Contains("***", contenido);
+        }
+
+        [Fact]
         public void Tolera_lineas_corruptas_al_cargar()
         {
             LogRemoto.Configurar("T", "C", ConnInactiva, "1.0", "ERROR", dir);

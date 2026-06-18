@@ -108,9 +108,9 @@ namespace AccesoData
                     Caja = caja,
                     Fecha = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     Nivel = Recortar((nivel ?? "").Trim(), 10),
-                    Mensaje = Recortar(mensaje ?? "", 1000),
+                    Mensaje = Recortar(Sanitizar(mensaje ?? ""), 1000),
                     Excepcion = ex == null ? null
-                        : ex.GetType().Name + ": " + ex.Message + Environment.NewLine + (ex.StackTrace ?? ""),
+                        : Sanitizar(ex.GetType().Name + ": " + ex.Message + Environment.NewLine + (ex.StackTrace ?? "")),
                     Version = version
                 };
 
@@ -292,6 +292,15 @@ namespace AccesoData
         {
             if (string.IsNullOrEmpty(s)) return s;
             return s.Length <= max ? s : s.Substring(0, max);
+        }
+
+        // Redacta posibles secretos antes de enviar a la sede (p. ej. una cadena de conexión que
+        // aparezca en una excepción). No es exhaustivo, pero evita filtrar contraseñas obvias.
+        private static string Sanitizar(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            return System.Text.RegularExpressions.Regex.Replace(
+                s, @"(?i)\b(password|pwd)\s*=\s*[^;]*", "$1=***");
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Data.Common;
+using System.Globalization;
 
 namespace AccesoData
 {
@@ -24,6 +25,16 @@ namespace AccesoData
             p.ParameterName = nombre;
             p.Value = valor ?? DBNull.Value;
             cmd.Parameters.Add(p);
+        }
+
+        // Lee una fecha guardada como texto ("yyyy-MM-dd HH:mm:ss") de forma robusta e independiente
+        // de la cultura del equipo (cajas distintas pueden tener culturas distintas). 5.b del roadmap.
+        public static DateTime LeerFecha(string texto)
+        {
+            if (DateTime.TryParseExact(texto, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var f))
+                return f;
+            return DateTime.Parse(texto, CultureInfo.InvariantCulture);   // tolerante a formatos antiguos
         }
     }
 

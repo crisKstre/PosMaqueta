@@ -62,6 +62,7 @@ namespace PosMaqueta.Tests
         [Fact]
         public void CobrarVenta_persiste_descuenta_stock_y_limpia_carrito()
         {
+            AbrirCaja();
             int id = CrearProducto(productos, "Cola", 1190m, 10m);
             ventas.AgregarPorId(id, 2m);
             int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
@@ -81,8 +82,18 @@ namespace PosMaqueta.Tests
             => Assert.Throws<NegocioException>(() => ventas.CobrarVenta(1, MedioPago.Efectivo));
 
         [Fact]
+        public void CobrarVenta_sin_caja_abierta_lanza()
+        {
+            int id = CrearProducto(productos, "X", 1000m, 5m);
+            ventas.AgregarPorId(id, 1m);
+            var ex = Assert.Throws<NegocioException>(() => ventas.CobrarVenta(1, MedioPago.Efectivo));
+            Assert.Contains("caja", ex.Message.ToLowerInvariant());
+        }
+
+        [Fact]
         public void CobrarVenta_combina_descuento_de_producto_y_de_total()
         {
+            AbrirCaja();
             int id = CrearProducto(productos, "Cola", 1000m, 10m);
             productos.AplicarDescuento(id, 10m);     // 900 c/u
             ventas.AgregarPorId(id, 2m);             // subtotal 1800
@@ -97,6 +108,7 @@ namespace PosMaqueta.Tests
         [Fact]
         public void AnularVenta_devuelve_el_stock_y_la_excluye_de_los_reportes()
         {
+            AbrirCaja();
             int id = CrearProducto(productos, "Cola", 1000m, 10m);
             ventas.AgregarPorId(id, 3m);
             int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
@@ -150,6 +162,7 @@ namespace PosMaqueta.Tests
         [Fact]
         public void CobrarVenta_no_deja_stock_negativo_con_dos_ventas()
         {
+            AbrirCaja();
             int id = CrearProducto(productos, "Cola", 1000m, 1m);   // stock 1
             ventas.AgregarPorId(id, 1m);                            // venta 1 reserva 1
             var v1 = ventas.Activa;
@@ -178,6 +191,7 @@ namespace PosMaqueta.Tests
         [Fact]
         public void AnularVenta_dos_veces_no_duplica_el_stock()
         {
+            AbrirCaja();
             int id = CrearProducto(productos, "Cola", 1000m, 10m);
             ventas.AgregarPorId(id, 3m);
             int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
@@ -192,6 +206,7 @@ namespace PosMaqueta.Tests
         [Fact]
         public void Descuento_se_reajusta_cuando_baja_el_subtotal()
         {
+            AbrirCaja();
             int a = CrearProducto(productos, "A", 6000m, 10m);
             int b = CrearProducto(productos, "B", 4000m, 10m);
             ventas.AgregarPorId(a, 1m);

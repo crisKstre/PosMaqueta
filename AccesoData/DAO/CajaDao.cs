@@ -149,8 +149,8 @@ namespace AccesoData.DAO
             {
                 IdCaja = reader.GetInt32(0),
                 IdUsuario = reader.GetInt32(1),
-                FechaApertura = DateTime.Parse(reader.GetString(2)),
-                FechaCierre = reader.IsDBNull(3) ? (DateTime?)null : DateTime.Parse(reader.GetString(3)),
+                FechaApertura = Persistencia.LeerFecha(reader.GetString(2)),
+                FechaCierre = reader.IsDBNull(3) ? (DateTime?)null : Persistencia.LeerFecha(reader.GetString(3)),
                 MontoInicial = reader.GetDecimal(4),
                 MontoEsperado = reader.GetDecimal(5),
                 MontoReal = reader.GetDecimal(6),

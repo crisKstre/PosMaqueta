@@ -69,6 +69,17 @@ namespace Presentacion
             if (!string.IsNullOrWhiteSpace(cad))
                 ConfigBD.CadenaConexion = cad;
 
+            // 1.A — En modo SQL Server, exigir la cadena explícita: NO caer en una BD por defecto
+            // (LocalDB local) de forma silenciosa, que no es la base central de la tienda.
+            if (ConfigBD.Proveedor == ProveedorBD.SqlServer && string.IsNullOrWhiteSpace(cad))
+            {
+                MessageBox.Show(
+                    "Configuración inválida: con ProveedorBD=SqlServer debes definir 'CadenaConexion' en " +
+                    "App.config (la cadena al servidor de la tienda). La aplicación se cerrará.",
+                    "Error de configuración", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(1);
+            }
+
             var carpeta = System.Configuration.ConfigurationManager.AppSettings["CarpetaRespaldoExterno"];
             if (!string.IsNullOrWhiteSpace(carpeta))
                 ConfigBD.CarpetaRespaldoExterno = carpeta.Trim();

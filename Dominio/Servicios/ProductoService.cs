@@ -79,6 +79,7 @@ namespace Dominio.Servicios
 
         public int Crear(Producto p)
         {
+            Autorizacion.ExigirAdmin();
             string error = Validar(p, true);
             if (error != null) throw new NegocioException(error);
             int id = productoDao.Insertar(p);
@@ -92,6 +93,7 @@ namespace Dominio.Servicios
 
         public void Actualizar(Producto p)
         {
+            Autorizacion.ExigirAdmin();
             string error = Validar(p, false);
             if (error != null) throw new NegocioException(error);
             productoDao.Actualizar(p);
@@ -105,6 +107,7 @@ namespace Dominio.Servicios
         // Aplica (o quita, con 0) el descuento de oferta de un producto, sin tocar el resto de sus datos.
         public void AplicarDescuento(int idProducto, decimal porcentaje)
         {
+            Autorizacion.ExigirAdmin();
             if (porcentaje < 0 || porcentaje > 100)
                 throw new NegocioException("El descuento debe estar entre 0 y 100%.");
             var p = productoDao.ObtenerPorId(idProducto);
@@ -127,6 +130,7 @@ namespace Dominio.Servicios
 
         public void Desactivar(int idProducto)
         {
+            Autorizacion.ExigirAdmin();
             var p = productoDao.ObtenerPorId(idProducto);
             productoDao.Desactivar(idProducto);
             Log.Info("Producto desactivado N°" + idProducto + " (" + (p?.Nombre ?? "?") + ")");
@@ -136,6 +140,7 @@ namespace Dominio.Servicios
 
         public void Activar(int idProducto)
         {
+            Autorizacion.ExigirAdmin();
             var p = productoDao.ObtenerPorId(idProducto);
             productoDao.Activar(idProducto);
             Log.Info("Producto activado N°" + idProducto + " (" + (p?.Nombre ?? "?") + ")");
@@ -145,6 +150,7 @@ namespace Dominio.Servicios
 
         public decimal AjustarStock(int idProducto, decimal delta)
         {
+            Autorizacion.ExigirAdmin();
             var p = productoDao.ObtenerPorId(idProducto);
             if (p == null) throw new NegocioException("El producto no existe.");
             decimal nuevoStock = p.Stock + delta;
@@ -162,6 +168,7 @@ namespace Dominio.Servicios
 
         public void Eliminar(int idProducto)
         {
+            Autorizacion.ExigirAdmin();
             if (productoDao.TieneVentas(idProducto)) throw new NegocioException(
                 "No se puede eliminar: el producto tiene ventas registradas. Usa Desactivar para conservar el historial.");
             var p = productoDao.ObtenerPorId(idProducto);

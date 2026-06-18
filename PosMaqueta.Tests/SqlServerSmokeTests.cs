@@ -55,11 +55,14 @@ namespace PosMaqueta.Tests
                 }
             }
             new DatabaseInitializer().Inicializar();
+            // Las operaciones sensibles exigen rol admin (3.A); corremos como el admin sembrado.
+            Sesion.UsuarioActual = new UsuarioService().ObtenerTodos().Find(u => u.LoginNombre == "admin");
         }
 
         public void Dispose()
         {
             VentaService.ReiniciarVentasEnCurso();
+            Sesion.UsuarioActual = null;
             ConfigBD.Proveedor = ProveedorBD.Sqlite;
             ConfigBD.CadenaConexion = null;
         }
@@ -120,6 +123,7 @@ namespace PosMaqueta.Tests
         public void Cobrar_registra_descuenta_stock_y_guarda_detalle()
         {
             Skip.IfNot(disponible, "LocalDB no disponible");
+            caja.AbrirCaja(1, 0m);                                     // 0.A: caja abierta para vender
             int id = CrearProducto("Cola", 1190m, 10m);
             ventas.AgregarPorId(id, 2m);
             int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
@@ -135,6 +139,7 @@ namespace PosMaqueta.Tests
         public void AnularVenta_devuelve_stock_y_es_idempotente()
         {
             Skip.IfNot(disponible, "LocalDB no disponible");
+            caja.AbrirCaja(1, 0m);
             int id = CrearProducto("Cola", 1000m, 10m);
             ventas.AgregarPorId(id, 3m);
             int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
@@ -161,6 +166,7 @@ namespace PosMaqueta.Tests
         public void Reportes_resumen_y_top_productos()
         {
             Skip.IfNot(disponible, "LocalDB no disponible");
+            caja.AbrirCaja(1, 0m);
             int a = CrearProducto("A", 1000m, 50m);
             int b = CrearProducto("B", 2000m, 50m);
             ventas.AgregarPorId(a, 3m); ventas.CobrarVenta(1, MedioPago.Efectivo);

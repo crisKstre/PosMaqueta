@@ -26,6 +26,7 @@ namespace Dominio.Servicios
 
         public ResultadoImportacion ImportarProductos(string rutaCsv)
         {
+            Autorizacion.ExigirAdmin();
             if (string.IsNullOrWhiteSpace(rutaCsv) || !File.Exists(rutaCsv))
                 throw new NegocioException("No se encontró el archivo CSV.");
 
@@ -56,8 +57,11 @@ namespace Dominio.Servicios
                     var p = MapearProducto(campos, out errCampos);
                     if (errCampos != null) { res.Errores.Add("Línea " + n + ": " + errCampos); continue; }
 
-                    Producto existente = string.IsNullOrWhiteSpace(p.CodigoBarras)
-                        ? null : productoDao.ObtenerPorCodigo(p.CodigoBarras);
+                    // Match: por código de barras si lo trae; si no, por nombre exacto (así un
+                    // producto sin código NO se duplica al reimportar). 5.c del roadmap.
+                    Producto existente = !string.IsNullOrWhiteSpace(p.CodigoBarras)
+                        ? productoDao.ObtenerPorCodigo(p.CodigoBarras)
+                        : productoDao.ObtenerPorNombre(p.Nombre);
                     bool esNuevo = existente == null;
                     if (!esNuevo) p.IdProducto = existente.IdProducto;
 
