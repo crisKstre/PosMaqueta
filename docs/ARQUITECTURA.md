@@ -30,7 +30,7 @@ Sistema POS de escritorio para minimarket. Documento para desarrolladores y mant
 | **Lenguaje / runtime** | C# · .NET Framework **4.7.2** |
 | **UI** | Windows Forms (WinForms) |
 | **Base de datos** | **SQLite** (local, una caja) o **SQL Server** (central, varias cajas), elegible por configuración |
-| **Pruebas** | xUnit (155 casos: unitarios + integración) |
+| **Pruebas** | xUnit (162 casos: unitarios + integración) |
 | **Uso** | Interno (empleados + administrador). No de cara al cliente. |
 | **Mercado** | Chile (CLP, IVA 19 % incluido en precios) |
 
@@ -316,7 +316,7 @@ Optimizaciones aplicadas (sin cambios visuales):
 
 ## 13. Pruebas
 
-Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **155 casos**, agregado a la solución.
+Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **162 casos**, agregado a la solución.
 
 - **Unitarios** de lógica pura: `Impuestos` (IVA, invariante neto+iva==total, redondeo) y
   `Seguridad` (PBKDF2, sal única, compatibilidad legacy SHA256, hashes malformados, migración).
@@ -333,6 +333,9 @@ Proyecto **`PosMaqueta.Tests`** (xUnit, net472) — **155 casos**, agregado a la
 - **Telemetría de fallos** (`LogRemoto`): filtro por nivel, persistencia y recarga de la bandeja,
   tope con descarte de los más viejos y tolerancia a líneas corruptas (el envío real a la sede se
   valida aparte, requiere la sede accesible).
+- **Pago mixto y devolución** (`VentaService` / `DevolucionService`): una venta con varios medios
+  cuadra con el total; la devolución parcial reintegra stock, baja el efectivo esperado del arqueo y
+  no deja devolver más de lo vendido.
 - **Humo de SQL Server** (9 casos, `SkippableFact`) contra **LocalDB**: verifican el dialecto T-SQL
   real (DDL, IDENTITY, TOP, IN, transacciones). Se omiten si no hay LocalDB instalado.
 
@@ -396,7 +399,7 @@ PosMaqueta/
 │   ├── UI/                 # Aviso (+ FormMensaje/FormPrompt), Errores
 │   ├── EstiloPos.cs        # estilo centralizado
 │   └── Program.cs          # entrypoint + handlers globales
-├── PosMaqueta.Tests/       # xUnit (155 casos)
+├── PosMaqueta.Tests/       # xUnit (162 casos)
 ├── docs/                   # esta documentación
 └── PosMaqueta.sln
 ```

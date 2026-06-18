@@ -15,7 +15,7 @@ namespace AccesoData
         // Versión del esquema que maneja ESTA app. Se sube al agregar una migración nueva (0.B).
         // Si la BD trae una versión MAYOR (otra caja con binario más nuevo ya migró), se aborta el
         // arranque con un mensaje claro, en vez de operar contra un esquema desconocido.
-        public const int ESQUEMA_VERSION = 2;   // v2: tabla PagoVenta (pago mixto)
+        public const int ESQUEMA_VERSION = 3;   // v2: PagoVenta (pago mixto); v3: Devolucion (devolución parcial)
 
         public void Inicializar()
         {
@@ -146,6 +146,26 @@ namespace AccesoData
                 MedioPago TEXT    NOT NULL,
                 Monto     REAL    NOT NULL DEFAULT 0,
                 FOREIGN KEY (IdVenta) REFERENCES Venta(IdVenta)
+            );
+            CREATE TABLE IF NOT EXISTS Devolucion (
+                IdDevolucion INTEGER PRIMARY KEY AUTOINCREMENT,
+                IdVenta   INTEGER NOT NULL,
+                IdCaja    INTEGER NOT NULL,
+                Fecha     TEXT    NOT NULL,
+                IdUsuario INTEGER NOT NULL,
+                Monto     REAL    NOT NULL DEFAULT 0,
+                FOREIGN KEY (IdVenta)   REFERENCES Venta(IdVenta),
+                FOREIGN KEY (IdCaja)    REFERENCES Caja(IdCaja),
+                FOREIGN KEY (IdUsuario) REFERENCES Usuario(IdUsuario)
+            );
+            CREATE TABLE IF NOT EXISTS DevolucionItem (
+                IdItem    INTEGER PRIMARY KEY AUTOINCREMENT,
+                IdDevolucion INTEGER NOT NULL,
+                IdProducto INTEGER NOT NULL,
+                Cantidad  REAL    NOT NULL DEFAULT 0,
+                Subtotal  REAL    NOT NULL DEFAULT 0,
+                FOREIGN KEY (IdDevolucion) REFERENCES Devolucion(IdDevolucion),
+                FOREIGN KEY (IdProducto)   REFERENCES Producto(IdProducto)
             );";
 
         // Esquema completo (incluye Anulada). Orden respetando las claves foráneas.
@@ -238,6 +258,28 @@ namespace AccesoData
                 MedioPago NVARCHAR(20) NOT NULL,
                 Monto     DECIMAL(18,4) NOT NULL DEFAULT 0,
                 CONSTRAINT FK_Pago_Venta FOREIGN KEY (IdVenta) REFERENCES Venta(IdVenta)
+            );
+            IF OBJECT_ID(N'dbo.Devolucion','U') IS NULL
+            CREATE TABLE Devolucion (
+                IdDevolucion INT IDENTITY(1,1) PRIMARY KEY,
+                IdVenta   INT NOT NULL,
+                IdCaja    INT NOT NULL,
+                Fecha     NVARCHAR(19) NOT NULL,
+                IdUsuario INT NOT NULL,
+                Monto     DECIMAL(18,4) NOT NULL DEFAULT 0,
+                CONSTRAINT FK_Dev_Venta   FOREIGN KEY (IdVenta)   REFERENCES Venta(IdVenta),
+                CONSTRAINT FK_Dev_Caja    FOREIGN KEY (IdCaja)    REFERENCES Caja(IdCaja),
+                CONSTRAINT FK_Dev_Usuario FOREIGN KEY (IdUsuario) REFERENCES Usuario(IdUsuario)
+            );
+            IF OBJECT_ID(N'dbo.DevolucionItem','U') IS NULL
+            CREATE TABLE DevolucionItem (
+                IdItem    INT IDENTITY(1,1) PRIMARY KEY,
+                IdDevolucion INT NOT NULL,
+                IdProducto INT NOT NULL,
+                Cantidad  DECIMAL(18,4) NOT NULL DEFAULT 0,
+                Subtotal  DECIMAL(18,4) NOT NULL DEFAULT 0,
+                CONSTRAINT FK_DevItem_Dev      FOREIGN KEY (IdDevolucion) REFERENCES Devolucion(IdDevolucion),
+                CONSTRAINT FK_DevItem_Producto FOREIGN KEY (IdProducto)   REFERENCES Producto(IdProducto)
             );";
 
         // Migraciones incrementales (solo afectan a SQLite: el esquema de SQL Server ya está completo,
@@ -291,14 +333,18 @@ namespace AccesoData
                     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_producto_categoria') CREATE INDEX idx_producto_categoria ON Producto(Categoria);
                     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_log_fecha')          CREATE INDEX idx_log_fecha          ON LogMovimiento(Fecha);
                     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='ux_producto_codigo')     CREATE UNIQUE INDEX ux_producto_codigo ON Producto(CodigoBarras) WHERE CodigoBarras IS NOT NULL;
-                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_pago_venta')         CREATE INDEX idx_pago_venta         ON PagoVenta(IdVenta);"
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_pago_venta')         CREATE INDEX idx_pago_venta         ON PagoVenta(IdVenta);
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_devolucion_caja')    CREATE INDEX idx_devolucion_caja    ON Devolucion(IdCaja);
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_devitem_dev')        CREATE INDEX idx_devitem_dev        ON DevolucionItem(IdDevolucion);"
                 : @"CREATE INDEX IF NOT EXISTS idx_venta_fecha        ON Venta(Fecha);
                     CREATE INDEX IF NOT EXISTS idx_venta_caja         ON Venta(IdCaja);
                     CREATE INDEX IF NOT EXISTS idx_detalle_venta      ON DetalleVenta(IdVenta);
                     CREATE INDEX IF NOT EXISTS idx_detalle_producto   ON DetalleVenta(IdProducto);
                     CREATE INDEX IF NOT EXISTS idx_producto_categoria ON Producto(Categoria);
                     CREATE INDEX IF NOT EXISTS idx_log_fecha          ON LogMovimiento(Fecha);
-                    CREATE INDEX IF NOT EXISTS idx_pago_venta         ON PagoVenta(IdVenta);";
+                    CREATE INDEX IF NOT EXISTS idx_pago_venta         ON PagoVenta(IdVenta);
+                    CREATE INDEX IF NOT EXISTS idx_devolucion_caja   ON Devolucion(IdCaja);
+                    CREATE INDEX IF NOT EXISTS idx_devitem_dev       ON DevolucionItem(IdDevolucion);";
             using (var cmd = con.Comando(sql))
                 cmd.ExecuteNonQuery();
         }

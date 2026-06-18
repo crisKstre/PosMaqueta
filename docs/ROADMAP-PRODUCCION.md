@@ -13,10 +13,11 @@
 > (autorización en la capa de servicio), 3.D (sanitización de telemetría + usuario demo forzado a
 > cambiar clave), 5.b (fechas con `InvariantCulture`), 5.c (importación sin código por nombre, sin
 > duplicar), **0.C** (dinero en pesos enteros, venta por kilo) y **4.C** (pago mixto: tabla
-> `PagoVenta`, arqueo/reportes por medio, UI de cobro). **Pendiente / a decidir:** 1.B
+> `PagoVenta`, arqueo/reportes por medio, UI de cobro) y **4.B** (devolución parcial: reintegra
+> stock + descuenta el efectivo del arqueo, solo admin). **Pendiente / a decidir:** 1.B
 > (`Microsoft.Data.SqlClient`), 1.C / 1.D (idempotencia de venta / race de caja — para multi-caja),
 > 1.E-infra (job real de backup), 2.x (instalador, config por caja), 3.B / 3.C (timeout de sesión,
-> cifrado de secretos), **4.B** (devolución parcial — en curso). **4.A (DTE) fuera de alcance.**
+> cifrado de secretos). **4.A (DTE) fuera de alcance.**
 
 ## Reglas para el implementador
 - No rompas lo que ya está bien: descuento de stock atómico (`VentaDao.cs:80-92`), anulación

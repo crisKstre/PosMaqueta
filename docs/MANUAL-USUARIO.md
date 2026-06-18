@@ -273,6 +273,9 @@ Análisis del negocio por período.
 - **Listado de ventas**: **doble clic** abre el detalle por código. El botón **Anular venta**
   revierte una venta: **devuelve el stock** al inventario y la excluye de los reportes (queda
   auditada). Anular dos veces no duplica el stock.
+- **Devolución parcial** (botón **Devolución**): elige **cuánto devolver de cada producto** de una
+  venta; reintegra ese stock y **descuenta el efectivo del cajón** del turno (afecta el arqueo). No
+  puedes devolver más de lo vendido, y requiere una caja abierta.
 
 **F5** vuelve a generar el reporte con el rango actual.
 

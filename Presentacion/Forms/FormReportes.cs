@@ -62,10 +62,17 @@ namespace Presentacion.Forms
             EstiloPos.AplicarBotonSecundario(btnAnular, EstiloPos.Rojo);
             btnAnular.Click += (s, e) => AnularSeleccionada();
 
+            var btnDevolver = new Button { Text = "Devolución", Size = new Size(140, 34) };
+            EstiloPos.AplicarBotonSecundario(btnDevolver, EstiloPos.Amber);
+            btnDevolver.Click += (s, e) => DevolverSeleccionada();
+
             pnlHeader.Controls.AddRange(new Control[] {
-                lblTitulo, lblDesde, dtpDesde, lblHasta, dtpHasta, btnVer, btnHoy, btnSemana, btnMes, btnAnular });
+                lblTitulo, lblDesde, dtpDesde, lblHasta, dtpHasta, btnVer, btnHoy, btnSemana, btnMes, btnAnular, btnDevolver });
             pnlHeader.Resize += (s, e) =>
-                btnAnular.Location = new Point(pnlHeader.ClientSize.Width - btnAnular.Width - 24, 80);
+            {
+                btnAnular.Location   = new Point(pnlHeader.ClientSize.Width - btnAnular.Width - 24, 80);
+                btnDevolver.Location = new Point(btnAnular.Left - btnDevolver.Width - 8, 80);
+            };
 
             // ── Cards ──────────────────────────────────────────────────────
             var pnlCards = new FlowLayoutPanel
@@ -168,6 +175,16 @@ namespace Presentacion.Forms
             var v = VentaDeFila(e.RowIndex);
             if (v != null)
                 using (var f = new FormDetalleVenta(v)) f.ShowDialog(this);
+        }
+
+        private void DevolverSeleccionada()
+        {
+            if (dgvVentas.CurrentRow == null)
+            { Aviso.Info(this, "Selecciona una venta de la lista para hacer una devolución."); return; }
+            var v = VentaDeFila(dgvVentas.CurrentRow.Index);
+            if (v == null) return;
+            using (var f = new FormDevolucion(v.IdVenta))
+                if (f.ShowDialog(this) == DialogResult.OK) Generar();   // refresca stock/efectivo
         }
 
         private void AnularSeleccionada()

@@ -227,6 +227,11 @@ pagos (efectivo + tarjeta, etc.). El **arqueo** y los **reportes** desglosan efe
 transferencia desde `PagoVenta` (no desde `Venta.MedioPago`, que pasa a ser un resumen: el medio
 único, o `"Mixto"`). Solo la parte en efectivo cuenta para el cajón.
 
+**v3 (devolución parcial):** tablas **`Devolucion(IdVenta, IdCaja, Fecha, IdUsuario, Monto)`** y
+**`DevolucionItem(IdDevolucion, IdProducto, Cantidad, Subtotal)`**. Reintegra el stock de lo devuelto
+y **resta del efectivo esperado** del arqueo (`ResumenCaja.TotalDevoluciones`); no se puede devolver
+más de lo vendido (se valida contra las devoluciones previas).
+
 ## Modo WAL
 
 Al inicializar se fija una vez `PRAGMA journal_mode=WAL` (persistente en el archivo) y

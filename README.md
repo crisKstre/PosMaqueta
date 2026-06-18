@@ -35,7 +35,7 @@ Principios:
 - **Telemetría de fallos (opcional)**: los errores técnicos (ERROR/FATAL) se envían a una **sede**
   central para monitoreo remoto, en segundo plano y tolerante a cortes de red (opt-in por config).
 - **Autorización por rol** en la capa de servicio (no solo en la UI) y **versionado de esquema** de BD.
-- **155 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
+- **162 pruebas automatizadas** (xUnit): unitarias e integración contra BD temporal.
 
 ### 🏠 Inicio (Dashboard)
 - Métricas del día: ventas, total vendido, productos bajo stock y estado de la caja.

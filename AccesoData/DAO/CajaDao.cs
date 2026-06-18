@@ -109,6 +109,13 @@ namespace AccesoData.DAO
                             }
                         }
                 }
+
+                // Devoluciones del turno: el efectivo reembolsado sale del cajón (4.B).
+                using (var cmd = con.Comando("SELECT COALESCE(SUM(Monto), 0) FROM Devolucion WHERE IdCaja = @idCaja;"))
+                {
+                    cmd.AddParam("@idCaja", idCaja);
+                    r.TotalDevoluciones = Convert.ToDecimal(cmd.ExecuteScalar());
+                }
             }
             return r;
         }

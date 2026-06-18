@@ -44,6 +44,8 @@ namespace PosMaqueta.Tests
                 using (var cmd = con.CreateCommand())
                 {
                     cmd.CommandText = @"
+                        DROP TABLE IF EXISTS DevolucionItem;
+                        DROP TABLE IF EXISTS Devolucion;
                         DROP TABLE IF EXISTS PagoVenta;
                         DROP TABLE IF EXISTS DetalleVenta;
                         DROP TABLE IF EXISTS Venta;

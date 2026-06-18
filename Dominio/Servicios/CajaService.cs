@@ -30,10 +30,10 @@ namespace Dominio.Servicios
             return cajaDao.ObtenerHistorial(desde, hasta);
         }
 
-        // Efectivo que debería haber físicamente: fondo inicial + ventas en efectivo.
+        // Efectivo que debería haber físicamente: fondo inicial + ventas en efectivo − devoluciones.
         public decimal CalcularEfectivoEsperado(Caja caja, ResumenCaja resumen)
         {
-            return caja.MontoInicial + resumen.TotalEfectivo;
+            return caja.MontoInicial + resumen.TotalEfectivo - resumen.TotalDevoluciones;
         }
 
         public int AbrirCaja(int idUsuario, decimal montoInicial)
