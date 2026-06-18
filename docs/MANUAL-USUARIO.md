@@ -27,14 +27,14 @@ Guía de operación del punto de venta para **cajeros** y **administradores**.
 Al abrir el programa aparece la pantalla de **inicio de sesión**. Ingresa tu **usuario** y
 **contraseña** y presiona **Entrar**.
 
-Usuarios de prueba que vienen configurados:
+Usuario que viene configurado de fábrica:
 
 | Usuario     | Contraseña     | Rol           |
 |-------------|----------------|---------------|
 | `admin`     | `admin123`     | Administrador |
-| `empleado`  | `empleado123`  | Cajero        |
 
-> Los usuarios los configura quien instala el sistema. Las contraseñas se guardan cifradas
+> Solo se crea el `admin` inicial (te obliga a cambiar la clave en el primer ingreso). Las cuentas de
+> **cajero** las crea el administrador desde **Usuarios**. Las contraseñas se guardan cifradas
 > (PBKDF2 con sal); nunca se almacenan en texto plano.
 
 Si la contraseña es incorrecta, el sistema lo avisa y el intento queda registrado en el log.
@@ -49,7 +49,7 @@ defecto, una cuenta recién creada o una **reseteada** por un administrador— e
 
 Hay dos roles. El sistema **oculta** lo que cada rol no puede usar.
 
-| Acción | Administrador | Cajero (empleado) |
+| Acción | Administrador | Cajero |
 |---|:---:|:---:|
 | Vender (módulo Ventas) | ✅ | ✅ |
 | Ver inventario | ✅ | ✅ (solo lectura) |

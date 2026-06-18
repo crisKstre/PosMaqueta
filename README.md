@@ -129,7 +129,9 @@ por defecto y categorías de ejemplo.
 | Usuario     | Contraseña     | Rol           |
 |-------------|----------------|---------------|
 | `admin`     | `admin123`     | Administrador |
-| `empleado`  | `empleado123`  | Cajero        |
+
+> Solo se siembra el `admin`, forzado a cambiar la contraseña en el primer ingreso. Las cuentas de
+> cajero las crea el administrador desde **Usuarios**: ya no existe un usuario demo con clave pública.
 
 ---
 

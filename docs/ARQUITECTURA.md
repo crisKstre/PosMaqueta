@@ -196,8 +196,9 @@ limpieza (desuscripción de `NotificadorCambios`, parada de timers) se hace en `
   venta, respaldos, importación) lo **exigen** con `Autorizacion.ExigirAdmin()` — defensa en
   profundidad, no saltable invocando el servicio directamente. El cierre de caja con **faltante**
   exige re-autenticación de un administrador (`FormVerificarAdmin`).
-- **Sin credenciales operables por defecto:** el `admin` sembrado y el `empleado` demo nacen
-  **forzados a cambiar la contraseña** en el primer ingreso.
+- **Sin credenciales operables por defecto:** solo se siembra el `admin`, **forzado a cambiar la
+  contraseña** en el primer ingreso. No existe un usuario demo con clave pública; los cajeros los
+  crea el administrador desde **Usuarios**.
 
 ---
 
@@ -371,7 +372,7 @@ dotnet test   PosMaqueta.Tests/PosMaqueta.Tests.csproj   # corre las pruebas
 
 **Publicación:** existe un perfil de carpeta (`Presentacion/Properties/PublishProfiles/`,
 `win-x86`, `net472`). Al primer arranque se crea `pos.db` con tablas, índices, el administrador
-por defecto, el empleado demo y categorías de ejemplo.
+por defecto (único usuario sembrado) y categorías de ejemplo.
 
 ---
 

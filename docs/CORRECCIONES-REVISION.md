@@ -141,3 +141,30 @@ para `UsuarioService` (Crear/ResetearPassword), `CategoriaService`, `RespaldoSer
 - **Bloquear merge de la devolución (4.B) hasta C1–C3.**
 - C4–C7 antes de operar multi-caja / instalaciones existentes.
 - C8–C13 limpieza continua. Sugerencia: un PR por Cxx con su test.
+
+---
+
+## Estado de implementación (Claude Code, 2026-06-18)
+
+Verificado contra el código real (no se asumió el doc) e implementado este lote, cada uno con test
+y la suite verde:
+
+- **C1 ✅** anular una venta que ya tiene devoluciones lanza `NegocioException`
+  (`VentaService.AnularVenta` vía `DevolucionDao.TieneDevoluciones`). Se eligió la **Opción A**.
+- **C2 ✅** `DevolucionService.Devolver` bloquea ventas anuladas (`VentaDao.EstaAnulada`).
+- **C3 — decisión del dueño:** el reembolso **siempre sale del efectivo de la caja** (así opera el
+  local), por lo que el arqueo actual es correcto. NO se cambia el esquema; no es bug en este contexto.
+- **C5 ✅** backfill de `PagoVenta` en `MigrarEsquema` (idempotente; SQLite y SQL Server).
+- **C7 ✅** `ResumenVentas` ahora trae `TotalDevoluciones` + `TotalNeto`; el reporte cuadra con el arqueo.
+- **C8 ✅** `FormVentas` avisa "no hay caja abierta" antes de abrir el diálogo de cobro.
+- **C9 ✅** el descuento manual se redondea a peso entero (`Dinero.Redondear`).
+- **C10 ✅** eliminado el seed `empleado/empleado123`; solo queda `admin` (forzado a cambiar clave).
+  Tests y docs ajustados.
+- **C13 ✅** tests de "rechaza a cajero" para Usuario / Categoría / Respaldo / Importación /
+  `Venta.AnularVenta`. **C12:** se agregó el test de migración menor; el constraint PK/UNIQUE de
+  `SchemaVersion` se **omitió** (no ocurre en 1 caja: 1 sola fila por el flujo `IF NOT EXISTS`).
+
+**Diferido (pertinente solo en multi-caja, que el dueño postergó):** C4 (IdCaja NOT NULL + validar
+caja recibida), C6 (redactar `User ID`/token y recortar el stacktrace; la PII por defecto NO viaja
+porque esos logs son INFO/WARN y la telemetría manda solo ERROR), C11 (getter `CadenaConexion` que
+caiga en LocalDB). Se retoman si se activa SQL Server / telemetría.

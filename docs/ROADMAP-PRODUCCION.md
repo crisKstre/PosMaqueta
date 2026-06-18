@@ -155,11 +155,14 @@ si hay auth SQL, cifrar la sección con DPAPI/`configProtectedData`. `Encrypt=tr
 Asegurar que `pos_log` sea **solo INSERT** en `LogFallo` (ya creado así en la sede) y cerrar 1433 al exterior (solo LAN/Tailscale).
 **Aceptación:** sin contraseñas en claro en disco; conexión cifrada.
 
-## 3.D — Sanitizar telemetría + quitar usuario demo  🟠/🟡
-**Qué hacer:** en `LogRemoto.Encolar` (`AccesoData/LogRemoto.cs:105-115`) redactar/recortar PII y posibles
-secretos del `Mensaje`/`Excepcion` antes de enviar. Eliminar el seed `empleado/empleado123`
-(`DatabaseInitializer.cs:304-313`) o forzar cambio de clave.
-**Aceptación:** ningún dato sensible viaja a la sede; no existe usuario operable con clave pública.
+## 3.D — Sanitizar telemetría + quitar usuario demo  ✅ HECHO
+**Qué hacer:** en `LogRemoto.Encolar` redactar/recortar PII y posibles secretos del `Mensaje`/`Excepcion`
+antes de enviar. **Hecho:** `LogRemoto.Sanitizar`/`Recortar` redactan `password`/`pwd` y acotan el largo.
+El seed `empleado/empleado123` se **eliminó** por completo (C10): solo se siembra `admin`, forzado a
+cambiar la clave en el primer ingreso.
+**Aceptación:** ningún dato sensible viaja a la sede; no existe usuario operable con clave pública. ✅
+*(Pendiente menor, solo si se activa la telemetría: ampliar la redacción a `User ID`/token y recortar el
+stacktrace — ver C6 en `CORRECCIONES-REVISION.md`.)*
 
 ---
 

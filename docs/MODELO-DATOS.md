@@ -241,8 +241,9 @@ reduce los `fsync` por commit. El respaldo hace `wal_checkpoint(TRUNCATE)` antes
 
 ## Datos sembrados (primer arranque)
 
-- `admin` / `admin123` — Nombre "Administrador", **Rol `Admin`** (`RolUsuario.Admin`).
-- `empleado` / `empleado123` — Nombre "Empleado Demo", Rol `Cajero` (idempotente).
+- `admin` / `admin123` — Nombre "Administrador", **Rol `Admin`** (`RolUsuario.Admin`), forzado a
+  cambiar la contraseña en el primer ingreso. Es el **único** usuario sembrado; las cuentas de cajero
+  las crea el administrador (ya no hay un usuario demo con clave pública).
 - Categorías de ejemplo: Abarrotes, Bebidas, Lácteos, Panadería, Limpieza, Otros.
 
 ---
