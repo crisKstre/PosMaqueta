@@ -25,15 +25,6 @@ namespace PosMaqueta.Tests
         }
 
         [Fact]
-        public void Empleado_sembrado_tambien_requiere_cambio()
-        {
-            // 3.D: el usuario demo ya no queda operable con su clave pública; nace forzado a cambiarla.
-            var emp = svc.Login("empleado", "empleado123");
-            Assert.NotNull(emp);
-            Assert.True(svc.RequiereCambioPassword(emp));
-        }
-
-        [Fact]
         public void Crear_persiste_activo_y_obliga_cambio_de_password()
         {
             int id = CrearUsuario("juan");
@@ -100,10 +91,10 @@ namespace PosMaqueta.Tests
         [Fact]
         public void ResetearPassword_obliga_a_cambiarla_en_el_proximo_login()
         {
-            var emp = svc.Login("empleado", "empleado123");
-            svc.ResetearPassword(emp.IdUsuario, "temporal1");
+            int id = CrearUsuario("ana");                          // nace con clave ana1234
+            svc.ResetearPassword(id, "temporal1");
 
-            var reLogin = svc.Login("empleado", "temporal1");
+            var reLogin = svc.Login("ana", "temporal1");
             Assert.NotNull(reLogin);
             Assert.True(svc.RequiereCambioPassword(reLogin));      // queda marcado para cambio forzado
         }
@@ -168,11 +159,27 @@ namespace PosMaqueta.Tests
         }
 
         [Fact]
-        public void ObtenerTodos_incluye_admin_y_empleado_sembrados()
+        public void ObtenerTodos_incluye_admin_pero_no_el_demo_empleado()
         {
             var todos = svc.ObtenerTodos();
             Assert.Contains(todos, u => u.LoginNombre == "admin");
-            Assert.Contains(todos, u => u.LoginNombre == "empleado");
+            Assert.DoesNotContain(todos, u => u.LoginNombre == "empleado");   // C10: el seed demo ya no existe
+        }
+
+        // 3.A / C13 — un cajero no puede gestionar usuarios aunque invoque el servicio directo.
+        [Fact]
+        public void Crear_como_cajero_lanza()
+        {
+            Sesion.UsuarioActual = CrearCajero();
+            Assert.Throws<NegocioException>(() => CrearUsuario("nuevo"));
+        }
+
+        [Fact]
+        public void ResetearPassword_como_cajero_lanza()
+        {
+            int id = CrearUsuario("victima");
+            Sesion.UsuarioActual = CrearCajero();
+            Assert.Throws<NegocioException>(() => svc.ResetearPassword(id, "temporal1"));
         }
     }
 }

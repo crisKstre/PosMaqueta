@@ -146,6 +146,16 @@ namespace AccesoData.DAO
                             }
                         }
                 }
+
+                // Devoluciones del período: el reporte debe restarlas (igual que el arqueo de caja),
+                // si no, TotalVendido/desglose quedan sobreestimados respecto del efectivo real.
+                using (var cmd = con.Comando(
+                    "SELECT COALESCE(SUM(Monto), 0) FROM Devolucion WHERE Fecha BETWEEN @desde AND @hasta;"))
+                {
+                    cmd.AddParam("@desde", d);
+                    cmd.AddParam("@hasta", h);
+                    r.TotalDevoluciones = Convert.ToDecimal(cmd.ExecuteScalar());
+                }
             }
             return r;
         }
@@ -298,6 +308,22 @@ namespace AccesoData.DAO
                 }
             }
             return mapa;
+        }
+
+        // True si la venta existe y está anulada. Permite al servicio impedir devolver una venta ya
+        // revertida (que reintegraría stock y sacaría efectivo de una venta que nunca contó como ingreso).
+        public bool EstaAnulada(int idVenta)
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var cmd = con.Comando("SELECT Anulada FROM Venta WHERE IdVenta = @id;"))
+                {
+                    cmd.AddParam("@id", idVenta);
+                    var r = cmd.ExecuteScalar();
+                    return r != null && r != DBNull.Value && Convert.ToInt32(r) != 0;
+                }
+            }
         }
 
         // Anula una venta: devuelve su stock al inventario y la marca Anulada=1, en una transacción.

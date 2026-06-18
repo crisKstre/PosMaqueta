@@ -77,7 +77,7 @@ namespace Presentacion.Forms
             // ── Cards ──────────────────────────────────────────────────────
             var pnlCards = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top, Height = 122, Padding = new Padding(24, 0, 0, 18),
+                Dock = DockStyle.Top, Height = 138, Padding = new Padding(24, 0, 0, 18),
                 BackColor = EstiloPos.Fondo, FlowDirection = FlowDirection.LeftToRight, WrapContents = false
             };
             pnlCards.Controls.Add(CrearCard("Ventas",          EstiloPos.Azul,  out lblVentasVal));
@@ -88,8 +88,8 @@ namespace Presentacion.Forms
             lblDesgloseVal.Font      = EstiloPos.FontSmall;
             lblDesgloseVal.ForeColor = EstiloPos.Ink1;
             lblDesgloseVal.TextAlign = ContentAlignment.TopLeft;
-            lblDesgloseVal.Location  = new Point(16, 32);
-            lblDesgloseVal.Size      = new Size(170, 66);
+            lblDesgloseVal.Location  = new Point(16, 30);
+            lblDesgloseVal.Size      = new Size(170, 82);
 
             // ── Tablas ─────────────────────────────────────────────────────
             var split = new TableLayoutPanel
@@ -151,7 +151,8 @@ namespace Presentacion.Forms
             lblDesgloseVal.Text =
                 "Efectivo:  $" + r.TotalEfectivo.ToString("N0") + "\n" +
                 "Tarjeta:   $" + r.TotalTarjeta.ToString("N0") + "\n" +
-                "Transfer.: $" + r.TotalTransferencia.ToString("N0");
+                "Transfer.: $" + r.TotalTransferencia.ToString("N0") + "\n" +
+                "Devoluc.: -$" + r.TotalDevoluciones.ToString("N0");
 
             dgvTop.Rows.Clear();
             foreach (var p in ventaService.ObtenerTopProductos(desde, hasta, 12))
@@ -230,7 +231,7 @@ namespace Presentacion.Forms
 
         private Panel CrearCard(string titulo, Color acento, out Label valor)
         {
-            var card = new Panel { Width = 192, Height = 100, Margin = new Padding(0, 0, 14, 0), BackColor = EstiloPos.Surface };
+            var card = new Panel { Width = 192, Height = 116, Margin = new Padding(0, 0, 14, 0), BackColor = EstiloPos.Surface };
             var barra = new Panel { Width = 4, Dock = DockStyle.Left, BackColor = acento };
 
             var lblTit = new Label

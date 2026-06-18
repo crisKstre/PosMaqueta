@@ -1,6 +1,8 @@
 using System.IO;
 using System.Text;
+using Dominio;
 using Dominio.Servicios;
+using Entidades;
 using Xunit;
 
 namespace PosMaqueta.Tests
@@ -91,6 +93,15 @@ namespace PosMaqueta.Tests
                 "CodigoBarras,Nombre,Categoria,Precio,Stock,StockMinimo,Unidad\n" +
                 "666,Unico,Bebidas,800,2,0,Unidad\n"));
             Assert.Equal(1, res.Creados);
+        }
+
+        // 3.A / C13 — un cajero no puede importar catálogo aunque invoque el servicio directo.
+        [Fact]
+        public void Importar_como_cajero_lanza()
+        {
+            Sesion.UsuarioActual = CrearCajero();
+            Assert.Throws<NegocioException>(() =>
+                svc.ImportarProductos(Csv("111,Agua,Bebidas,700,1,0,Unidad\n")));
         }
     }
 }

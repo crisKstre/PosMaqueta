@@ -1,6 +1,7 @@
 using System.Linq;
 using Dominio;
 using Dominio.Servicios;
+using Entidades;
 using Xunit;
 
 namespace PosMaqueta.Tests
@@ -40,6 +41,14 @@ namespace PosMaqueta.Tests
             var temp = cats.ObtenerTodas().First(c => c.Nombre == "Temporal");
             cats.Eliminar(temp.IdCategoria);
             Assert.DoesNotContain(cats.ObtenerTodas(), c => c.Nombre == "Temporal");
+        }
+
+        // 3.A / C13 — un cajero no puede gestionar categorías aunque invoque el servicio directo.
+        [Fact]
+        public void Agregar_como_cajero_lanza()
+        {
+            Sesion.UsuarioActual = CrearCajero();
+            Assert.Throws<NegocioException>(() => cats.Agregar("Congelados"));
         }
     }
 }

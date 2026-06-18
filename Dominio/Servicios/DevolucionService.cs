@@ -51,6 +51,11 @@ namespace Dominio.Servicios
             if (caja == null)
                 throw new NegocioException("Debe haber una caja abierta para registrar la devolución.");
 
+            // No se puede devolver una venta anulada: ya fue revertida (su stock volvió y nunca contó
+            // como ingreso). Devolverla reintegraría stock de más y sacaría efectivo de un ingreso inexistente.
+            if (ventaDao.EstaAnulada(idVenta))
+                throw new NegocioException("La venta N°" + idVenta + " está anulada; no se puede devolver.");
+
             var detalles = ventaDao.ObtenerDetalleVenta(idVenta);
             if (detalles.Count == 0)
                 throw new NegocioException("La venta no existe o no tiene detalle.");

@@ -5,6 +5,21 @@ namespace AccesoData.DAO
 {
     public class DevolucionDao : ConexionBD
     {
+        // True si la venta tiene al menos una devolución registrada. Se usa para impedir ANULAR una venta
+        // que ya tuvo devoluciones (si no, el stock se reintegraría dos veces: por la devolución y por la anulación).
+        public bool TieneDevoluciones(int idVenta)
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var cmd = con.Comando("SELECT COUNT(*) FROM Devolucion WHERE IdVenta = @idVenta;"))
+                {
+                    cmd.AddParam("@idVenta", idVenta);
+                    return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
+                }
+            }
+        }
+
         // Cantidad ya devuelta de un producto en una venta (para no devolver más de lo vendido).
         public decimal CantidadDevuelta(int idVenta, int idProducto)
         {

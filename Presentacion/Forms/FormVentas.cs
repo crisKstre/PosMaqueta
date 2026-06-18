@@ -13,6 +13,7 @@ namespace Presentacion.Forms
         private readonly VentaService    ventaService    = new VentaService();
         private readonly ProductoService productoService = new ProductoService();
         private readonly CategoriaService categoriaService = new CategoriaService();
+        private readonly CajaService     cajaService     = new CajaService();
         private readonly LogService      logService      = new LogService();
         private bool logVentasVisible = false;
         private string categoriaActual = "";
@@ -815,6 +816,13 @@ namespace Presentacion.Forms
         private void btnCobrar_Click(object sender, EventArgs e)
         {
             if (ventaService.Carrito.Count == 0) { MostrarMensaje("El carrito está vacío."); return; }
+            // Avisar ANTES de abrir el diálogo de cobro: si no hay caja, no tiene sentido que el cajero
+            // cuente el efectivo para que recién al confirmar salte el error. (El servicio igual lo impide.)
+            if (!cajaService.HayCajaAbierta())
+            {
+                Aviso.Advertencia(this, "Debe abrir caja antes de vender.", "Sin caja abierta");
+                return;
+            }
             string  medioPago = comboMedioPago.SelectedItem.ToString();
             decimal total     = ventaService.Total;
 

@@ -35,7 +35,6 @@ namespace AccesoData
                 MigrarEsquema(con);
                 CrearIndices(con);
                 SembrarAdmin(con);
-                SembrarEmpleadoDemo(con);
                 SincronizarCategorias(con);
                 ActualizarVersionEsquema(con);   // deja la BD marcada con la versión de esta app
             }
@@ -302,6 +301,16 @@ namespace AccesoData
                 // BD ya existente: forzamos el cambio de la clave del admin por defecto en su próximo ingreso.
                 Ejecutar(con, "UPDATE Usuario SET DebeCambiarPassword = 1 WHERE LoginNombre = 'admin';");
             }
+
+            // Backfill de PagoVenta para BDs anteriores al pago mixto (v2): el desglose de arqueo/reportes
+            // lee SOLO de PagoVenta, así que una venta sin filas de pago desaparece del efectivo del arqueo
+            // mientras su total sí se cuenta. Crea un pago = total por el medio de la venta. Idempotente
+            // (solo donde no exista pago) y válido en SQLite y SQL Server.
+            Ejecutar(con, @"
+                INSERT INTO PagoVenta (IdVenta, MedioPago, Monto)
+                SELECT v.IdVenta, COALESCE(v.MedioPago, 'Efectivo'), v.Total
+                FROM Venta v
+                WHERE NOT EXISTS (SELECT 1 FROM PagoVenta p WHERE p.IdVenta = v.IdVenta);");
         }
 
         private bool ColumnaExiste(DbConnection con, string tabla, string columna)
@@ -367,27 +376,6 @@ namespace AccesoData
 
             string[] cats = { "Abarrotes", "Bebidas", "Lácteos", "Panadería", "Limpieza", "Otros" };
             foreach (var c in cats) InsertarCategoriaSiFalta(con, c);
-        }
-
-        // Empleado de prueba (rol Cajero). Idempotente: solo se crea si aún no existe.
-        private void SembrarEmpleadoDemo(DbConnection con)
-        {
-            using (var cmd = con.Comando("SELECT COUNT(*) FROM Usuario WHERE LoginNombre = @login;"))
-            {
-                cmd.AddParam("@login", "empleado");
-                if (Convert.ToInt64(cmd.ExecuteScalar()) > 0) return;
-            }
-
-            using (var cmd = con.Comando(@"
-                INSERT INTO Usuario (Nombre, LoginNombre, Pass, Rol, Activo, DebeCambiarPassword)
-                VALUES (@nombre, @login, @pass, @rol, 1, 1);"))
-            {
-                cmd.AddParam("@nombre", "Empleado Demo");
-                cmd.AddParam("@login", "empleado");
-                cmd.AddParam("@pass", Seguridad.Hash("empleado123"));
-                cmd.AddParam("@rol", RolUsuario.Cajero);
-                cmd.ExecuteNonQuery();
-            }
         }
 
         // Asegura que toda categoría usada por algún producto exista en la lista de Categorías.

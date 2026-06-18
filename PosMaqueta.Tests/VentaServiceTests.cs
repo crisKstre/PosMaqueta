@@ -60,6 +60,18 @@ namespace PosMaqueta.Tests
             Assert.Equal(0m, ventas.Total);
         }
 
+        // C9 — un descuento fraccionario tecleado a mano (100.50) no debe colar centavos en el Total.
+        [Fact]
+        public void AplicarDescuento_redondea_al_peso_entero()
+        {
+            int id = CrearProducto(productos, "X", 5000m, 10m);
+            ventas.AgregarPorId(id, 1m);              // subtotal 5000
+            ventas.AplicarDescuento(100.50m);         // fraccionario
+            Assert.Equal(101m, ventas.Descuento);     // redondeado AwayFromZero
+            Assert.Equal(4899m, ventas.Total);        // total entero (5000 - 101)
+            Assert.Equal(ventas.Total, decimal.Truncate(ventas.Total));
+        }
+
         [Fact]
         public void CobrarVenta_persiste_descuenta_stock_y_limpia_carrito()
         {
@@ -171,6 +183,19 @@ namespace PosMaqueta.Tests
             ventas.AnularVenta(idVenta);
             Assert.Equal(10m, productos.ObtenerPorId(id).Stock);   // stock devuelto
             Assert.DoesNotContain(ventas.ObtenerVentas(DateTime.Today, DateTime.Today), x => x.IdVenta == idVenta);
+        }
+
+        // 3.A / C13 — un cajero no puede anular ventas aunque invoque el servicio directo.
+        [Fact]
+        public void AnularVenta_como_cajero_lanza()
+        {
+            AbrirCaja();
+            int id = CrearProducto(productos, "Cola", 1000m, 10m);
+            ventas.AgregarPorId(id, 1m);
+            int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
+
+            Sesion.UsuarioActual = CrearCajero();
+            Assert.Throws<NegocioException>(() => ventas.AnularVenta(idVenta));
         }
 
         [Fact]

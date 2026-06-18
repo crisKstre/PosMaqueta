@@ -13,6 +13,7 @@ namespace Dominio.Servicios
         private readonly VentaDao ventaDao = new VentaDao();
         private readonly ProductoDao productoDao = new ProductoDao();
         private readonly CajaDao cajaDao = new CajaDao();
+        private readonly DevolucionDao devolucionDao = new DevolucionDao();
         private readonly LogService logService = new LogService();
 
         // ── Ventas en curso ───────────────────────────────────────────────
@@ -43,6 +44,9 @@ namespace Dominio.Servicios
         public void AplicarDescuento(decimal monto)
         {
             if (monto < 0) monto = 0;
+            // Redondeo a peso entero (CLP): un descuento fraccionario (ej. 100.50 tecleado a mano)
+            // dejaría un Total con centavos y descuadraría el arqueo. Todo el sistema es entero.
+            monto = Dinero.Redondear(monto);
             // El descuento EFECTIVO se acota dinámicamente al subtotal (VentaEnCurso.Descuento),
             // así que si luego se quitan ítems el descuento baja con el carrito.
             Activa.DescuentoSolicitado = monto;
@@ -252,6 +256,12 @@ namespace Dominio.Servicios
         public void AnularVenta(int idVenta)
         {
             Autorizacion.ExigirAdmin();
+            // Si la venta ya tuvo una devolución parcial, anularla reintegraría el stock por SEGUNDA vez
+            // (la devolución ya lo reintegró) e inflaría el inventario. Las dos vías son excluyentes:
+            // una venta con devoluciones se corrige por devolución, no por anulación.
+            if (devolucionDao.TieneDevoluciones(idVenta))
+                throw new NegocioException("La venta N°" + idVenta + " tiene devoluciones registradas; " +
+                    "no se puede anular. Usa la devolución para el resto de los productos.");
             if (!ventaDao.AnularVenta(idVenta))
                 throw new NegocioException("La venta N°" + idVenta + " ya estaba anulada.");
             Log.Advertencia("Venta anulada N°" + idVenta + " (stock devuelto al inventario)");

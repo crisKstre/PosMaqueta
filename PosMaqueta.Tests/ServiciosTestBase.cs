@@ -28,7 +28,7 @@ namespace PosMaqueta.Tests
             ConfigBD.CarpetaRespaldoExterno = null;   // evita que la config de otro test se filtre
             VentaService.ReiniciarVentasEnCurso();   // limpia el estado estático compartido
             Sesion.UsuarioActual = null;              // evita que una sesión de otro test se filtre
-            new DatabaseInitializer().Inicializar();  // esquema + admin/empleado + categorías
+            new DatabaseInitializer().Inicializar();  // esquema + admin (forzado a cambiar clave) + categorías
             // Las operaciones sensibles exigen rol admin (defensa en profundidad): los tests corren
             // como el admin sembrado, que además es un IdUsuario real (FK válida para los logs).
             Sesion.UsuarioActual = new UsuarioService().ObtenerTodos().Find(u => u.LoginNombre == "admin");
@@ -49,6 +49,15 @@ namespace PosMaqueta.Tests
         protected int AbrirCaja(decimal montoInicial = 0)
         {
             return new CajaService().AbrirCaja(Sesion.UsuarioActual.IdUsuario, montoInicial);
+        }
+
+        // Crea un cajero real (con la sesión admin del setup) y lo devuelve. Reemplaza al antiguo seed
+        // 'empleado' (eliminado, C10): los tests que necesitan un rol no-admin lo crean a demanda.
+        protected Usuario CrearCajero(string login = "cajero")
+        {
+            new UsuarioService().Crear(
+                new Usuario { Nombre = login, LoginNombre = login, Rol = RolUsuario.Cajero }, login + "1234");
+            return new UsuarioService().ObtenerTodos().Find(u => u.LoginNombre == login);
         }
 
         // Crea un producto activo y devuelve su id. Categoría "Bebidas" (sembrada por defecto).

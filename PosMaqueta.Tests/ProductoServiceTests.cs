@@ -14,7 +14,7 @@ namespace PosMaqueta.Tests
         [Fact]
         public void Crear_como_cajero_lanza_NegocioException()
         {
-            Sesion.UsuarioActual = new UsuarioService().ObtenerTodos().Find(u => u.LoginNombre == "empleado");
+            Sesion.UsuarioActual = CrearCajero();
             Assert.Throws<NegocioException>(() => CrearProducto(svc, "X", 100m, 1m));
         }
 

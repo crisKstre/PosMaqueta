@@ -29,7 +29,7 @@ namespace PosMaqueta.Tests
         [Fact]
         public void Restaurar_revierte_los_cambios_posteriores()
         {
-            string backup = svc.RespaldarAhora();   // estado: admin + empleado sembrados
+            string backup = svc.RespaldarAhora();   // estado: solo el admin sembrado
             usuarios.Crear(new Usuario { Nombre = "Extra", LoginNombre = "extra", Rol = RolUsuario.Cajero }, "extra1234");
             Assert.Contains(usuarios.ObtenerTodos(), u => u.LoginNombre == "extra");
 
@@ -56,6 +56,14 @@ namespace PosMaqueta.Tests
         public void Restaurar_archivo_inexistente_lanza_NegocioException()
         {
             Assert.Throws<NegocioException>(() => svc.Restaurar(Path.Combine(DirTrabajo, "no-existe.db")));
+        }
+
+        // 3.A / C13 — un cajero no puede respaldar ni restaurar aunque invoque el servicio directo.
+        [Fact]
+        public void RespaldarAhora_como_cajero_lanza()
+        {
+            Sesion.UsuarioActual = CrearCajero();
+            Assert.Throws<NegocioException>(() => svc.RespaldarAhora());
         }
     }
 }
