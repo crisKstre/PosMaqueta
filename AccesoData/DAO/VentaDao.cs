@@ -197,10 +197,12 @@ namespace AccesoData.DAO
             {
                 con.Open();
                 string sql = @"
-                    SELECT IdVenta, IdCaja, IdUsuario, Fecha, Total, Descuento, MedioPago
-                    FROM Venta
-                    WHERE Fecha BETWEEN @desde AND @hasta AND Anulada = 0
-                    ORDER BY Fecha DESC;";
+                    SELECT v.IdVenta, v.IdCaja, v.IdUsuario, v.Fecha, v.Total, v.Descuento, v.MedioPago,
+                           COALESCE(u.Nombre, '')
+                    FROM Venta v
+                    LEFT JOIN Usuario u ON v.IdUsuario = u.IdUsuario
+                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0
+                    ORDER BY v.Fecha DESC;";
 
                 using (var cmd = con.Comando(sql))
                 {
@@ -218,7 +220,8 @@ namespace AccesoData.DAO
                                 Fecha = Persistencia.LeerFecha(reader.GetString(3)),
                                 Total = reader.GetDecimal(4),
                                 Descuento = reader.GetDecimal(5),
-                                MedioPago = reader.IsDBNull(6) ? "" : reader.GetString(6)
+                                MedioPago = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                                NombreUsuario = reader.GetString(7)
                             });
                         }
                     }

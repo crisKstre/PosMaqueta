@@ -12,6 +12,7 @@ namespace Entidades
         public decimal Total { get; set; }
         public decimal Descuento { get; set; }
         public string MedioPago { get; set; }   // medio único, o "Mixto" si hay varios pagos
+        public string NombreUsuario { get; set; }   // transitorio: nombre del cajero que la registró (JOIN)
 
         public List<DetalleVenta> Detalles { get; set; } = new List<DetalleVenta>();
         public List<PagoVenta>    Pagos    { get; set; } = new List<PagoVenta>();

@@ -20,11 +20,11 @@ namespace Presentacion.Forms
         {
             this.Text = "Detalle de venta N° " + v.IdVenta;
             this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MaximizeBox = false; this.MinimizeBox = false;
+            this.MaximizeBox = true; this.MinimizeBox = false;   // se puede maximizar / pantalla completa
             this.ShowIcon = false; this.ShowInTaskbar = false;
             this.StartPosition = FormStartPosition.CenterParent;
-            this.Size = new Size(640, 520);
-            this.MinimumSize = new Size(520, 380);
+            this.Size = new Size(900, 580);                      // más ancha por defecto
+            this.MinimumSize = new Size(560, 380);
             this.BackColor = EstiloPos.Fondo;
 
             // Encabezado
@@ -37,7 +37,8 @@ namespace Presentacion.Forms
             };
             var lblInfo = new Label
             {
-                Text = v.Fecha.ToString("dd/MM/yyyy  HH:mm") + "      ·      " + v.MedioPago,
+                Text = v.Fecha.ToString("dd/MM/yyyy  HH:mm") + "      ·      " + v.MedioPago +
+                       "      ·      Vendedor: " + (string.IsNullOrWhiteSpace(v.NombreUsuario) ? "—" : v.NombreUsuario),
                 Font = EstiloPos.FontSmall, ForeColor = EstiloPos.Ink2,
                 AutoSize = true, Location = new Point(24, 52)
             };
