@@ -1,5 +1,8 @@
 # Correcciones post-revisión — PosMaqueta (brief para Claude Code / IDE)
 
+> 👉 **Respuesta y porqués en `RESPUESTA-CORRECCIONES.md`** (qué se implementó, qué se difirió, qué se
+> descartó y las decisiones del dueño). Ver también "Estado de implementación" al final de este archivo.
+
 > Derivado de una revisión adversarial del push `a4dd644…d0456f1` contra la auditoría previa
 > (ver `ROADMAP-PRODUCCION.md`). Lista solo lo que quedó **incorrecto** en lo que SÍ se implementó.
 > NO incluye lo diferido por diseño (DTE 4.A, offline, 1.B/1.C/1.D/2.x/3.B/3.C).
