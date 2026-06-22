@@ -361,8 +361,10 @@ namespace Presentacion.Forms
             tile.Paint += (s, pe) =>
             {
                 Color colorBorde = hover ? EstiloPos.Azul : (bajoStock ? EstiloPos.Amber : EstiloPos.Border);
-                using (var pen = new System.Drawing.Pen(colorBorde, hover ? 2.2f : 1.5f))
-                    pe.Graphics.DrawRectangle(pen, 0, 0, tile.Width - 1, tile.Height - 1);
+                // Dibujado HACIA ADENTRO (1px de margen): con pluma gruesa, dibujar en el filo (0,0)
+                // recorta la mitad del trazo y se ve mal junto al título. Inset = borde limpio y parejo.
+                using (var pen = new System.Drawing.Pen(colorBorde, hover ? 2f : 1.5f))
+                    pe.Graphics.DrawRectangle(pen, 1, 1, tile.Width - 3, tile.Height - 3);
             };
 
             var lblNombre = new Label
@@ -370,9 +372,10 @@ namespace Presentacion.Forms
                 Text      = p.Nombre,
                 Font      = FontTileNombre,
                 ForeColor = EstiloPos.Ink1,
+                BackColor = Color.Transparent,   // sigue el fondo de la tarjeta (incl. el hover)
                 AutoSize  = false,
-                Location  = new Point(10, 8),
-                Size      = new Size(tile.Width - 20, 38),
+                Location  = new Point(10, 10),
+                Size      = new Size(tile.Width - 20, 36),
                 TextAlign = ContentAlignment.TopLeft
             };
             var lblPrecio = new Label
@@ -380,6 +383,7 @@ namespace Presentacion.Forms
                 Text      = "$" + p.PrecioConDescuento.ToString("N0"),
                 Font      = FontTilePrecio,
                 ForeColor = p.TieneDescuento ? EstiloPos.Verde : EstiloPos.Ink1,
+                BackColor = Color.Transparent,
                 AutoSize  = true,
                 Location  = new Point(10, 48)
             };
@@ -389,6 +393,7 @@ namespace Presentacion.Forms
                                       : p.Stock.ToString("0.##") + " " + p.UnidadMedida,
                 Font      = FontTileStock,
                 ForeColor = bajoStock ? EstiloPos.Amber : EstiloPos.Ink3,
+                BackColor = Color.Transparent,
                 AutoSize  = true,
                 Location  = new Point(10, 74)
             };
