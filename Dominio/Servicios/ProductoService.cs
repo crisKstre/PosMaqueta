@@ -58,6 +58,9 @@ namespace Dominio.Servicios
             if (p.Precio < 0)
                 return "El precio no puede ser negativo.";
 
+            if (p.Costo < 0)
+                return "El costo no puede ser negativo.";
+
             if (p.Stock < 0)
                 return "El stock no puede ser negativo.";
 
@@ -186,6 +189,12 @@ namespace Dominio.Servicios
         public bool EstaBajoStock(Producto p)
         {
             return p.Stock <= p.StockMinimo;
+        }
+
+        // Valor del inventario activo a costo (Σ Stock × Costo). Solo admin lo consume (FormProductos).
+        public decimal ValorInventarioACosto()
+        {
+            return productoDao.ValorInventarioACosto();
         }
     }
 }

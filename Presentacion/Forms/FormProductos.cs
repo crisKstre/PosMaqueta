@@ -61,7 +61,7 @@ namespace Presentacion.Forms
             lblModo.ForeColor = EstiloPos.Ink1;
 
             // Labels de campo
-            foreach (var l in new[] { lblCodigo, lblNombre, lblCategoria, lblPrecio,
+            foreach (var l in new[] { lblCodigo, lblNombre, lblCategoria, lblPrecio, lblCosto,
                                        lblStock, lblStockMin, lblUnidad })
             {
                 l.Font      = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
@@ -79,7 +79,7 @@ namespace Presentacion.Forms
             }
 
             // Inputs fila 1 y 2
-            foreach (var t in new[] { txtCodigo, txtNombre, txtPrecio, txtStock, txtStockMin })
+            foreach (var t in new[] { txtCodigo, txtNombre, txtPrecio, txtCosto, txtStock, txtStockMin })
                 EstiloPos.AplicarInput(t);
             foreach (var t in new[] { txtBuscar, txtCantidad })
             {
@@ -92,7 +92,7 @@ namespace Presentacion.Forms
             EstiloPos.AplicarCombo(comboCategoria);
             EstiloPos.AplicarCombo(comboUnidad);
             comboCategoria.Size = new System.Drawing.Size(210, EstiloPos.AlturaInput);
-            comboUnidad.Size    = new System.Drawing.Size(110, EstiloPos.AlturaInput);
+            comboUnidad.Size    = new System.Drawing.Size(100, EstiloPos.AlturaInput);
 
             // Botón gestionar categoría
             EstiloPos.AplicarBotonSecundario(btnGestionarCat);
@@ -186,6 +186,9 @@ namespace Presentacion.Forms
             btnDescontar.Visible  = false;   // descontar stock
             btnDesactivar.Visible = false;
             btnEliminar.Visible   = false;
+            // El costo y el margen son información sensible: el cajero no los ve.
+            dgvProductos.Columns["colCosto"].Visible  = false;
+            dgvProductos.Columns["colMargen"].Visible = false;
         }
 
         private void FormProductos_FormClosed(object sender, FormClosedEventArgs e)
@@ -282,7 +285,9 @@ namespace Presentacion.Forms
                 int fila = dgvProductos.Rows.Add(p.IdProducto, p.CodigoBarras, p.Nombre,
                     p.Categoria, "$" + p.Precio.ToString("N0"),
                     p.TieneDescuento ? "-" + p.DescuentoPorcentaje.ToString("0.##") + "%" : "—",
-                    p.Stock.ToString("0.##") + " " + p.UnidadMedida, estado);
+                    p.Stock.ToString("0.##") + " " + p.UnidadMedida, estado,
+                    p.TieneCosto ? "$" + p.Costo.ToString("N0") : "—",
+                    p.TieneCosto ? "$" + p.MargenUnitario.ToString("N0") + " (" + p.MargenPorcentaje.ToString("0") + "%)" : "—");
 
                 var row = dgvProductos.Rows[fila];
                 if (!p.Activo)
@@ -299,6 +304,13 @@ namespace Presentacion.Forms
                 {
                     row.Cells["colEstado"].Style.ForeColor = Color.FromArgb(30, 120, 30);
                     row.Cells["colEstado"].Style.SelectionForeColor = Color.FromArgb(30, 120, 30);
+                }
+
+                // Alerta: margen negativo (precio efectivo por debajo del costo) en rojo.
+                if (p.TieneCosto && p.MargenUnitario < 0)
+                {
+                    row.Cells["colMargen"].Style.ForeColor = Color.FromArgb(180, 30, 30);
+                    row.Cells["colMargen"].Style.SelectionForeColor = Color.FromArgb(180, 30, 30);
                 }
             }
             dgvProductos.ResumeLayout();
@@ -435,7 +447,8 @@ namespace Presentacion.Forms
             if (!decimal.TryParse(txtPrecio.Text, out decimal precio))  { MostrarError("Precio inválido.");  return; }
             if (!decimal.TryParse(txtStock.Text,  out decimal stock))   { MostrarError("Stock inválido.");   return; }
             decimal.TryParse(txtStockMin.Text, out decimal stockMin);
-            p.Precio = precio; p.Stock = stock; p.StockMinimo = stockMin;
+            decimal.TryParse(txtCosto.Text, out decimal costo);   // costo opcional (0 si vacío)
+            p.Precio = precio; p.Stock = stock; p.StockMinimo = stockMin; p.Costo = costo;
 
             // Confirmar antes de actualizar un producto existente (no para el alta)
             if (idEnEdicion != 0 &&
@@ -475,6 +488,7 @@ namespace Presentacion.Forms
             txtNombre.Text         = prod.Nombre;
             comboCategoria.Text    = prod.Categoria;
             txtPrecio.Text         = prod.Precio.ToString("0.##");
+            txtCosto.Text          = prod.Costo.ToString("0.##");
             txtStock.Text          = prod.Stock.ToString("0.##");
             txtStockMin.Text       = prod.StockMinimo.ToString("0.##");
             comboUnidad.SelectedItem = prod.UnidadMedida;
@@ -568,7 +582,7 @@ namespace Presentacion.Forms
         {
             idEnEdicion = 0;
             txtCodigo.Clear(); txtNombre.Clear(); comboCategoria.Text = "";
-            txtPrecio.Clear(); txtStock.Clear(); txtStockMin.Clear();
+            txtPrecio.Clear(); txtCosto.Clear(); txtStock.Clear(); txtStockMin.Clear();
             // (el descuento se gestiona aparte, con clic derecho sobre el producto)
             comboUnidad.SelectedIndex = 0;
             lblModo.Text = "Nuevo producto";

@@ -11,6 +11,7 @@ namespace Entidades
         public decimal PrecioUnitario { get; set; }   // precio efectivamente cobrado (ya con descuento)
         public decimal PrecioOriginal { get; set; }   // precio de lista antes del descuento
         public decimal DescuentoPorcentaje { get; set; } // % aplicado a esta línea (0 = sin descuento)
+        public decimal CostoUnitario { get; set; }    // snapshot del costo del producto al momento de la venta
         public decimal Subtotal { get; set; }
 
         public bool TieneDescuento => DescuentoPorcentaje > 0;

@@ -64,8 +64,8 @@ namespace AccesoData.DAO
         private void InsertarDetalle(DbConnection con, DbTransaction tran, int idVenta, DetalleVenta d)
         {
             string sql = @"
-                INSERT INTO DetalleVenta (IdVenta, IdProducto, Cantidad, PrecioUnitario, PrecioOriginal, DescuentoPorcentaje, Subtotal)
-                VALUES (@idVenta, @idProducto, @cantidad, @precio, @precioOrig, @descuento, @subtotal);";
+                INSERT INTO DetalleVenta (IdVenta, IdProducto, Cantidad, PrecioUnitario, PrecioOriginal, DescuentoPorcentaje, CostoUnitario, Subtotal)
+                VALUES (@idVenta, @idProducto, @cantidad, @precio, @precioOrig, @descuento, @costo, @subtotal);";
 
             using (var cmd = con.Comando(sql, tran))
             {
@@ -75,6 +75,7 @@ namespace AccesoData.DAO
                 cmd.AddParam("@precio", d.PrecioUnitario);
                 cmd.AddParam("@precioOrig", d.PrecioOriginal > 0 ? d.PrecioOriginal : d.PrecioUnitario);
                 cmd.AddParam("@descuento", d.DescuentoPorcentaje);
+                cmd.AddParam("@costo", d.CostoUnitario);
                 cmd.AddParam("@subtotal", d.Subtotal);
                 cmd.ExecuteNonQuery();
             }
@@ -156,6 +157,18 @@ namespace AccesoData.DAO
                     cmd.AddParam("@hasta", h);
                     r.TotalDevoluciones = Convert.ToDecimal(cmd.ExecuteScalar());
                 }
+
+                // Costo de lo vendido (COGS) del período, para la utilidad/margen del reporte.
+                // Solo cuenta lo que tenga costo cargado; el resto suma 0 (ventas viejas, productos sin costo).
+                using (var cmd = con.Comando(@"
+                    SELECT COALESCE(SUM(d.CostoUnitario * d.Cantidad), 0)
+                    FROM DetalleVenta d JOIN Venta v ON d.IdVenta = v.IdVenta
+                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0;"))
+                {
+                    cmd.AddParam("@desde", d);
+                    cmd.AddParam("@hasta", h);
+                    r.TotalCosto = Convert.ToDecimal(cmd.ExecuteScalar());
+                }
             }
             return r;
         }
@@ -169,7 +182,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string seleccion = Dialecto.EsSqlServer ? "SELECT TOP (@top) " : "SELECT ";
                 string limite    = Dialecto.EsSqlServer ? "" : " LIMIT @top";
-                string sql = seleccion + @"p.Nombre, SUM(d.Cantidad), SUM(d.Subtotal)
+                string sql = seleccion + @"p.Nombre, SUM(d.Cantidad), SUM(d.Subtotal), SUM(d.CostoUnitario * d.Cantidad)
                     FROM DetalleVenta d
                     JOIN Venta v    ON d.IdVenta    = v.IdVenta
                     JOIN Producto p ON d.IdProducto = p.IdProducto
@@ -190,10 +203,47 @@ namespace AccesoData.DAO
                             {
                                 Nombre   = reader.GetString(0),
                                 Cantidad = reader.GetDecimal(1),
-                                Total    = reader.GetDecimal(2)
+                                Total    = reader.GetDecimal(2),
+                                Costo    = reader.GetDecimal(3)
                             });
                         }
                     }
+                }
+            }
+            return lista;
+        }
+
+        // Productos que MÁS UTILIDAD dejaron en un rango (Σ venta − Σ costo), ordenados por utilidad.
+        public List<ProductoVendido> ObtenerTopUtilidad(DateTime desde, DateTime hasta, int top)
+        {
+            var lista = new List<ProductoVendido>();
+            using (var con = GetConnection())
+            {
+                con.Open();
+                string seleccion = Dialecto.EsSqlServer ? "SELECT TOP (@top) " : "SELECT ";
+                string limite    = Dialecto.EsSqlServer ? "" : " LIMIT @top";
+                string sql = seleccion + @"p.Nombre, SUM(d.Cantidad), SUM(d.Subtotal), SUM(d.CostoUnitario * d.Cantidad)
+                    FROM DetalleVenta d
+                    JOIN Venta v    ON d.IdVenta    = v.IdVenta
+                    JOIN Producto p ON d.IdProducto = p.IdProducto
+                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0
+                    GROUP BY d.IdProducto, p.Nombre
+                    ORDER BY SUM(d.Subtotal - d.CostoUnitario * d.Cantidad) DESC" + limite + ";";
+
+                using (var cmd = con.Comando(sql))
+                {
+                    cmd.AddParam("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
+                    cmd.AddParam("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
+                    cmd.AddParam("@top", top);
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            lista.Add(new ProductoVendido
+                            {
+                                Nombre   = reader.GetString(0),
+                                Cantidad = reader.GetDecimal(1),
+                                Total    = reader.GetDecimal(2),
+                                Costo    = reader.GetDecimal(3)
+                            });
                 }
             }
             return lista;
@@ -252,7 +302,7 @@ namespace AccesoData.DAO
                            COALESCE(p.CodigoBarras, ''),
                            p.Nombre,
                            d.Cantidad, d.PrecioUnitario, d.Subtotal,
-                           d.PrecioOriginal, d.DescuentoPorcentaje
+                           d.PrecioOriginal, d.DescuentoPorcentaje, d.CostoUnitario
                     FROM DetalleVenta d
                     LEFT JOIN Producto p ON d.IdProducto = p.IdProducto
                     WHERE d.IdVenta = @id;";
@@ -272,7 +322,8 @@ namespace AccesoData.DAO
                                 PrecioUnitario = reader.GetDecimal(4),
                                 Subtotal       = reader.GetDecimal(5),
                                 PrecioOriginal = reader.GetDecimal(6),
-                                DescuentoPorcentaje = reader.GetDecimal(7)
+                                DescuentoPorcentaje = reader.GetDecimal(7),
+                                CostoUnitario  = reader.GetDecimal(8)
                             });
                         }
                 }

@@ -95,6 +95,26 @@ namespace PosMaqueta.Tests
             Assert.Equal(1, res.Creados);
         }
 
+        [Fact]
+        public void Importa_con_columna_costo()
+        {
+            var res = svc.ImportarProductos(Csv(
+                "CodigoBarras,Nombre,Categoria,Precio,Stock,StockMinimo,Unidad,Costo\n" +
+                "C1,Cola,Bebidas,1000,10,2,Unidad,600\n"));
+            Assert.Equal(1, res.Creados);
+            Assert.Equal(600m, productos.ObtenerPorCodigo("C1").Costo);
+        }
+
+        [Fact]
+        public void Reimportar_sin_costo_conserva_el_costo_cargado()
+        {
+            svc.ImportarProductos(Csv("C2,Pan,Bebidas,1500,10,2,Unidad,900\n"));   // crea con costo 900
+            svc.ImportarProductos(Csv("C2,Pan,Bebidas,1600,8,2,Unidad\n"));        // reimporta SIN costo (7 columnas)
+            var p = productos.ObtenerPorCodigo("C2");
+            Assert.Equal(1600m, p.Precio);   // el precio sí se actualiza
+            Assert.Equal(900m,  p.Costo);    // el costo se conserva (no se pisa con 0)
+        }
+
         // 3.A / C13 — un cajero no puede importar catálogo aunque invoque el servicio directo.
         [Fact]
         public void Importar_como_cajero_lanza()

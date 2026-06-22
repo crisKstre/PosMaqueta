@@ -129,5 +129,29 @@ namespace PosMaqueta.Tests
             Assert.Contains(lista, x => x.IdProducto == bajo);
             Assert.DoesNotContain(lista, x => x.IdProducto == ok);
         }
+
+        // ── Costo / utilidad ──────────────────────────────────────────────
+        [Fact]
+        public void Crear_persiste_el_costo_y_calcula_margen()
+        {
+            int id = svc.Crear(new Producto { Nombre = "Cola", Precio = 1000m, Costo = 600m, Stock = 10m,
+                UnidadMedida = UnidadMedida.Unidad, Categoria = "Bebidas" });
+            var p = svc.ObtenerPorId(id);
+            Assert.Equal(600m, p.Costo);
+            Assert.Equal(400m, p.MargenUnitario);
+        }
+
+        [Fact]
+        public void Crear_con_costo_negativo_lanza()
+            => Assert.Throws<NegocioException>(() => svc.Crear(new Producto { Nombre = "X", Precio = 1000m,
+                Costo = -1m, Stock = 1m, UnidadMedida = UnidadMedida.Unidad }));
+
+        [Fact]
+        public void ValorInventarioACosto_suma_stock_por_costo()
+        {
+            svc.Crear(new Producto { Nombre = "A", Precio = 1000m, Costo = 500m, Stock = 10m, UnidadMedida = UnidadMedida.Unidad, Categoria = "Bebidas" }); // 5000
+            svc.Crear(new Producto { Nombre = "B", Precio = 2000m, Costo = 300m, Stock = 4m,  UnidadMedida = UnidadMedida.Unidad, Categoria = "Bebidas" }); // 1200
+            Assert.Equal(6200m, svc.ValorInventarioACosto());
+        }
     }
 }

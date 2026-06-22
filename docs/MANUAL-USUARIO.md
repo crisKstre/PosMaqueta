@@ -216,7 +216,8 @@ Además puede:
   muestra el porcentaje vigente. La oferta se aplica sola al vender ese producto.
 - **Importar catálogo (CSV)** (botón **Importar CSV**): da de alta muchos productos de una vez
   desde un archivo. Formato (una fila por producto, **encabezado opcional**):
-  `CodigoBarras,Nombre,Categoria,Precio,Stock,StockMinimo,Unidad`. Acepta separador **coma o punto
+  `CodigoBarras,Nombre,Categoria,Precio,Stock,StockMinimo,Unidad,Costo` (el `Costo` es **opcional**;
+  al reimportar sin esa columna, el costo ya cargado se conserva). Acepta separador **coma o punto
   y coma**, crea solas las **categorías nuevas** y, si un producto ya existe (por código de
   barras), lo **actualiza**. Al terminar muestra cuántos se crearon, se actualizaron y las filas
   con error. Guárdalo como **CSV UTF-8**. Hay una plantilla de ejemplo en

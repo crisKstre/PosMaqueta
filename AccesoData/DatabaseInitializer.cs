@@ -15,7 +15,7 @@ namespace AccesoData
         // Versión del esquema que maneja ESTA app. Se sube al agregar una migración nueva (0.B).
         // Si la BD trae una versión MAYOR (otra caja con binario más nuevo ya migró), se aborta el
         // arranque con un mensaje claro, en vez de operar contra un esquema desconocido.
-        public const int ESQUEMA_VERSION = 3;   // v2: PagoVenta (pago mixto); v3: Devolucion (devolución parcial)
+        public const int ESQUEMA_VERSION = 4;   // v2: PagoVenta; v3: Devolucion; v4: Costo/CostoUnitario (utilidad)
 
         public void Inicializar()
         {
@@ -89,6 +89,7 @@ namespace AccesoData
                 Nombre       TEXT    NOT NULL,
                 Categoria    TEXT,
                 Precio       REAL    NOT NULL DEFAULT 0,
+                Costo        REAL    NOT NULL DEFAULT 0,
                 Stock        REAL    NOT NULL DEFAULT 0,
                 StockMinimo  REAL    NOT NULL DEFAULT 0,
                 UnidadMedida TEXT    NOT NULL DEFAULT 'Unidad',
@@ -135,6 +136,7 @@ namespace AccesoData
                 PrecioUnitario REAL    NOT NULL DEFAULT 0,
                 PrecioOriginal REAL    NOT NULL DEFAULT 0,
                 DescuentoPorcentaje REAL NOT NULL DEFAULT 0,
+                CostoUnitario  REAL    NOT NULL DEFAULT 0,
                 Subtotal       REAL    NOT NULL DEFAULT 0,
                 FOREIGN KEY (IdVenta)    REFERENCES Venta(IdVenta),
                 FOREIGN KEY (IdProducto) REFERENCES Producto(IdProducto)
@@ -195,6 +197,7 @@ namespace AccesoData
                 Nombre       NVARCHAR(150) NOT NULL,
                 Categoria    NVARCHAR(100) NULL,
                 Precio       DECIMAL(18,4) NOT NULL DEFAULT 0,
+                Costo        DECIMAL(18,4) NOT NULL DEFAULT 0,
                 Stock        DECIMAL(18,4) NOT NULL DEFAULT 0,
                 StockMinimo  DECIMAL(18,4) NOT NULL DEFAULT 0,
                 UnidadMedida NVARCHAR(20)  NOT NULL DEFAULT 'Unidad',
@@ -246,6 +249,7 @@ namespace AccesoData
                 PrecioUnitario DECIMAL(18,4) NOT NULL DEFAULT 0,
                 PrecioOriginal DECIMAL(18,4) NOT NULL DEFAULT 0,
                 DescuentoPorcentaje DECIMAL(18,4) NOT NULL DEFAULT 0,
+                CostoUnitario  DECIMAL(18,4) NOT NULL DEFAULT 0,
                 Subtotal       DECIMAL(18,4) NOT NULL DEFAULT 0,
                 CONSTRAINT FK_Detalle_Venta    FOREIGN KEY (IdVenta)    REFERENCES Venta(IdVenta),
                 CONSTRAINT FK_Detalle_Producto FOREIGN KEY (IdProducto) REFERENCES Producto(IdProducto)
@@ -301,6 +305,12 @@ namespace AccesoData
                 // BD ya existente: forzamos el cambio de la clave del admin por defecto en su próximo ingreso.
                 Ejecutar(con, "UPDATE Usuario SET DebeCambiarPassword = 1 WHERE LoginNombre = 'admin';");
             }
+
+            // v4: costo del producto y snapshot del costo en la venta (utilidad/margen).
+            if (!ColumnaExiste(con, "Producto", "Costo"))
+                Ejecutar(con, "ALTER TABLE Producto ADD COLUMN Costo REAL NOT NULL DEFAULT 0;");
+            if (!ColumnaExiste(con, "DetalleVenta", "CostoUnitario"))
+                Ejecutar(con, "ALTER TABLE DetalleVenta ADD COLUMN CostoUnitario REAL NOT NULL DEFAULT 0;");
 
             // Backfill de PagoVenta para BDs anteriores al pago mixto (v2): el desglose de arqueo/reportes
             // lee SOLO de PagoVenta, así que una venta sin filas de pago desaparece del efectivo del arqueo

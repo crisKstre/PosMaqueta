@@ -10,9 +10,11 @@ namespace Presentacion.Forms
     public class FormReportes : Form
     {
         private readonly VentaService ventaService = new VentaService();
+        private readonly ProductoService productoService = new ProductoService();
 
         private DateTimePicker dtpDesde, dtpHasta;
         private Label lblVentasVal, lblTotalVal, lblIvaVal, lblTicketVal, lblDesgloseVal;
+        private Label lblUtilVal, lblMargenVal, lblInvVal;
         private DataGridView dgvTop, dgvVentas;
         private List<Venta> ventasPeriodo = new List<Venta>();
 
@@ -25,6 +27,11 @@ namespace Presentacion.Forms
         private void InitUI()
         {
             this.BackColor = EstiloPos.Fondo;
+            // A 720p el header + tarjetas dejan poco alto para las tablas. AutoScrollMinSize fuerza un
+            // área virtual mínima: si la pantalla es más baja aparece scroll vertical y las tablas se ven
+            // completas; en pantallas altas (1080p) no hay scroll y todo se ve directo.
+            this.AutoScroll = true;
+            this.AutoScrollMinSize = new Size(0, 726);
             this.Load += (s, e) => SetRango(DateTime.Today, DateTime.Today);
 
             // ── Header + filtro de fechas ──────────────────────────────────
@@ -77,34 +84,38 @@ namespace Presentacion.Forms
             // ── Cards ──────────────────────────────────────────────────────
             var pnlCards = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top, Height = 138, Padding = new Padding(24, 0, 0, 18),
-                BackColor = EstiloPos.Fondo, FlowDirection = FlowDirection.LeftToRight, WrapContents = false
+                Dock = DockStyle.Top, Height = 232, Padding = new Padding(24, 0, 0, 14),
+                BackColor = EstiloPos.Fondo, FlowDirection = FlowDirection.LeftToRight, WrapContents = true
             };
             pnlCards.Controls.Add(CrearCard("Ventas",          EstiloPos.Azul,  out lblVentasVal));
             pnlCards.Controls.Add(CrearCard("Total vendido",   EstiloPos.Verde, out lblTotalVal));
+            pnlCards.Controls.Add(CrearCard("Utilidad",        EstiloPos.Verde, out lblUtilVal));
+            pnlCards.Controls.Add(CrearCard("Margen",          EstiloPos.Azul,  out lblMargenVal));
             pnlCards.Controls.Add(CrearCard("IVA (19%) incl.", EstiloPos.Ink2,  out lblIvaVal));
             pnlCards.Controls.Add(CrearCard("Ticket promedio", EstiloPos.Amber, out lblTicketVal));
+            pnlCards.Controls.Add(CrearCard("Inventario a costo", EstiloPos.Ink2, out lblInvVal));
             pnlCards.Controls.Add(CrearCard("Medios de pago",  EstiloPos.Ink2,  out lblDesgloseVal));
             lblDesgloseVal.Font      = EstiloPos.FontSmall;
             lblDesgloseVal.ForeColor = EstiloPos.Ink1;
             lblDesgloseVal.TextAlign = ContentAlignment.TopLeft;
-            lblDesgloseVal.Location  = new Point(16, 30);
-            lblDesgloseVal.Size      = new Size(170, 82);
+            lblDesgloseVal.Location  = new Point(16, 26);
+            lblDesgloseVal.Size      = new Size(170, 70);
 
             // ── Tablas ─────────────────────────────────────────────────────
             var split = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
-                Padding = new Padding(24, 0, 24, 24), BackColor = EstiloPos.Fondo
+                Padding = new Padding(24, 0, 24, 44), BackColor = EstiloPos.Fondo
             };
             split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46F));
             split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54F));
             split.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-            var pnlTopProd = CrearPanelTabla("Productos más vendidos", out dgvTop, new Padding(0, 0, 10, 0));
+            var pnlTopProd = CrearPanelTabla("Top productos por utilidad", out dgvTop, new Padding(0, 0, 10, 0));
             dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Producto", FillWeight = 120 });
-            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Cant.",    FillWeight = 45 });
-            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",    FillWeight = 55 });
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Cant.",    FillWeight = 40 });
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",    FillWeight = 50 });
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Utilidad", FillWeight = 55 });
             EstiloPos.AplicarGrid(dgvTop);
 
             var pnlListaVentas = CrearPanelTabla("Ventas del período  ·  doble clic para ver detalle", out dgvVentas, new Padding(10, 0, 0, 0));
@@ -153,10 +164,13 @@ namespace Presentacion.Forms
                 "Tarjeta:   $" + r.TotalTarjeta.ToString("N0") + "\n" +
                 "Transfer.: $" + r.TotalTransferencia.ToString("N0") + "\n" +
                 "Devoluc.: -$" + r.TotalDevoluciones.ToString("N0");
+            lblUtilVal.Text   = "$" + r.Utilidad.ToString("N0");
+            lblMargenVal.Text = r.MargenPorcentaje.ToString("0") + "%";
+            lblInvVal.Text    = "$" + productoService.ValorInventarioACosto().ToString("N0");
 
             dgvTop.Rows.Clear();
-            foreach (var p in ventaService.ObtenerTopProductos(desde, hasta, 12))
-                dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.##"), "$" + p.Total.ToString("N0"));
+            foreach (var p in ventaService.ObtenerTopUtilidad(desde, hasta, 12))
+                dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.##"), "$" + p.Total.ToString("N0"), "$" + p.Utilidad.ToString("N0"));
 
             ventasPeriodo = ventaService.ObtenerVentas(desde, hasta);
             dgvVentas.Rows.Clear();
@@ -231,7 +245,7 @@ namespace Presentacion.Forms
 
         private Panel CrearCard(string titulo, Color acento, out Label valor)
         {
-            var card = new Panel { Width = 192, Height = 116, Margin = new Padding(0, 0, 14, 0), BackColor = EstiloPos.Surface };
+            var card = new Panel { Width = 192, Height = 100, Margin = new Padding(0, 0, 14, 12), BackColor = EstiloPos.Surface };
             var barra = new Panel { Width = 4, Dock = DockStyle.Left, BackColor = acento };
 
             var lblTit = new Label

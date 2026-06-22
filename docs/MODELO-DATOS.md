@@ -39,6 +39,7 @@ erDiagram
         text Nombre
         text Categoria "nombre, no FK"
         real Precio "incluye IVA"
+        real Costo "compra, con IVA"
         real Stock
         real StockMinimo
         text UnidadMedida "Unidad | Kg"
@@ -73,6 +74,7 @@ erDiagram
         real PrecioUnitario "cobrado (con descuento)"
         real PrecioOriginal "de lista"
         real DescuentoPorcentaje "de la línea"
+        real CostoUnitario "snapshot al vender"
         real Subtotal
     }
     LOGMOVIMIENTO {
@@ -126,6 +128,7 @@ Catálogo. Los precios **incluyen IVA**.
 | `Nombre` | TEXT | |
 | `Categoria` | TEXT | nombre de la categoría (no FK) |
 | `Precio` | REAL | precio de venta (con IVA) |
+| `Costo` | REAL | costo de compra (con IVA); 0 = sin costo cargado. Base de la utilidad/margen |
 | `Stock` | REAL | admite decimales (venta por kg) |
 | `StockMinimo` | REAL | umbral de alerta de bajo stock |
 | `UnidadMedida` | TEXT | `Unidad` o `Kg` |
@@ -172,6 +175,7 @@ Líneas (ítems) de cada venta.
 | `PrecioUnitario` | REAL | precio cobrado (ya con descuento) |
 | `PrecioOriginal` | REAL | precio de lista antes del descuento |
 | `DescuentoPorcentaje` | REAL | % aplicado a esta línea |
+| `CostoUnitario` | REAL | **snapshot** del costo del producto al vender (la utilidad histórica no cambia si luego cambia el costo) |
 | `Subtotal` | REAL | `Cantidad × PrecioUnitario` |
 
 ### `LogMovimiento`
@@ -215,7 +219,8 @@ no, ejecuta `ALTER TABLE ... ADD COLUMN`. Así una BD vieja se actualiza sin per
 
 Columnas agregadas por migración: `Venta.Anulada`, `Venta.Descuento`,
 `Producto.DescuentoPorcentaje`, `DetalleVenta.PrecioOriginal`, `DetalleVenta.DescuentoPorcentaje`,
-`Usuario.DebeCambiarPassword` (al agregarla, marca al `admin` existente para forzar el cambio).
+`Usuario.DebeCambiarPassword` (al agregarla, marca al `admin` existente para forzar el cambio),
+`Producto.Costo` y `DetalleVenta.CostoUnitario` (v4).
 
 **Versionado de esquema.** La tabla `SchemaVersion(Version)` guarda la versión del esquema. Al
 arrancar, si la BD trae una versión **mayor** que la del binario (otra caja se actualizó antes), la
@@ -231,6 +236,11 @@ transferencia desde `PagoVenta` (no desde `Venta.MedioPago`, que pasa a ser un r
 **`DevolucionItem(IdDevolucion, IdProducto, Cantidad, Subtotal)`**. Reintegra el stock de lo devuelto
 y **resta del efectivo esperado** del arqueo (`ResumenCaja.TotalDevoluciones`); no se puede devolver
 más de lo vendido (se valida contra las devoluciones previas).
+
+**v4 (costo y utilidad):** **`Producto.Costo`** (costo de compra, con IVA) y **`DetalleVenta.CostoUnitario`**
+(snapshot del costo al vender). Habilitan utilidad/margen por período y top por utilidad en Reportes,
+valorización del inventario a costo y la alerta de margen negativo. El costo/margen es **solo para
+administrador**; el importador CSV acepta una 8ª columna `Costo` opcional.
 
 ## Modo WAL
 

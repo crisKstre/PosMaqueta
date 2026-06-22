@@ -15,7 +15,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo
                     FROM Producto";
                 if (soloActivos)
                     sql += " WHERE Activo = 1";
@@ -37,7 +37,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo
                     FROM Producto
                     WHERE (Nombre LIKE @texto OR CodigoBarras LIKE @texto)
                     ORDER BY Activo DESC, Nombre;";
@@ -60,7 +60,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo
                     FROM Producto
                     WHERE CodigoBarras = @codigo AND Activo = 1;";
 
@@ -80,7 +80,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo
                     FROM Producto
                     WHERE IdProducto = @id;";
 
@@ -102,7 +102,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo
                     FROM Producto
                     WHERE Nombre = @nombre
                     ORDER BY Activo DESC, IdProducto;";
@@ -138,7 +138,7 @@ namespace AccesoData.DAO
             {
                 con.Open();
                 string sql = @"SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                                      Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                                      Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo
                                FROM Producto
                                WHERE Activo = 1 AND Categoria = @cat
                                ORDER BY Nombre;";
@@ -161,7 +161,7 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     SELECT IdProducto, CodigoBarras, Nombre, Categoria, Precio,
-                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje
+                           Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo
                     FROM Producto
                     WHERE Activo = 1 AND Stock <= StockMinimo
                     ORDER BY Nombre;";
@@ -171,6 +171,17 @@ namespace AccesoData.DAO
                         lista.Add(Mapear(reader));
             }
             return lista;
+        }
+
+        // Valor del inventario activo valorizado a COSTO (Σ Stock × Costo). Cuánta plata hay "parada".
+        public decimal ValorInventarioACosto()
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var cmd = con.Comando("SELECT COALESCE(SUM(Stock * Costo), 0) FROM Producto WHERE Activo = 1;"))
+                    return Convert.ToDecimal(cmd.ExecuteScalar());
+            }
         }
 
         public bool ExisteCodigo(string codigoBarras, int idExcluir = 0)
@@ -196,9 +207,9 @@ namespace AccesoData.DAO
                 con.Open();
                 string sql = @"
                     INSERT INTO Producto (CodigoBarras, Nombre, Categoria, Precio,
-                                          Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje)
+                                          Stock, StockMinimo, UnidadMedida, Activo, DescuentoPorcentaje, Costo)
                     VALUES (@codigo, @nombre, @categoria, @precio,
-                            @stock, @stockMin, @unidad, 1, @descuento);
+                            @stock, @stockMin, @unidad, 1, @descuento, @costo);
                     " + Dialecto.UltimoId;
 
                 using (var cmd = con.Comando(sql))
@@ -221,6 +232,7 @@ namespace AccesoData.DAO
                         Nombre       = @nombre,
                         Categoria    = @categoria,
                         Precio       = @precio,
+                        Costo        = @costo,
                         Stock        = @stock,
                         StockMinimo  = @stockMin,
                         UnidadMedida = @unidad
@@ -321,6 +333,7 @@ namespace AccesoData.DAO
             cmd.AddParam("@nombre", p.Nombre);
             cmd.AddParam("@categoria", p.Categoria);
             cmd.AddParam("@precio", p.Precio);
+            cmd.AddParam("@costo", p.Costo);
             cmd.AddParam("@stock", p.Stock);
             cmd.AddParam("@stockMin", p.StockMinimo);
             cmd.AddParam("@unidad", p.UnidadMedida);
@@ -339,7 +352,8 @@ namespace AccesoData.DAO
                 StockMinimo = reader.GetDecimal(6),
                 UnidadMedida = reader.GetString(7),
                 Activo = reader.GetInt32(8) == 1,
-                DescuentoPorcentaje = reader.GetDecimal(9)
+                DescuentoPorcentaje = reader.GetDecimal(9),
+                Costo = reader.GetDecimal(10)
             };
         }
     }

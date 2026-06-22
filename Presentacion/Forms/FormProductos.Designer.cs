@@ -14,6 +14,7 @@ namespace Presentacion.Forms
         private Label    lblCategoria;   private ComboBox comboCategoria;
         private Button   btnGestionarCat;
         private Label    lblPrecio;      private TextBox  txtPrecio;
+        private Label    lblCosto;       private TextBox  txtCosto;
         private Label    lblStock;       private TextBox  txtStock;
         private Label    lblStockMin;    private TextBox  txtStockMin;
         private Label    lblUnidad;      private ComboBox comboUnidad;
@@ -48,6 +49,8 @@ namespace Presentacion.Forms
         private DataGridViewTextBoxColumn colDescuento;
         private DataGridViewTextBoxColumn colStock;
         private DataGridViewTextBoxColumn colEstado;
+        private DataGridViewTextBoxColumn colCosto;
+        private DataGridViewTextBoxColumn colMargen;
 
         protected override void Dispose(bool disposing)
         {
@@ -68,6 +71,8 @@ namespace Presentacion.Forms
             this.btnGestionarCat = new System.Windows.Forms.Button();
             this.lblPrecio      = new System.Windows.Forms.Label();
             this.txtPrecio      = new System.Windows.Forms.TextBox();
+            this.lblCosto       = new System.Windows.Forms.Label();
+            this.txtCosto       = new System.Windows.Forms.TextBox();
             this.lblStock       = new System.Windows.Forms.Label();
             this.txtStock       = new System.Windows.Forms.TextBox();
             this.lblStockMin    = new System.Windows.Forms.Label();
@@ -109,6 +114,8 @@ namespace Presentacion.Forms
             this.colDescuento   = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colStock       = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colEstado      = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colCosto       = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colMargen      = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlFormulario.SuspendLayout();
             this.pnlAcciones.SuspendLayout();
             this.pnlLog.SuspendLayout();
@@ -122,7 +129,7 @@ namespace Presentacion.Forms
             this.pnlFormulario.Controls.AddRange(new System.Windows.Forms.Control[] {
                 this.lblModo, this.lblCodigo, this.txtCodigo, this.lblNombre, this.txtNombre,
                 this.lblCategoria, this.comboCategoria, this.btnGestionarCat,
-                this.lblPrecio, this.txtPrecio, this.lblStock, this.txtStock,
+                this.lblPrecio, this.txtPrecio, this.lblCosto, this.txtCosto, this.lblStock, this.txtStock,
                 this.lblStockMin, this.txtStockMin, this.lblUnidad, this.comboUnidad,
                 this.btnGuardar, this.btnCancelar, this.lblError });
             this.pnlFormulario.Dock = System.Windows.Forms.DockStyle.Top;
@@ -182,49 +189,59 @@ namespace Presentacion.Forms
             this.txtPrecio.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtPrecio.Location = new System.Drawing.Point(18, 152);
             this.txtPrecio.Name = "txtPrecio";
-            this.txtPrecio.Size = new System.Drawing.Size(140, 38);
+            this.txtPrecio.Size = new System.Drawing.Size(110, 38);
+            // lblCosto
+            this.lblCosto.AutoSize = true;
+            this.lblCosto.Location = new System.Drawing.Point(140, 130);
+            this.lblCosto.Name = "lblCosto";
+            this.lblCosto.Text = "COSTO";
+            // txtCosto
+            this.txtCosto.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtCosto.Location = new System.Drawing.Point(140, 152);
+            this.txtCosto.Name = "txtCosto";
+            this.txtCosto.Size = new System.Drawing.Size(110, 38);
             // lblStock
             this.lblStock.AutoSize = true;
-            this.lblStock.Location = new System.Drawing.Point(176, 130);
+            this.lblStock.Location = new System.Drawing.Point(262, 130);
             this.lblStock.Name = "lblStock";
             this.lblStock.Text = "STOCK";
             // txtStock
             this.txtStock.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtStock.Location = new System.Drawing.Point(176, 152);
+            this.txtStock.Location = new System.Drawing.Point(262, 152);
             this.txtStock.Name = "txtStock";
-            this.txtStock.Size = new System.Drawing.Size(120, 38);
+            this.txtStock.Size = new System.Drawing.Size(100, 38);
             // lblStockMin
             this.lblStockMin.AutoSize = true;
-            this.lblStockMin.Location = new System.Drawing.Point(314, 130);
+            this.lblStockMin.Location = new System.Drawing.Point(374, 130);
             this.lblStockMin.Name = "lblStockMin";
-            this.lblStockMin.Text = "STOCK MÍNIMO";
+            this.lblStockMin.Text = "STOCK MÍN.";
             // txtStockMin
             this.txtStockMin.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtStockMin.Location = new System.Drawing.Point(314, 152);
+            this.txtStockMin.Location = new System.Drawing.Point(374, 152);
             this.txtStockMin.Name = "txtStockMin";
-            this.txtStockMin.Size = new System.Drawing.Size(120, 38);
+            this.txtStockMin.Size = new System.Drawing.Size(100, 38);
             // lblUnidad
             this.lblUnidad.AutoSize = true;
-            this.lblUnidad.Location = new System.Drawing.Point(452, 130);
+            this.lblUnidad.Location = new System.Drawing.Point(486, 130);
             this.lblUnidad.Name = "lblUnidad";
             this.lblUnidad.Text = "UNIDAD";
             // comboUnidad
             this.comboUnidad.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboUnidad.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.comboUnidad.Location = new System.Drawing.Point(452, 152);
+            this.comboUnidad.Location = new System.Drawing.Point(486, 152);
             this.comboUnidad.Name = "comboUnidad";
-            this.comboUnidad.Size = new System.Drawing.Size(110, 38);
+            this.comboUnidad.Size = new System.Drawing.Size(100, 38);
             // btnGuardar
             this.btnGuardar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnGuardar.Location = new System.Drawing.Point(580, 152);
+            this.btnGuardar.Location = new System.Drawing.Point(598, 152);
             this.btnGuardar.Name = "btnGuardar";
-            this.btnGuardar.Size = new System.Drawing.Size(140, 38);
+            this.btnGuardar.Size = new System.Drawing.Size(120, 38);
             this.btnGuardar.Text = "Guardar";
             this.btnGuardar.UseVisualStyleBackColor = false;
             this.btnGuardar.Click += new System.EventHandler(this.btnGuardar_Click);
             // btnCancelar
             this.btnCancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancelar.Location = new System.Drawing.Point(728, 152);
+            this.btnCancelar.Location = new System.Drawing.Point(730, 152);
             this.btnCancelar.Name = "btnCancelar";
             this.btnCancelar.Size = new System.Drawing.Size(110, 38);
             this.btnCancelar.Text = "Cancelar";
@@ -312,8 +329,8 @@ namespace Presentacion.Forms
             this.pnlLog.Controls.Add(this.pnlLogFiltros);
             this.pnlLog.Controls.Add(this.dgvLog);
             this.pnlLog.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlLog.Height = 300;
-            this.pnlLog.MinimumSize = new System.Drawing.Size(0, 120);
+            this.pnlLog.Height = 220;
+            this.pnlLog.MinimumSize = new System.Drawing.Size(0, 110);
             this.pnlLog.Name = "pnlLog";
             this.pnlLog.Visible = false;
             // splitterLog
@@ -383,7 +400,7 @@ namespace Presentacion.Forms
             this.dgvProductos.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.dgvProductos.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
                 this.colId, this.colCodigo, this.colNombre, this.colCategoria,
-                this.colPrecio, this.colDescuento, this.colStock, this.colEstado });
+                this.colPrecio, this.colDescuento, this.colStock, this.colEstado, this.colCosto, this.colMargen });
             this.dgvProductos.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvProductos.EnableHeadersVisualStyles = false;
             this.dgvProductos.MultiSelect = false;
@@ -399,6 +416,8 @@ namespace Presentacion.Forms
             this.colDescuento.Name = "colDescuento"; this.colDescuento.HeaderText = "Desc.";   this.colDescuento.FillWeight = 60;
             this.colStock.Name = "colStock";       this.colStock.HeaderText = "Stock";
             this.colEstado.Name = "colEstado";     this.colEstado.HeaderText = "Estado";     this.colEstado.FillWeight = 80;
+            this.colCosto.Name = "colCosto";       this.colCosto.HeaderText = "Costo";       this.colCosto.FillWeight = 70;
+            this.colMargen.Name = "colMargen";     this.colMargen.HeaderText = "Margen";     this.colMargen.FillWeight = 95;
             this.dgvProductos.CellDoubleClick  += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvProductos_CellDoubleClick);
             this.dgvProductos.SelectionChanged += new System.EventHandler(this.dgvProductos_SelectionChanged);
             // FormProductos

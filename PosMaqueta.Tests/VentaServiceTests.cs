@@ -300,5 +300,64 @@ namespace PosMaqueta.Tests
             Assert.Equal(6000m, v.Descuento);         // se persiste el descuento acotado, no 8000
             Assert.Equal(0m, v.Total);
         }
+
+        // ── Costo / utilidad ──────────────────────────────────────────────
+        private int CrearConCosto(string nombre, decimal precio, decimal costo, decimal stock = 100m)
+            => productos.Crear(new Producto { Nombre = nombre, Precio = precio, Costo = costo, Stock = stock,
+                UnidadMedida = UnidadMedida.Unidad, Categoria = "Bebidas" });
+
+        [Fact]
+        public void CobrarVenta_guarda_el_costo_unitario_como_snapshot()
+        {
+            AbrirCaja();
+            int id = CrearConCosto("Cola", 1000m, 600m);
+            ventas.AgregarPorId(id, 2m);
+            int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
+            var det = Assert.Single(ventas.ObtenerDetalleVenta(idVenta));
+            Assert.Equal(600m, det.CostoUnitario);
+        }
+
+        [Fact]
+        public void Cambiar_el_costo_despues_de_vender_no_altera_la_utilidad_historica()
+        {
+            AbrirCaja();
+            int id = CrearConCosto("Cola", 1000m, 600m);
+            ventas.AgregarPorId(id, 1m);
+            int idVenta = ventas.CobrarVenta(1, MedioPago.Efectivo);
+
+            var p = productos.ObtenerPorId(id); p.Costo = 950m; productos.Actualizar(p);  // sube el costo después
+            var det = Assert.Single(ventas.ObtenerDetalleVenta(idVenta));
+            Assert.Equal(600m, det.CostoUnitario);   // el snapshot del momento de la venta no cambia
+        }
+
+        [Fact]
+        public void ResumenVentas_calcula_utilidad_y_margen()
+        {
+            AbrirCaja();
+            int id = CrearConCosto("Cola", 1000m, 600m);
+            ventas.AgregarPorId(id, 2m);              // vende 2000, costo 1200
+            ventas.CobrarVenta(1, MedioPago.Efectivo);
+            var hoy = DateTime.Today;
+            var r = ventas.ObtenerResumenVentas(hoy, hoy);
+            Assert.Equal(2000m, r.TotalVendido);
+            Assert.Equal(1200m, r.TotalCosto);
+            Assert.Equal(800m,  r.Utilidad);
+            Assert.Equal(40m,   r.MargenPorcentaje);  // 800 / 2000 * 100
+        }
+
+        [Fact]
+        public void ObtenerTopUtilidad_ordena_por_utilidad_no_por_cantidad()
+        {
+            AbrirCaja();
+            int barato = CrearConCosto("MuchaVenta",   1000m, 950m);  // margen 50 c/u
+            int caro   = CrearConCosto("MuchaUtilidad", 2000m, 500m); // margen 1500 c/u
+            ventas.AgregarPorId(barato, 5m); ventas.CobrarVenta(1, MedioPago.Efectivo);  // utilidad 250
+            ventas.AgregarPorId(caro, 1m);   ventas.CobrarVenta(1, MedioPago.Efectivo);  // utilidad 1500
+
+            var hoy = DateTime.Today;
+            var top = ventas.ObtenerTopUtilidad(hoy, hoy, 10);
+            Assert.Equal("MuchaUtilidad", top[0].Nombre);
+            Assert.Equal(1500m, top[0].Utilidad);
+        }
     }
 }

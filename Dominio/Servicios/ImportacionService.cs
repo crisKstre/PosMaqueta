@@ -63,7 +63,12 @@ namespace Dominio.Servicios
                         ? productoDao.ObtenerPorCodigo(p.CodigoBarras)
                         : productoDao.ObtenerPorNombre(p.Nombre);
                     bool esNuevo = existente == null;
-                    if (!esNuevo) p.IdProducto = existente.IdProducto;
+                    if (!esNuevo)
+                    {
+                        p.IdProducto = existente.IdProducto;
+                        // Si el CSV no trae costo, conservar el ya cargado (no pisarlo con 0 al reimportar).
+                        if (p.Costo == 0) p.Costo = existente.Costo;
+                    }
 
                     string error = productoService.Validar(p, esNuevo);
                     if (error != null) { res.Errores.Add("Línea " + n + ": " + error); continue; }
@@ -149,12 +154,18 @@ namespace Dominio.Servicios
             if (sStock.Length > 0 && !TryDecimal(sStock, out stock)) { error = "stock inválido (\"" + sStock + "\")."; return null; }
             if (sStockMin.Length > 0 && !TryDecimal(sStockMin, out stockMin)) { error = "stock mínimo inválido (\"" + sStockMin + "\")."; return null; }
 
+            // Costo: columna 8 (índice 7), OPCIONAL. Si falta o viene vacía, queda 0 (sin costo cargado).
+            decimal costo = 0;
+            string sCosto = Campo(7);
+            if (sCosto.Length > 0 && !TryDecimal(sCosto, out costo)) { error = "costo inválido (\"" + sCosto + "\")."; return null; }
+
             return new Producto
             {
                 CodigoBarras = Campo(0),
                 Nombre = nombre,
                 Categoria = Campo(2),
                 Precio = precio,
+                Costo = costo,
                 Stock = stock,
                 StockMinimo = stockMin,
                 UnidadMedida = MapearUnidad(Campo(6)),

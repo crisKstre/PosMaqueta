@@ -1,5 +1,5 @@
-CodigoBarras,Nombre,Categoria,Precio,Stock,StockMinimo,Unidad
-7800001112223,Bebida Cola 1.5L,Bebidas,1490,24,6,Unidad
-7800004445556,Pan Marraqueta,Panadería,1990,10,2,Kg
-7800007778889,Detergente 1L,Limpieza,3290,15,3,Unidad
-,Manzana Roja,Frutas,1290,30,5,Kg
+CodigoBarras,Nombre,Categoria,Precio,Stock,StockMinimo,Unidad,Costo
+7800001112223,Bebida Cola 1.5L,Bebidas,1490,24,6,Unidad,990
+7800004445556,Pan Marraqueta,Panadería,1990,10,2,Kg,1290
+7800007778889,Detergente 1L,Limpieza,3290,15,3,Unidad,2350
+,Manzana Roja,Frutas,1290,30,5,Kg,

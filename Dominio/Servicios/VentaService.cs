@@ -179,6 +179,7 @@ namespace Dominio.Servicios
                     PrecioUnitario = precioEfectivo,
                     PrecioOriginal = producto.Precio,
                     DescuentoPorcentaje = producto.DescuentoPorcentaje,
+                    CostoUnitario = producto.Costo,   // snapshot: la utilidad histórica no cambia si luego cambia el costo
                     Subtotal = Dinero.Redondear(cantidad * precioEfectivo)
                 });
             }
@@ -248,6 +249,10 @@ namespace Dominio.Servicios
 
         public List<ProductoVendido> ObtenerTopProductos(DateTime desde, DateTime hasta, int top = 10)
             => ventaDao.ObtenerTopProductos(desde, hasta, top);
+
+        // Top por utilidad (lo que más plata deja, no lo más vendido).
+        public List<ProductoVendido> ObtenerTopUtilidad(DateTime desde, DateTime hasta, int top = 10)
+            => ventaDao.ObtenerTopUtilidad(desde, hasta, top);
 
         public List<DetalleVenta> ObtenerDetalleVenta(int idVenta)
             => ventaDao.ObtenerDetalleVenta(idVenta);
