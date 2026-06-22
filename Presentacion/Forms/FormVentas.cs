@@ -27,6 +27,20 @@ namespace Presentacion.Forms
         private static readonly Pen PenAccionMenos  = new Pen(EstiloPos.Ink1,  2.6f);
         private static readonly Pen PenAccionMas    = new Pen(EstiloPos.Verde, 2.6f);
         private static readonly Pen PenAccionQuitar = new Pen(EstiloPos.Rojo,  2.6f);
+
+        // Tope de tarjetas de producto que se dibujan a la vez. Una pared de cientos/miles de tiles
+        // (cada uno es un Panel con varios Labels) hace lentísimo el load; el cajero igual agrega por
+        // escáner o por la búsqueda. Si hay más resultados, se muestra un aviso para filtrar.
+        private const int MaxTiles = 60;
+
+        // Fonts de las tarjetas: ESTÁTICAS y compartidas. Antes se creaba un Font por etiqueta y por
+        // tarjeta (miles de objetos GDI) y nunca se liberaban (Control.Dispose no libera su Font),
+        // así que fugaban en cada recarga. Compartidas: sin fuga y sin coste por tarjeta.
+        private static readonly Font FontTileNombre    = new Font("Segoe UI", 11F,  FontStyle.Bold);
+        private static readonly Font FontTilePrecio    = new Font("Segoe UI", 14F,  FontStyle.Bold);
+        private static readonly Font FontTileStock     = new Font("Segoe UI", 10F);
+        private static readonly Font FontTilePrecioOrig= new Font("Segoe UI", 9.5F, FontStyle.Strikeout);
+        private static readonly Font FontTileBadge     = new Font("Segoe UI", 8.5F, FontStyle.Bold);
         private List<Venta> ventasRegistro = new List<Venta>();
         private static readonly TimeSpan InactividadMax = TimeSpan.FromMinutes(10);
 
@@ -286,7 +300,7 @@ namespace Presentacion.Forms
             pnlProdGrid.SuspendLayout();
             var tilesViejos = pnlProdGrid.Controls.Cast<Control>().ToArray();
             pnlProdGrid.Controls.Clear();
-            foreach (var c in tilesViejos) c.Dispose();   // libera Fonts/handlers GDI de las tarjetas previas
+            foreach (var c in tilesViejos) c.Dispose();   // libera los controles/handlers previos (las Fonts son estáticas compartidas)
 
             List<Producto> productos;
             if (!string.IsNullOrEmpty(busqueda))
@@ -296,8 +310,13 @@ namespace Presentacion.Forms
             else
                 productos = productoService.ObtenerActivos();
 
-            foreach (var p in productos)
-                pnlProdGrid.Controls.Add(CrearTileProducto(p));
+            // Solo se dibujan las primeras MaxTiles; el resto se alcanza con la búsqueda/categoría.
+            int total    = productos.Count;
+            int aMostrar = Math.Min(total, MaxTiles);
+            for (int i = 0; i < aMostrar; i++)
+                pnlProdGrid.Controls.Add(CrearTileProducto(productos[i]));
+            if (total > aMostrar)
+                pnlProdGrid.Controls.Add(CrearTileAviso(total - aMostrar));
 
             pnlProdGrid.ResumeLayout();
 
@@ -349,7 +368,7 @@ namespace Presentacion.Forms
             var lblNombre = new Label
             {
                 Text      = p.Nombre,
-                Font      = new Font("Segoe UI", 11F, FontStyle.Bold),
+                Font      = FontTileNombre,
                 ForeColor = EstiloPos.Ink1,
                 AutoSize  = false,
                 Location  = new Point(10, 8),
@@ -359,7 +378,7 @@ namespace Presentacion.Forms
             var lblPrecio = new Label
             {
                 Text      = "$" + p.PrecioConDescuento.ToString("N0"),
-                Font      = new Font("Segoe UI", 14F, FontStyle.Bold),
+                Font      = FontTilePrecio,
                 ForeColor = p.TieneDescuento ? EstiloPos.Verde : EstiloPos.Ink1,
                 AutoSize  = true,
                 Location  = new Point(10, 48)
@@ -368,7 +387,7 @@ namespace Presentacion.Forms
             {
                 Text      = bajoStock ? "⚠ " + p.Stock.ToString("0.##") + " " + p.UnidadMedida
                                       : p.Stock.ToString("0.##") + " " + p.UnidadMedida,
-                Font      = new Font("Segoe UI", 10F),
+                Font      = FontTileStock,
                 ForeColor = bajoStock ? EstiloPos.Amber : EstiloPos.Ink3,
                 AutoSize  = true,
                 Location  = new Point(10, 74)
@@ -405,7 +424,7 @@ namespace Presentacion.Forms
                 var lblPrecioOrig = new Label
                 {
                     Text      = "$" + p.Precio.ToString("N0"),
-                    Font      = new Font("Segoe UI", 9.5F, FontStyle.Strikeout),
+                    Font      = FontTilePrecioOrig,
                     ForeColor = EstiloPos.Ink3,
                     AutoSize  = true,
                     Location  = new Point(10 + wPrecio + 8, 55)
@@ -413,7 +432,7 @@ namespace Presentacion.Forms
                 var badge = new Label
                 {
                     Text      = "-" + p.DescuentoPorcentaje.ToString("0.##") + "%",
-                    Font      = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                    Font      = FontTileBadge,
                     ForeColor = Color.White,
                     BackColor = EstiloPos.Verde,
                     AutoSize  = false,
@@ -433,6 +452,29 @@ namespace Presentacion.Forms
                 badge.BringToFront();
             }
 
+            return tile;
+        }
+
+        // Tarjeta-aviso al final cuando hay más productos que el tope dibujado: indica cuántos quedan
+        // y que se filtre con la búsqueda o una categoría. No es clickeable.
+        private Panel CrearTileAviso(int restantes)
+        {
+            var tile = new Panel
+            {
+                BackColor = EstiloPos.Fondo,
+                Margin    = new Padding(0, 0, 8, 8),
+                Padding   = new Padding(10, 8, 10, 8),
+                Size      = new Size(220, 100)
+            };
+            var lbl = new Label
+            {
+                Text      = "+" + restantes + " productos más.\nBuscá por nombre o elegí\nuna categoría para verlos.",
+                Font      = FontTileStock,
+                ForeColor = EstiloPos.Ink3,
+                Dock      = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            tile.Controls.Add(lbl);
             return tile;
         }
 
