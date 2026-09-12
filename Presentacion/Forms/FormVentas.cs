@@ -800,6 +800,7 @@ namespace Presentacion.Forms
             }
             lblMensaje.Visible = false;
             RefrescarTabs();
+            txtCodigo.Focus();
         }
 
         private void dgvCarrito_CellClick(object sender, DataGridViewCellEventArgs e)

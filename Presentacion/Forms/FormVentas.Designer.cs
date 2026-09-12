@@ -144,7 +144,7 @@ namespace Presentacion.Forms
             this.lblCodigo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(69)))), ((int)(((byte)(69)))), ((int)(((byte)(79)))));
             this.lblCodigo.Location = new System.Drawing.Point(16, 10);
             this.lblCodigo.Name = "lblCodigo";
-            this.lblCodigo.Size = new System.Drawing.Size(122, 15);
+            this.lblCodigo.Size = new System.Drawing.Size(154, 20);
             this.lblCodigo.TabIndex = 0;
             this.lblCodigo.Text = "CÓDIGO DE BARRAS";
             // 
@@ -156,7 +156,7 @@ namespace Presentacion.Forms
             this.txtCodigo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(14)))), ((int)(((byte)(14)))), ((int)(((byte)(18)))));
             this.txtCodigo.Location = new System.Drawing.Point(16, 32);
             this.txtCodigo.Name = "txtCodigo";
-            this.txtCodigo.Size = new System.Drawing.Size(290, 32);
+            this.txtCodigo.Size = new System.Drawing.Size(290, 39);
             this.txtCodigo.TabIndex = 1;
             this.txtCodigo.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtCodigo_KeyDown);
             // 
@@ -167,7 +167,7 @@ namespace Presentacion.Forms
             this.lblBuscarNombre.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(69)))), ((int)(((byte)(69)))), ((int)(((byte)(79)))));
             this.lblBuscarNombre.Location = new System.Drawing.Point(322, 10);
             this.lblBuscarNombre.Name = "lblBuscarNombre";
-            this.lblBuscarNombre.Size = new System.Drawing.Size(135, 15);
+            this.lblBuscarNombre.Size = new System.Drawing.Size(171, 20);
             this.lblBuscarNombre.TabIndex = 2;
             this.lblBuscarNombre.Text = "BUSCAR POR NOMBRE";
             // 
@@ -179,7 +179,7 @@ namespace Presentacion.Forms
             this.txtBuscar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(14)))), ((int)(((byte)(14)))), ((int)(((byte)(18)))));
             this.txtBuscar.Location = new System.Drawing.Point(322, 32);
             this.txtBuscar.Name = "txtBuscar";
-            this.txtBuscar.Size = new System.Drawing.Size(290, 32);
+            this.txtBuscar.Size = new System.Drawing.Size(290, 39);
             this.txtBuscar.TabIndex = 3;
             this.txtBuscar.TextChanged += new System.EventHandler(this.txtBuscar_TextChanged);
             this.txtBuscar.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtBuscar_KeyDown);
@@ -191,7 +191,7 @@ namespace Presentacion.Forms
             this.lblCantidad.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(69)))), ((int)(((byte)(69)))), ((int)(((byte)(79)))));
             this.lblCantidad.Location = new System.Drawing.Point(628, 10);
             this.lblCantidad.Name = "lblCantidad";
-            this.lblCantidad.Size = new System.Drawing.Size(68, 15);
+            this.lblCantidad.Size = new System.Drawing.Size(88, 20);
             this.lblCantidad.TabIndex = 4;
             this.lblCantidad.Text = "CANTIDAD";
             // 
@@ -203,7 +203,7 @@ namespace Presentacion.Forms
             this.txtCantidad.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(14)))), ((int)(((byte)(14)))), ((int)(((byte)(18)))));
             this.txtCantidad.Location = new System.Drawing.Point(628, 32);
             this.txtCantidad.Name = "txtCantidad";
-            this.txtCantidad.Size = new System.Drawing.Size(80, 32);
+            this.txtCantidad.Size = new System.Drawing.Size(80, 39);
             this.txtCantidad.TabIndex = 5;
             this.txtCantidad.Text = "1";
             this.txtCantidad.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -235,7 +235,7 @@ namespace Presentacion.Forms
             this.lblMensaje.Size = new System.Drawing.Size(2033, 16);
             this.lblMensaje.TabIndex = 7;
             this.lblMensaje.Visible = false;
-            //
+            // 
             // pnlCentro
             // 
             this.pnlCentro.Controls.Add(this.pnlGridWrap);
@@ -255,7 +255,7 @@ namespace Presentacion.Forms
             this.pnlGridWrap.Location = new System.Drawing.Point(0, 0);
             this.pnlGridWrap.Name = "pnlGridWrap";
             this.pnlGridWrap.Padding = new System.Windows.Forms.Padding(10);
-            this.pnlGridWrap.Size = new System.Drawing.Size(975, 113);
+            this.pnlGridWrap.Size = new System.Drawing.Size(855, 113);
             this.pnlGridWrap.TabIndex = 0;
             // 
             // pnlProdGrid
@@ -265,7 +265,7 @@ namespace Presentacion.Forms
             this.pnlProdGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlProdGrid.Location = new System.Drawing.Point(10, 54);
             this.pnlProdGrid.Name = "pnlProdGrid";
-            this.pnlProdGrid.Size = new System.Drawing.Size(955, 49);
+            this.pnlProdGrid.Size = new System.Drawing.Size(835, 49);
             this.pnlProdGrid.TabIndex = 0;
             this.pnlProdGrid.Resize += new System.EventHandler(this.pnlProdGrid_Resize);
             // 
@@ -276,7 +276,7 @@ namespace Presentacion.Forms
             this.pnlCats.Location = new System.Drawing.Point(10, 10);
             this.pnlCats.Name = "pnlCats";
             this.pnlCats.Padding = new System.Windows.Forms.Padding(0, 6, 0, 6);
-            this.pnlCats.Size = new System.Drawing.Size(955, 44);
+            this.pnlCats.Size = new System.Drawing.Size(835, 44);
             this.pnlCats.TabIndex = 1;
             this.pnlCats.WrapContents = false;
             // 
@@ -288,7 +288,7 @@ namespace Presentacion.Forms
             this.pnlCarrito.Controls.Add(this.dgvCarrito);
             this.pnlCarrito.Controls.Add(this.pnlCobro);
             this.pnlCarrito.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlCarrito.Location = new System.Drawing.Point(975, 0);
+            this.pnlCarrito.Location = new System.Drawing.Point(855, 0);
             this.pnlCarrito.Name = "pnlCarrito";
             this.pnlCarrito.Size = new System.Drawing.Size(480, 113);
             this.pnlCarrito.TabIndex = 1;
@@ -301,13 +301,14 @@ namespace Presentacion.Forms
             this.lblCarritoTitulo.Location = new System.Drawing.Point(0, 0);
             this.lblCarritoTitulo.Name = "lblCarritoTitulo";
             this.lblCarritoTitulo.Padding = new System.Windows.Forms.Padding(14, 0, 0, 0);
-            this.lblCarritoTitulo.Size = new System.Drawing.Size(358, 44);
+            this.lblCarritoTitulo.Size = new System.Drawing.Size(478, 44);
             this.lblCarritoTitulo.TabIndex = 0;
             this.lblCarritoTitulo.Text = "Carrito";
             this.lblCarritoTitulo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // dgvCarrito
             // 
+            this.dgvCarrito.ColumnHeadersHeight = 29;
             this.dgvCarrito.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colVId,
             this.colVNombre,
@@ -319,50 +320,65 @@ namespace Presentacion.Forms
             this.dgvCarrito.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvCarrito.Location = new System.Drawing.Point(0, 0);
             this.dgvCarrito.Name = "dgvCarrito";
+            this.dgvCarrito.RowHeadersWidth = 51;
             this.dgvCarrito.RowTemplate.Height = 36;
-            this.dgvCarrito.Size = new System.Drawing.Size(358, 0);
+            this.dgvCarrito.Size = new System.Drawing.Size(478, 0);
             this.dgvCarrito.TabIndex = 1;
             this.dgvCarrito.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvCarrito_CellClick);
             // 
             // colVId
             // 
+            this.colVId.MinimumWidth = 6;
             this.colVId.Name = "colVId";
             this.colVId.Visible = false;
+            this.colVId.Width = 125;
             // 
             // colVNombre
             // 
             this.colVNombre.FillWeight = 150F;
             this.colVNombre.HeaderText = "Producto";
+            this.colVNombre.MinimumWidth = 6;
             this.colVNombre.Name = "colVNombre";
+            this.colVNombre.Width = 125;
             // 
             // colMenos
             // 
             this.colMenos.FillWeight = 34F;
             this.colMenos.HeaderText = "";
+            this.colMenos.MinimumWidth = 6;
             this.colMenos.Name = "colMenos";
+            this.colMenos.Width = 125;
             // 
             // colVCantidad
             // 
             this.colVCantidad.FillWeight = 50F;
             this.colVCantidad.HeaderText = "Cant.";
+            this.colVCantidad.MinimumWidth = 6;
             this.colVCantidad.Name = "colVCantidad";
+            this.colVCantidad.Width = 125;
             // 
             // colMas
             // 
             this.colMas.FillWeight = 34F;
             this.colMas.HeaderText = "";
+            this.colMas.MinimumWidth = 6;
             this.colMas.Name = "colMas";
+            this.colMas.Width = 125;
             // 
             // colVSubtotal
             // 
             this.colVSubtotal.HeaderText = "Subtotal";
+            this.colVSubtotal.MinimumWidth = 6;
             this.colVSubtotal.Name = "colVSubtotal";
+            this.colVSubtotal.Width = 125;
             // 
             // colQuitar
             // 
             this.colQuitar.FillWeight = 36F;
             this.colQuitar.HeaderText = "";
+            this.colQuitar.MinimumWidth = 6;
             this.colQuitar.Name = "colQuitar";
+            this.colQuitar.Width = 125;
             // 
             // pnlCobro
             // 
@@ -377,7 +393,7 @@ namespace Presentacion.Forms
             this.pnlCobro.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlCobro.Location = new System.Drawing.Point(0, -165);
             this.pnlCobro.Name = "pnlCobro";
-            this.pnlCobro.Size = new System.Drawing.Size(358, 276);
+            this.pnlCobro.Size = new System.Drawing.Size(478, 276);
             this.pnlCobro.TabIndex = 2;
             // 
             // lblTotalLabel
@@ -387,7 +403,7 @@ namespace Presentacion.Forms
             this.lblTotalLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(143)))), ((int)(((byte)(143)))), ((int)(((byte)(154)))));
             this.lblTotalLabel.Location = new System.Drawing.Point(18, 14);
             this.lblTotalLabel.Name = "lblTotalLabel";
-            this.lblTotalLabel.Size = new System.Drawing.Size(90, 15);
+            this.lblTotalLabel.Size = new System.Drawing.Size(114, 20);
             this.lblTotalLabel.TabIndex = 0;
             this.lblTotalLabel.Text = "TOTAL A PAGAR";
             // 
@@ -398,7 +414,7 @@ namespace Presentacion.Forms
             this.lblTotal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(14)))), ((int)(((byte)(14)))), ((int)(((byte)(18)))));
             this.lblTotal.Location = new System.Drawing.Point(15, 32);
             this.lblTotal.Name = "lblTotal";
-            this.lblTotal.Size = new System.Drawing.Size(60, 47);
+            this.lblTotal.Size = new System.Drawing.Size(75, 60);
             this.lblTotal.TabIndex = 1;
             this.lblTotal.Text = "$0";
             // 
@@ -409,7 +425,7 @@ namespace Presentacion.Forms
             this.lblMedioPago.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(69)))), ((int)(((byte)(69)))), ((int)(((byte)(79)))));
             this.lblMedioPago.Location = new System.Drawing.Point(18, 96);
             this.lblMedioPago.Name = "lblMedioPago";
-            this.lblMedioPago.Size = new System.Drawing.Size(112, 19);
+            this.lblMedioPago.Size = new System.Drawing.Size(132, 23);
             this.lblMedioPago.TabIndex = 2;
             this.lblMedioPago.Text = "Medio de pago";
             // 
@@ -417,7 +433,7 @@ namespace Presentacion.Forms
             // 
             this.comboMedioPago.Location = new System.Drawing.Point(18, 118);
             this.comboMedioPago.Name = "comboMedioPago";
-            this.comboMedioPago.Size = new System.Drawing.Size(322, 21);
+            this.comboMedioPago.Size = new System.Drawing.Size(322, 24);
             this.comboMedioPago.TabIndex = 3;
             // 
             // btnCobrar
@@ -482,7 +498,7 @@ namespace Presentacion.Forms
             this.lblDesdeV.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(69)))), ((int)(((byte)(69)))), ((int)(((byte)(79)))));
             this.lblDesdeV.Location = new System.Drawing.Point(16, 15);
             this.lblDesdeV.Name = "lblDesdeV";
-            this.lblDesdeV.Size = new System.Drawing.Size(50, 19);
+            this.lblDesdeV.Size = new System.Drawing.Size(61, 23);
             this.lblDesdeV.TabIndex = 0;
             this.lblDesdeV.Text = "Desde:";
             // 
@@ -492,7 +508,7 @@ namespace Presentacion.Forms
             this.dtpDesdeV.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpDesdeV.Location = new System.Drawing.Point(74, 11);
             this.dtpDesdeV.Name = "dtpDesdeV";
-            this.dtpDesdeV.Size = new System.Drawing.Size(148, 29);
+            this.dtpDesdeV.Size = new System.Drawing.Size(148, 34);
             this.dtpDesdeV.TabIndex = 1;
             // 
             // lblHastaV
@@ -502,7 +518,7 @@ namespace Presentacion.Forms
             this.lblHastaV.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(69)))), ((int)(((byte)(69)))), ((int)(((byte)(79)))));
             this.lblHastaV.Location = new System.Drawing.Point(240, 15);
             this.lblHastaV.Name = "lblHastaV";
-            this.lblHastaV.Size = new System.Drawing.Size(47, 19);
+            this.lblHastaV.Size = new System.Drawing.Size(57, 23);
             this.lblHastaV.TabIndex = 2;
             this.lblHastaV.Text = "Hasta:";
             // 
@@ -512,7 +528,7 @@ namespace Presentacion.Forms
             this.dtpHastaV.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpHastaV.Location = new System.Drawing.Point(296, 11);
             this.dtpHastaV.Name = "dtpHastaV";
-            this.dtpHastaV.Size = new System.Drawing.Size(148, 29);
+            this.dtpHastaV.Size = new System.Drawing.Size(148, 34);
             this.dtpHastaV.TabIndex = 3;
             // 
             // btnFiltrarLogV
@@ -526,6 +542,7 @@ namespace Presentacion.Forms
             // 
             // dgvLogVentas
             // 
+            this.dgvLogVentas.ColumnHeadersHeight = 29;
             this.dgvLogVentas.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colLVFecha,
             this.colLVUsuario,
@@ -534,6 +551,7 @@ namespace Presentacion.Forms
             this.dgvLogVentas.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvLogVentas.Location = new System.Drawing.Point(0, 0);
             this.dgvLogVentas.Name = "dgvLogVentas";
+            this.dgvLogVentas.RowHeadersWidth = 51;
             this.dgvLogVentas.Size = new System.Drawing.Size(1333, 278);
             this.dgvLogVentas.TabIndex = 1;
             // 
@@ -541,24 +559,32 @@ namespace Presentacion.Forms
             // 
             this.colLVFecha.FillWeight = 110F;
             this.colLVFecha.HeaderText = "Fecha";
+            this.colLVFecha.MinimumWidth = 6;
             this.colLVFecha.Name = "colLVFecha";
+            this.colLVFecha.Width = 125;
             // 
             // colLVUsuario
             // 
             this.colLVUsuario.HeaderText = "Usuario";
+            this.colLVUsuario.MinimumWidth = 6;
             this.colLVUsuario.Name = "colLVUsuario";
+            this.colLVUsuario.Width = 125;
             // 
             // colLVAccion
             // 
             this.colLVAccion.FillWeight = 80F;
             this.colLVAccion.HeaderText = "Acción";
+            this.colLVAccion.MinimumWidth = 6;
             this.colLVAccion.Name = "colLVAccion";
+            this.colLVAccion.Width = 125;
             // 
             // colLVDetalle
             // 
             this.colLVDetalle.FillWeight = 300F;
             this.colLVDetalle.HeaderText = "Detalle";
+            this.colLVDetalle.MinimumWidth = 6;
             this.colLVDetalle.Name = "colLVDetalle";
+            this.colLVDetalle.Width = 125;
             // 
             // splitterLogV
             // 

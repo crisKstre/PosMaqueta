@@ -26,6 +26,10 @@ namespace Presentacion.Forms
         {
             AplicarEstilos();
 
+            // Foco inicial y longitud máxima de búsqueda (código de barras EAN13) 
+            txtBuscar.Focus();
+            txtCantidad.Text = "1";
+
             // Re-aplicar grids en runtime para garantizar estilos correctos
             EstiloPos.AplicarGrid(dgvProductos);
             EstiloPos.AplicarGrid(dgvLog);
@@ -232,7 +236,7 @@ namespace Presentacion.Forms
             var btn = new Button { Text = "Importar CSV", Size = new Size(130, btnGestionarCat.Height) };
             EstiloPos.AplicarBotonSecundario(btn);
             btn.Font     = EstiloPos.FontSmall;
-            btn.Location = new Point(btnGestionarCat.Right + 12, btnGestionarCat.Top);
+            btn.Location = new Point(pnlFormulario.Right - btn.Width - 15, pnlFormulario.Bottom - btn.Height - 15);
             btn.Click   += (s, e) => ImportarCsv();
             pnlFormulario.Controls.Add(btn);
             btn.BringToFront();
@@ -593,5 +597,10 @@ namespace Presentacion.Forms
         }
 
         private void MostrarError(string msg) { lblError.Text = msg; lblError.Visible = true; }
+
+        private void pnlFormulario_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
     }
 }

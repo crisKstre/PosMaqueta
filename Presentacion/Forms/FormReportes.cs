@@ -14,7 +14,7 @@ namespace Presentacion.Forms
 
         private DateTimePicker dtpDesde, dtpHasta;
         private Label lblVentasVal, lblTotalVal, lblIvaVal, lblTicketVal, lblDesgloseVal;
-        private Label lblUtilVal, lblMargenVal, lblInvVal;
+        private Label lblUtilVal, lblMargenVal, lblInvVal, lblInvValTot, lblTotalProd;
         private DataGridView dgvTop, dgvVentas;
         private List<Venta> ventasPeriodo = new List<Venta>();
 
@@ -84,7 +84,7 @@ namespace Presentacion.Forms
             // ── Cards ──────────────────────────────────────────────────────
             var pnlCards = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top, Height = 232, Padding = new Padding(24, 0, 0, 14),
+                Dock = DockStyle.Top, Height = 232, Padding = new Padding(65, 8, 0, 14),
                 BackColor = EstiloPos.Fondo, FlowDirection = FlowDirection.LeftToRight, WrapContents = true
             };
             pnlCards.Controls.Add(CrearCard("Ventas",          EstiloPos.Azul,  out lblVentasVal));
@@ -95,17 +95,19 @@ namespace Presentacion.Forms
             pnlCards.Controls.Add(CrearCard("Ticket promedio", EstiloPos.Amber, out lblTicketVal));
             pnlCards.Controls.Add(CrearCard("Inventario a costo", EstiloPos.Ink2, out lblInvVal));
             pnlCards.Controls.Add(CrearCard("Medios de pago",  EstiloPos.Ink2,  out lblDesgloseVal));
+            pnlCards.Controls.Add(CrearCard("Inventario total", EstiloPos.Ink2, out lblInvValTot));
+            pnlCards.Controls.Add(CrearCard("Total productos", EstiloPos.Ink2, out lblTotalProd));
             lblDesgloseVal.Font      = EstiloPos.FontSmall;
             lblDesgloseVal.ForeColor = EstiloPos.Ink1;
             lblDesgloseVal.TextAlign = ContentAlignment.TopLeft;
-            lblDesgloseVal.Location  = new Point(16, 26);
-            lblDesgloseVal.Size      = new Size(170, 70);
+            lblDesgloseVal.Location  = new Point(16, 32);
+            lblDesgloseVal.Size      = new Size(340, 70);
 
             // ── Tablas ─────────────────────────────────────────────────────
             var split = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
-                Padding = new Padding(24, 0, 24, 44), BackColor = EstiloPos.Fondo
+                Padding = new Padding(24, 0, 24, 10), BackColor = EstiloPos.Fondo
             };
             split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46F));
             split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54F));
@@ -149,24 +151,39 @@ namespace Presentacion.Forms
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // FormReportes
+            // 
+            this.ClientSize = new System.Drawing.Size(1256, 666);
+            this.Name = "FormReportes";
+            this.ResumeLayout(false);
+
+        }
+
         private void Generar()
         {
             DateTime desde = dtpDesde.Value.Date, hasta = dtpHasta.Value.Date;
             if (hasta < desde) { var t = desde; desde = hasta; hasta = t; }
 
+            
             var r = ventaService.ObtenerResumenVentas(desde, hasta);
             lblVentasVal.Text   = r.CantidadVentas.ToString();
             lblTotalVal.Text    = "$" + r.TotalVendido.ToString("N0");
             lblIvaVal.Text      = "$" + Impuestos.Iva(r.TotalVendido).ToString("N0");
             lblTicketVal.Text   = "$" + r.TicketPromedio.ToString("N0");
+            lblTotalProd.Text   = productoService.ContarProductos().ToString();
+
             lblDesgloseVal.Text =
                 "Efectivo:  $" + r.TotalEfectivo.ToString("N0") + "\n" +
                 "Tarjeta:   $" + r.TotalTarjeta.ToString("N0") + "\n" +
-                "Transfer.: $" + r.TotalTransferencia.ToString("N0") + "\n" +
-                "Devoluc.: -$" + r.TotalDevoluciones.ToString("N0");
+                "Transfer.: $" + r.TotalTransferencia.ToString("N0");
             lblUtilVal.Text   = "$" + r.Utilidad.ToString("N0");
             lblMargenVal.Text = r.MargenPorcentaje.ToString("0") + "%";
             lblInvVal.Text    = "$" + productoService.ValorInventarioACosto().ToString("N0");
+            lblInvValTot.Text = "$" + productoService.ValorInventario().ToString("N0");
 
             dgvTop.Rows.Clear();
             foreach (var p in ventaService.ObtenerTopUtilidad(desde, hasta, 12))
@@ -245,17 +262,17 @@ namespace Presentacion.Forms
 
         private Panel CrearCard(string titulo, Color acento, out Label valor)
         {
-            var card = new Panel { Width = 192, Height = 100, Margin = new Padding(0, 0, 14, 12), BackColor = EstiloPos.Surface };
+            var card = new Panel { Width = 230, Height = 100, Margin = new Padding(0, 0, 14, 12), BackColor = EstiloPos.Surface };
             var barra = new Panel { Width = 4, Dock = DockStyle.Left, BackColor = acento };
 
             var lblTit = new Label
             {
-                Text = titulo, AutoSize = false, Location = new Point(16, 12), Size = new Size(170, 20),
+                Text = titulo, AutoSize = false, Location = new Point(16, 12), Size = new Size(300, 20),
                 ForeColor = EstiloPos.Ink2, Font = EstiloPos.FontSmall
             };
             valor = new Label
             {
-                Text = "—", AutoSize = false, Location = new Point(16, 36), Size = new Size(170, 54),
+                Text = "—", AutoSize = false, Location = new Point(16, 36), Size = new Size(300, 54),
                 ForeColor = acento, TextAlign = ContentAlignment.MiddleLeft, Font = EstiloPos.FontMetrica
             };
 

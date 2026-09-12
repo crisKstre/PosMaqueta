@@ -79,9 +79,14 @@ namespace AccesoData.DAO
                                 cmd.AddParam("@c", item.Cantidad);
                                 cmd.AddParam("@p", item.IdProducto);
                                 cmd.ExecuteNonQuery();
-                            }
+                            }  
                         }
-
+                        using (var cmd = con.Comando("UPDATE Venta SET Total = Total - @monto WHERE IdVenta = @idVenta;", tran))
+                        {
+                            cmd.AddParam("@monto", dev.Monto);
+                            cmd.AddParam("@idVenta", dev.IdVenta);
+                            cmd.ExecuteNonQuery();
+                        }
                         tran.Commit();
                         return idDev;
                     }

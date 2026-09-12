@@ -191,10 +191,20 @@ namespace Dominio.Servicios
             return p.Stock <= p.StockMinimo;
         }
 
-        // Valor del inventario activo a costo (Σ Stock × Costo). Solo admin lo consume (FormProductos).
+        // Valor del inventario activo a costo y precio (Σ Stock × Costo y Σ Stock × Precio). Solo admin lo consume (FormProductos).
         public decimal ValorInventarioACosto()
         {
             return productoDao.ValorInventarioACosto();
+        }
+
+        public decimal ValorInventario()
+        {
+            return productoDao.ValorInventario();
+        }
+
+        public int ContarProductos()
+        {
+            return productoDao.ContarProductos();
         }
     }
 }

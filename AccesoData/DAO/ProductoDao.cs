@@ -173,7 +173,7 @@ namespace AccesoData.DAO
             return lista;
         }
 
-        // Valor del inventario activo valorizado a COSTO (Σ Stock × Costo). Cuánta plata hay "parada".
+        // Valor del inventario activo valorizado a COSTO y PRECIO. Cuánta plata hay "parada".
         public decimal ValorInventarioACosto()
         {
             using (var con = GetConnection())
@@ -181,6 +181,26 @@ namespace AccesoData.DAO
                 con.Open();
                 using (var cmd = con.Comando("SELECT COALESCE(SUM(Stock * Costo), 0) FROM Producto WHERE Activo = 1;"))
                     return Convert.ToDecimal(cmd.ExecuteScalar());
+            }
+        }
+
+        public decimal ValorInventario()
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var cmd = con.Comando("SELECT COALESCE(SUM(Stock * Precio), 0) FROM Producto WHERE Activo = 1;"))
+                    return Convert.ToDecimal(cmd.ExecuteScalar());
+            }
+        }
+
+        public int ContarProductos()
+        {
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var cmd = con.Comando("SELECT COUNT(*) FROM Producto;"))
+                    return Convert.ToInt32(cmd.ExecuteScalar());
             }
         }
 
