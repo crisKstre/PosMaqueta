@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-01",
+  "baseCommit": "5d05101",
+  "scope": "MIG-002 sobre MIG-001, cambios locales sin commit",
+  "sdk": "9.0.300",
+  "targetFramework": "net472",
+  "runs": [
+    {
+      "name": "mig002-antes",
+      "start": "2026-10-01T13:08:45.6363820-03:00",
+      "finish": "2026-10-01T13:08:52.2070247-03:00",
+      "total": 9,
+      "passed": 0,
+      "failed": 9,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig002/mig002-antes.trx",
+      "failedCases": [
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Residuo_del_descuento_se_asigna_por_producto_independiente_del_orden_de_devolucion(inverso: False)",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Kilos_en_varias_devoluciones_no_acumulan_redondeos_de_mas",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Descuento_total_permite_reintegrar_stock_sin_reembolsar_dinero",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Descuentos_se_respetan_en_devoluciones_parciales_y_total(oferta: 0, descuento: 1000, cobrado: 1000)",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Producto_repetido_se_rechaza_sin_movimientos(cantidad: 2)",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Producto_repetido_se_rechaza_sin_movimientos(cantidad: 1)",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Historico_reembolsado_de_mas_se_bloquea_para_conciliacion",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Descuentos_se_respetan_en_devoluciones_parciales_y_total(oferta: 10, descuento: 300, cobrado: 1500)",
+        "PosMaqueta.Tests.DevolucionDescuentosTests.Residuo_del_descuento_se_asigna_por_producto_independiente_del_orden_de_devolucion(inverso: True)"
+      ]
+    },
+    {
+      "name": "mig002-focalizadas",
+      "start": "2026-10-01T13:13:50.4737945-03:00",
+      "finish": "2026-10-01T13:14:05.4680936-03:00",
+      "total": 35,
+      "passed": 35,
+      "failed": 0,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig002/mig002-focalizadas.trx",
+      "failedCases": []
+    },
+    {
+      "name": "mig002-despues",
+      "start": "2026-10-01T13:14:45.9135676-03:00",
+      "finish": "2026-10-01T13:15:58.8991907-03:00",
+      "total": 201,
+      "passed": 201,
+      "failed": 0,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig002/mig002-despues.trx",
+      "failedCases": []
+    }
+  ],
+  "excludedSqlServerCases": 9,
+  "build": {
+    "command": "dotnet build Presentacion/Presentacion.csproj --no-restore",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "limitations": [
+    "No se ejecutó SQL Server ni UI interactiva.",
+    "Concurrencia entre devoluciones/anulaciones/cierre pendiente.",
+    "Sin conciliación ni modificación de datos productivos.",
+    "Costos/utilidad/rankings netos pendientes."
+  ]
+}

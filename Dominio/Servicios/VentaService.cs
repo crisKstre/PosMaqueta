@@ -327,19 +327,19 @@ namespace Dominio.Servicios
             };
 
             int idVenta = ventaDao.RegistrarVenta(venta);
-            string itemsLog = string.Join(", ", actual.Detalles.Select(d =>
-                d.NombreProducto + " x" + d.Cantidad.ToString("0.##") +
-                (d.TieneDescuento ? " (-" + d.DescuentoPorcentaje.ToString("0.##") + "%)" : "")));
-            Log.Info("VENTA N°" + idVenta + " | " + venta.MedioPago + " | Total $" + venta.Total.ToString("N0") +
-                     " | Neto $" + Impuestos.Neto(venta.Total).ToString("N0") +
-                     " | IVA $" + Impuestos.Iva(venta.Total).ToString("N0") +
-                     (venta.Descuento > 0 ? " | Desc $" + venta.Descuento.ToString("N0") : "") +
-                     " | usuario " + idUsuario + " | " + actual.Detalles.Count + " items: [" + itemsLog + "]");
-            string detalleLog = "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + venta.MedioPago;
-            if (venta.Descuento > 0) detalleLog += " | desc. $" + venta.Descuento.ToString("N0");
-            logService.Registrar(ModuloLog.Ventas, "Venta", detalleLog);
-
-            CerrarVenta(actual.Id);   // la venta cobrada deja de estar en curso
+            CerrarVenta(actual.Id);   // commit confirmado: retirar el carrito antes de cualquier efecto secundario
+            try
+            {
+                string itemsLog = string.Join(", ", actual.Detalles.Select(d =>
+                    d.NombreProducto + " x" + d.Cantidad.ToString("0.##") +
+                    (d.TieneDescuento ? " (-" + d.DescuentoPorcentaje.ToString("0.##") + "%)" : "")));
+                Log.Info("VENTA N°" + idVenta + " | " + venta.MedioPago + " | Total $" + venta.Total.ToString("N0") +
+                         " | Neto $" + Impuestos.Neto(venta.Total).ToString("N0") +
+                         " | IVA $" + Impuestos.Iva(venta.Total).ToString("N0") +
+                         (venta.Descuento > 0 ? " | Desc $" + venta.Descuento.ToString("N0") : "") +
+                         " | usuario " + idUsuario + " | " + actual.Detalles.Count + " items: [" + itemsLog + "]");
+            }
+            catch (Exception ex) { Log.Error("Venta N°" + idVenta + " confirmada; falló el registro técnico.", ex); }
             NotificadorCambios.Notificar(Entidad.Venta);
             NotificadorCambios.Notificar(Entidad.Producto);
             return idVenta;

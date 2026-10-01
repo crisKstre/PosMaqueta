@@ -1,5 +1,7 @@
 # Documentación — Sistema POS
 
+> [**Migración a .NET MAUI — Windows y Android**](migracion-maui/README.md): diagnóstico del código, arquitectura propuesta, sincronización entre dispositivos offline, etapas, pruebas y fuentes oficiales. Propuesta del 24-09-2026; la aplicación actual sigue siendo WinForms.
+
 | Documento | Para quién | Contenido |
 |---|---|---|
 | [Manual de Usuario](MANUAL-USUARIO.md) | Cajeros y administradores | Operación de cada módulo (Ventas, Productos, Caja, Reportes), atajos de teclado y preguntas frecuentes |

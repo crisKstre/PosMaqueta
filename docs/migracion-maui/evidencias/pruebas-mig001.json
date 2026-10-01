@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-01",
+  "baseCommit": "5d05101",
+  "scope": "MIG-001: corrección de nuevas devoluciones, cambios locales sin commit",
+  "sdk": "9.0.300",
+  "targetFramework": "net472",
+  "runs": [
+    {
+      "name": "mig001-antes",
+      "start": "2026-10-01T13:01:29.5775454-03:00",
+      "finish": "2026-10-01T13:01:40.3482090-03:00",
+      "total": 13,
+      "passed": 6,
+      "failed": 7,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig001/mig001-antes.trx",
+      "failedCases": [
+        "PosMaqueta.Tests.DevolucionServiceTests.Devolver_conserva_venta_y_pagos_originales_y_reembolsa_en_efectivo(medio: \"Tarjeta\")",
+        "PosMaqueta.Tests.DevolucionServiceTests.Devolucion_posterior_se_imputa_a_su_fecha_y_turno_sin_reescribir_la_venta",
+        "PosMaqueta.Tests.DevolucionServiceTests.Devoluciones_sucesivas_hasta_el_total_conservan_bruto_y_dejan_neto_cero",
+        "PosMaqueta.Tests.DevolucionServiceTests.Devolver_conserva_venta_y_pagos_originales_y_reembolsa_en_efectivo(medio: \"Mixto\")",
+        "PosMaqueta.Tests.DevolucionServiceTests.ResumenVentas_refleja_las_devoluciones",
+        "PosMaqueta.Tests.DevolucionServiceTests.Devolver_conserva_venta_y_pagos_originales_y_reembolsa_en_efectivo(medio: \"Efectivo\")",
+        "PosMaqueta.Tests.DevolucionServiceTests.Devolver_conserva_venta_y_pagos_originales_y_reembolsa_en_efectivo(medio: \"Transferencia\")"
+      ]
+    },
+    {
+      "name": "mig001-despues",
+      "start": "2026-10-01T13:02:18.0254500-03:00",
+      "finish": "2026-10-01T13:03:26.0349079-03:00",
+      "total": 179,
+      "passed": 179,
+      "failed": 0,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig001/mig001-despues.trx",
+      "failedCases": []
+    }
+  ],
+  "excludedSqlServerCases": 9,
+  "limitations": [
+    "Histórico real pendiente de conciliación; no se modificaron datos productivos.",
+    "No se ejecutó SQL Server ni UI.",
+    "MIG-002 y costos/utilidad/rankings netos pendientes."
+  ]
+}

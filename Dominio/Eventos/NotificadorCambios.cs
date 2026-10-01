@@ -15,7 +15,18 @@ namespace Dominio.Eventos
 
         public static void Notificar(string entidad)
         {
-            Cambio?.Invoke(entidad);
+            var suscriptores = Cambio;
+            if (suscriptores == null) return;
+            foreach (Action<string> suscriptor in suscriptores.GetInvocationList())
+            {
+                try { suscriptor(entidad); }
+                catch (Exception ex)
+                {
+                    // Avisos de refresco posteriores al guardado: un observador no puede convertir
+                    // una operación confirmada en fallo ni impedir que se avise a los demás.
+                    AccesoData.Log.Error("Falló un suscriptor del cambio de " + entidad + ".", ex);
+                }
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 # Sistema POS
 
+> **Evolución a Windows y Android:** [análisis y propuesta de migración a .NET MAUI](docs/migracion-maui/README.md), con arquitectura, sincronización offline, plan por etapas y validación técnica (24-09-2026).
+
 Punto de venta (POS) de escritorio para **minimarket / almacén**, desarrollado en
 **C# · WinForms · .NET Framework 4.7.2** con base de datos **SQLite** (una caja) o **SQL Server** (varias cajas).
 

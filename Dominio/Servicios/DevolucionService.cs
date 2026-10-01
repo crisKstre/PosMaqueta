@@ -21,27 +21,24 @@ namespace Dominio.Servicios
 
         // Ítems de una venta que TODAVÍA se pueden devolver (cantidad = vendida − ya devuelta).
         public List<DevolucionItem> ObtenerDevolvibles(int idVenta)
+            => CargarCalculo(idVenta).ObtenerDevolvibles();
+
+        public List<DevolucionItem> Previsualizar(int idVenta, List<DevolucionItem> items)
         {
-            var lista = new List<DevolucionItem>();
-            foreach (var d in ventaDao.ObtenerDetalleVenta(idVenta))
-            {
-                decimal restante = d.Cantidad - devolucionDao.CantidadDevuelta(idVenta, d.IdProducto);
-                if (restante <= 0) continue;
-                lista.Add(new DevolucionItem
-                {
-                    IdProducto = d.IdProducto,
-                    NombreProducto = d.NombreProducto,
-                    Cantidad = restante,
-                    PrecioUnitario = d.PrecioUnitario,
-                    Subtotal = Dinero.Redondear(restante * d.PrecioUnitario)
-                });
-            }
-            return lista;
+            Autorizacion.ExigirAdmin();
+            return CargarCalculo(idVenta).Calcular(items);
+        }
+
+        private CalculoDevolucion CargarCalculo(int idVenta)
+        {
+            if (ventaDao.EstaAnulada(idVenta))
+                throw new NegocioException("La venta N°" + idVenta + " está anulada; no se puede devolver.");
+            return new CalculoDevolucion(ventaDao.ObtenerParaDevolucion(idVenta), devolucionDao.ObtenerAcumulado(idVenta));
         }
 
         // Devuelve los ítems indicados (IdProducto + Cantidad). Reintegra stock y registra la salida
-        // de efectivo en la caja abierta. Los precios se toman de la venta original (autoritativo).
-        public int Devolver(int idVenta, List<DevolucionItem> items)
+        // de efectivo en la caja abierta. El cálculo se repite con datos persistidos, nunca con precios de la UI.
+        public int Devolver(int idVenta, List<DevolucionItem> items, decimal? montoEsperado = null)
         {
             Autorizacion.ExigirAdmin();
             if (items == null || items.Count == 0)
@@ -51,49 +48,17 @@ namespace Dominio.Servicios
             if (caja == null)
                 throw new NegocioException("Debe haber una caja abierta para registrar la devolución.");
 
-            // No se puede devolver una venta anulada: ya fue revertida (su stock volvió y nunca contó
-            // como ingreso). Devolverla reintegraría stock de más y sacaría efectivo de un ingreso inexistente.
-            if (ventaDao.EstaAnulada(idVenta))
-                throw new NegocioException("La venta N°" + idVenta + " está anulada; no se puede devolver.");
-
-            var detalles = ventaDao.ObtenerDetalleVenta(idVenta);
-            if (detalles.Count == 0)
-                throw new NegocioException("La venta no existe o no tiene detalle.");
-
             var dev = new Devolucion
             {
                 IdVenta = idVenta,
                 IdCaja = caja.IdCaja,
                 Fecha = DateTime.Now,
-                IdUsuario = Sesion.UsuarioActual.IdUsuario
+                IdUsuario = Sesion.UsuarioActual.IdUsuario,
+                Detalles = Previsualizar(idVenta, items)
             };
-
-            foreach (var pedido in items)
-            {
-                if (pedido.Cantidad <= 0) continue;
-                var original = detalles.FirstOrDefault(d => d.IdProducto == pedido.IdProducto);
-                if (original == null)
-                    throw new NegocioException("Un producto seleccionado no pertenece a esta venta.");
-
-                decimal disponible = original.Cantidad - devolucionDao.CantidadDevuelta(idVenta, pedido.IdProducto);
-                if (pedido.Cantidad > disponible)
-                    throw new NegocioException("No puedes devolver más de lo vendido de \"" +
-                        original.NombreProducto + "\" (disponible: " + disponible.ToString("0.##") + ").");
-
-                decimal subtotal = Dinero.Redondear(pedido.Cantidad * original.PrecioUnitario);
-                dev.Detalles.Add(new DevolucionItem
-                {
-                    IdProducto = pedido.IdProducto,
-                    NombreProducto = original.NombreProducto,
-                    Cantidad = pedido.Cantidad,
-                    PrecioUnitario = original.PrecioUnitario,
-                    Subtotal = subtotal
-                });
-                dev.Monto += subtotal;
-            }
-
-            if (dev.Detalles.Count == 0)
-                throw new NegocioException("Selecciona al menos un producto a devolver.");
+            dev.Monto = dev.Detalles.Sum(d => d.Subtotal);
+            if (montoEsperado.HasValue && montoEsperado.Value != dev.Monto)
+                throw new NegocioException("El importe a reembolsar cambió. Revisa nuevamente la devolución.");
 
             int id = devolucionDao.Registrar(dev);
             Log.Advertencia("Devolución N°" + id + " de venta N°" + idVenta + " | $" + dev.Monto.ToString("N0") +

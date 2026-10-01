@@ -30,6 +30,7 @@ namespace AccesoData.DAO
                         foreach (var pago in venta.Pagos)
                             InsertarPago(con, tran, idVenta, pago);
 
+                        RegistrarAuditoria(con, tran, idVenta, venta);
                         tran.Commit();
                         return idVenta;
                     }
@@ -39,6 +40,26 @@ namespace AccesoData.DAO
                         throw;
                     }
                 }
+            }
+        }
+
+        private void RegistrarAuditoria(DbConnection con, DbTransaction tran, int idVenta, Venta venta)
+        {
+            string detalle = "N°" + idVenta + " | $" + venta.Total.ToString("N0") + " | " + venta.MedioPago;
+            if (venta.Descuento > 0) detalle += " | desc. $" + venta.Descuento.ToString("N0");
+            // El actor es el de la venta, no una sesión global que pueda cambiar. La auditoría
+            // participa del mismo commit que cabecera, detalles, pagos y stock.
+            using (var cmd = con.Comando(@"
+                INSERT INTO LogMovimiento (Fecha, IdUsuario, NombreUsuario, Modulo, Accion, Detalle)
+                SELECT @fecha, IdUsuario, Nombre, @modulo, 'Venta', @detalle
+                FROM Usuario WHERE IdUsuario = @usuario;", tran))
+            {
+                cmd.AddParam("@fecha", venta.Fecha.ToString("yyyy-MM-dd HH:mm:ss"));
+                cmd.AddParam("@usuario", venta.IdUsuario);
+                cmd.AddParam("@modulo", ModuloLog.Ventas);
+                cmd.AddParam("@detalle", detalle);
+                if (cmd.ExecuteNonQuery() != 1)
+                    throw new InvalidOperationException("No se pudo registrar la auditoría de la venta.");
             }
         }
 
@@ -148,8 +169,8 @@ namespace AccesoData.DAO
                         }
                 }
 
-                // Devoluciones del período: el reporte debe restarlas (igual que el arqueo de caja),
-                // si no, TotalVendido/desglose quedan sobreestimados respecto del efectivo real.
+                // Devoluciones por fecha del reembolso, aunque la venta sea de otro período.
+                // TotalVendido y el desglose conservan el cobro original; TotalNeto resta el reembolso.
                 using (var cmd = con.Comando(
                     "SELECT COALESCE(SUM(Monto), 0) FROM Devolucion WHERE Fecha BETWEEN @desde AND @hasta;"))
                 {
@@ -158,95 +179,119 @@ namespace AccesoData.DAO
                     r.TotalDevoluciones = Convert.ToDecimal(cmd.ExecuteScalar());
                 }
 
-                // Costo de lo vendido (COGS) del período, para la utilidad/margen del reporte.
-                // Solo cuenta lo que tenga costo cargado; el resto suma 0 (ventas viejas, productos sin costo).
-                using (var cmd = con.Comando(@"
-                    SELECT COALESCE(SUM(d.CostoUnitario * d.Cantidad), 0)
-                    FROM DetalleVenta d JOIN Venta v ON d.IdVenta = v.IdVenta
-                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0;"))
-                {
-                    cmd.AddParam("@desde", d);
-                    cmd.AddParam("@hasta", h);
-                    r.TotalCosto = Convert.ToDecimal(cmd.ExecuteScalar());
-                }
             }
+            // Misma proyección de costos que los rankings, sin otra suma en coma flotante de SQLite.
+            var productos = ObtenerProductosPeriodo(desde, hasta);
+            r.TotalCostoDevuelto = productos.Sum(p => p.CostoDevuelto);
+            r.TotalCosto = productos.Sum(p => p.Costo + p.CostoDevuelto);
             return r;
         }
 
-        // Productos más vendidos en un rango (ordenados por cantidad)
+        // Ordenar y limitar DESPUÉS de aplicar descuentos y devoluciones. Los empates usan el ID.
         public List<ProductoVendido> ObtenerTopProductos(DateTime desde, DateTime hasta, int top)
+            => ObtenerProductosPeriodo(desde, hasta).OrderByDescending(p => p.Cantidad)
+                .ThenBy(p => p.IdProducto).Take(Math.Max(0, top)).ToList();
+
+        public List<ProductoVendido> ObtenerTopUtilidad(DateTime desde, DateTime hasta, int top)
+            => ObtenerProductosPeriodo(desde, hasta).OrderByDescending(p => p.Utilidad)
+                .ThenBy(p => p.IdProducto).Take(Math.Max(0, top)).ToList();
+
+        // Dos consultas por período, sin una consulta por venta/producto. El reparto se hace en
+        // decimal con la misma regla que las devoluciones; no se recalculan reembolsos históricos.
+        private List<ProductoVendido> ObtenerProductosPeriodo(DateTime desde, DateTime hasta)
         {
-            var lista = new List<ProductoVendido>();
+            var productos = new Dictionary<int, ProductoVendido>();
+            var ventas = new Dictionary<int, Venta>();
             using (var con = GetConnection())
             {
                 con.Open();
-                string seleccion = Dialecto.EsSqlServer ? "SELECT TOP (@top) " : "SELECT ";
-                string limite    = Dialecto.EsSqlServer ? "" : " LIMIT @top";
-                string sql = seleccion + @"p.Nombre, SUM(d.Cantidad), SUM(d.Subtotal), SUM(d.CostoUnitario * d.Cantidad)
-                    FROM DetalleVenta d
-                    JOIN Venta v    ON d.IdVenta    = v.IdVenta
-                    JOIN Producto p ON d.IdProducto = p.IdProducto
-                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0
-                    GROUP BY d.IdProducto, p.Nombre
-                    ORDER BY SUM(d.Cantidad) DESC" + limite + ";";
-
-                using (var cmd = con.Comando(sql))
+                using (var cmd = con.Comando(@"
+                    SELECT v.IdVenta, v.Descuento, d.IdProducto, p.Nombre,
+                           d.Cantidad, d.Subtotal, d.CostoUnitario
+                    FROM Venta v JOIN DetalleVenta d ON d.IdVenta = v.IdVenta
+                    LEFT JOIN Producto p ON p.IdProducto = d.IdProducto
+                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0;"))
                 {
                     cmd.AddParam("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
                     cmd.AddParam("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
-                    cmd.AddParam("@top", top);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read())
                         {
-                            lista.Add(new ProductoVendido
-                            {
-                                Nombre   = reader.GetString(0),
-                                Cantidad = reader.GetDecimal(1),
-                                Total    = reader.GetDecimal(2),
-                                Costo    = reader.GetDecimal(3)
-                            });
+                            int id = r.GetInt32(0);
+                            if (!ventas.TryGetValue(id, out var venta))
+                                ventas[id] = venta = new Venta { Descuento = r.GetDecimal(1) };
+                            venta.Detalles.Add(new DetalleVenta { IdProducto = r.GetInt32(2),
+                                NombreProducto = r.IsDBNull(3) ? "Producto #" + r.GetInt32(2) : r.GetString(3),
+                                Cantidad = r.GetDecimal(4), Subtotal = r.GetDecimal(5), CostoUnitario = r.GetDecimal(6) });
                         }
+                }
+                foreach (var venta in ventas.Values)
+                {
+                    var reparto = RepartoVenta.PorProducto(venta.Detalles, venta.Descuento);
+                    foreach (var grupo in venta.Detalles.GroupBy(d => d.IdProducto))
+                    {
+                        var p = ProductoReporte(productos, grupo.Key, grupo.First().NombreProducto);
+                        p.Cantidad += grupo.Sum(d => d.Cantidad);
+                        p.Total += reparto[grupo.Key];
+                        p.Costo += grupo.Sum(d => d.CostoUnitario * d.Cantidad);
                     }
                 }
-            }
-            return lista;
-        }
 
-        // Productos que MÁS UTILIDAD dejaron en un rango (Σ venta − Σ costo), ordenados por utilidad.
-        public List<ProductoVendido> ObtenerTopUtilidad(DateTime desde, DateTime hasta, int top)
-        {
-            var lista = new List<ProductoVendido>();
-            using (var con = GetConnection())
-            {
-                con.Open();
-                string seleccion = Dialecto.EsSqlServer ? "SELECT TOP (@top) " : "SELECT ";
-                string limite    = Dialecto.EsSqlServer ? "" : " LIMIT @top";
-                string sql = seleccion + @"p.Nombre, SUM(d.Cantidad), SUM(d.Subtotal), SUM(d.CostoUnitario * d.Cantidad)
-                    FROM DetalleVenta d
-                    JOIN Venta v    ON d.IdVenta    = v.IdVenta
-                    JOIN Producto p ON d.IdProducto = p.IdProducto
-                    WHERE v.Fecha BETWEEN @desde AND @hasta AND v.Anulada = 0
-                    GROUP BY d.IdProducto, p.Nombre
-                    ORDER BY SUM(d.Subtotal - d.CostoUnitario * d.Cantidad) DESC" + limite + ";";
-
-                using (var cmd = con.Comando(sql))
+                // La cantidad/costo originales se agrupan antes del JOIN: no duplicar devoluciones
+                // cuando el histórico tiene más de una línea del mismo producto en una venta.
+                using (var cmd = con.Comando(@"
+                    SELECT di.IdProducto, p.Nombre, o.Cantidad, o.Costo,
+                           SUM(CASE WHEN d.Fecha < @desde THEN di.Cantidad ELSE 0 END),
+                           SUM(CASE WHEN d.Fecha BETWEEN @desde AND @hasta THEN di.Cantidad ELSE 0 END),
+                           SUM(CASE WHEN d.Fecha BETWEEN @desde AND @hasta THEN di.Subtotal ELSE 0 END)
+                    FROM Devolucion d JOIN DevolucionItem di ON di.IdDevolucion = d.IdDevolucion
+                    LEFT JOIN (
+                        SELECT IdVenta, IdProducto, SUM(Cantidad) AS Cantidad,
+                               SUM(CostoUnitario * Cantidad) AS Costo
+                        FROM DetalleVenta GROUP BY IdVenta, IdProducto
+                    ) o ON o.IdVenta = d.IdVenta AND o.IdProducto = di.IdProducto
+                    LEFT JOIN Producto p ON p.IdProducto = di.IdProducto
+                    WHERE d.Fecha <= @hasta
+                    GROUP BY d.IdVenta, di.IdProducto, p.Nombre, o.Cantidad, o.Costo
+                    HAVING SUM(CASE WHEN d.Fecha BETWEEN @desde AND @hasta THEN 1 ELSE 0 END) > 0;"))
                 {
                     cmd.AddParam("@desde", desde.ToString("yyyy-MM-dd 00:00:00"));
                     cmd.AddParam("@hasta", hasta.ToString("yyyy-MM-dd 23:59:59"));
-                    cmd.AddParam("@top", top);
-                    using (var reader = cmd.ExecuteReader())
-                        while (reader.Read())
-                            lista.Add(new ProductoVendido
-                            {
-                                Nombre   = reader.GetString(0),
-                                Cantidad = reader.GetDecimal(1),
-                                Total    = reader.GetDecimal(2),
-                                Costo    = reader.GetDecimal(3)
-                            });
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read())
+                        {
+                            if (r.IsDBNull(2) || r.GetDecimal(2) <= 0)
+                                throw new InvalidOperationException("Una devolución sin detalle de venta válido requiere conciliación.");
+                            decimal vendida = Convert.ToDecimal(r.GetValue(2));
+                            decimal costo = Convert.ToDecimal(r.GetValue(3));
+                            decimal anterior = Convert.ToDecimal(r.GetValue(4));
+                            decimal cantidad = Convert.ToDecimal(r.GetValue(5));
+                            if (costo < 0 || anterior < 0 || cantidad < 0 || anterior + cantidad > vendida)
+                                throw new InvalidOperationException("El costo o las cantidades devueltas requieren conciliación.");
+                            // Diferencia de acumulados: conserva el costo total incluso si el promedio
+                            // ponderado de líneas históricas tiene decimales periódicos.
+                            decimal reintegrado = CostoAcumulado(costo, vendida, anterior + cantidad)
+                                - CostoAcumulado(costo, vendida, anterior);
+                            int id = r.GetInt32(0);
+                            var p = ProductoReporte(productos, id, r.IsDBNull(1) ? "Producto #" + id : r.GetString(1));
+                            p.Cantidad -= cantidad;
+                            p.Total -= Convert.ToDecimal(r.GetValue(6));
+                            p.Costo -= reintegrado;
+                            p.CostoDevuelto += reintegrado;
+                        }
                 }
             }
-            return lista;
+            return productos.Values.ToList();
+        }
+
+        private static decimal CostoAcumulado(decimal costo, decimal vendida, decimal devuelta)
+            => vendida == devuelta ? costo : costo * devuelta / vendida;
+
+        private static ProductoVendido ProductoReporte(Dictionary<int, ProductoVendido> productos, int id, string nombre)
+        {
+            if (!productos.TryGetValue(id, out var p))
+                productos[id] = p = new ProductoVendido { IdProducto = id, Nombre = nombre };
+            return p;
         }
 
         // Historial de ventas (para reportes / módulo de caja)
@@ -288,6 +333,33 @@ namespace AccesoData.DAO
                 }
             }
             return lista;
+        }
+
+        // Importes originales necesarios para repartir descuentos en devoluciones.
+        public Venta ObtenerParaDevolucion(int idVenta)
+        {
+            Venta venta;
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var cmd = con.Comando("SELECT Total, Descuento FROM Venta WHERE IdVenta = @id;"))
+                {
+                    cmd.AddParam("@id", idVenta);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (!r.Read()) return null;
+                        venta = new Venta { IdVenta = idVenta, Total = r.GetDecimal(0), Descuento = r.GetDecimal(1) };
+                    }
+                }
+                using (var cmd = con.Comando("SELECT MedioPago, Monto FROM PagoVenta WHERE IdVenta = @id;"))
+                {
+                    cmd.AddParam("@id", idVenta);
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) venta.Pagos.Add(new PagoVenta { MedioPago = r.GetString(0), Monto = r.GetDecimal(1) });
+                }
+            }
+            venta.Detalles = ObtenerDetalleVenta(idVenta);
+            return venta;
         }
 
         // Detalle (ítems) de una venta, con el código de barras y nombre del producto.

@@ -23,7 +23,7 @@ namespace Entidades
         public int IdProducto { get; set; }
         public string NombreProducto { get; set; }
         public decimal Cantidad { get; set; }
-        public decimal PrecioUnitario { get; set; }   // del detalle original (transitorio)
+        public decimal PrecioUnitario { get; set; }   // referencia neta por unidad; no multiplicar para calcular el reembolso
         public decimal Subtotal { get; set; }
     }
 }

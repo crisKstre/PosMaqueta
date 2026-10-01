@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-01",
+  "baseCommit": "5d05101",
+  "scope": "H16 y parte de MIG-007 sobre MIG-001/MIG-002, sin commit",
+  "sdk": "9.0.300",
+  "targetFramework": "net472",
+  "runs": [
+    {
+      "name": "mig007-antes",
+      "start": "2026-10-01T13:22:09.9709126-03:00",
+      "finish": "2026-10-01T13:22:15.7300091-03:00",
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig007/mig007-antes.trx",
+      "failedCases": [
+        "PosMaqueta.Tests.ReportesDevolucionesTests.Ranking_ordena_y_limita_despues_de_descontar_devoluciones(porUtilidad: True)",
+        "PosMaqueta.Tests.ReportesDevolucionesTests.Costo_fraccionario_se_conserva_y_ventas_anuladas_no_entran_en_ranking",
+        "PosMaqueta.Tests.ReportesDevolucionesTests.Devolucion_parcial_reduce_costo_utilidad_y_ranking_con_costo_original",
+        "PosMaqueta.Tests.ReportesDevolucionesTests.Ranking_ordena_y_limita_despues_de_descontar_devoluciones(porUtilidad: False)",
+        "PosMaqueta.Tests.ReportesDevolucionesTests.Rankings_reparten_descuento_global_y_restan_reembolso_real",
+        "PosMaqueta.Tests.ReportesDevolucionesTests.Devolucion_total_deja_costo_y_utilidad_netos_cero",
+        "PosMaqueta.Tests.ReportesDevolucionesTests.Devolucion_en_otro_dia_no_reescribe_costo_del_dia_de_venta"
+      ]
+    },
+    {
+      "name": "mig007-focalizadas",
+      "start": "2026-10-01T13:27:12.9772331-03:00",
+      "finish": "2026-10-01T13:27:20.8559556-03:00",
+      "total": 21,
+      "passed": 21,
+      "failed": 0,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig007/mig007-focalizadas.trx",
+      "failedCases": []
+    },
+    {
+      "name": "mig007-despues",
+      "start": "2026-10-01T13:28:02.7215408-03:00",
+      "finish": "2026-10-01T13:29:21.5033004-03:00",
+      "total": 212,
+      "passed": 212,
+      "failed": 0,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/mig007/mig007-despues.trx",
+      "failedCases": []
+    }
+  ],
+  "excludedSqlServerCases": 9,
+  "build": {
+    "command": "dotnet build Presentacion/Presentacion.csproj --no-restore",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "limitations": [
+    "No se ejecutó SQL Server ni UI interactiva.",
+    "Sin prueba de concurrencia ni rendimiento.",
+    "Histórico real pendiente de conciliación; sin modificación de datos productivos.",
+    "Otros asuntos de MIG-007 (CSV/precisión general) pendientes."
+  ]
+}

@@ -38,6 +38,33 @@ namespace AccesoData.DAO
             }
         }
 
+        // Cabeceras e ítems se suman por separado para no multiplicar montos al hacer JOIN.
+        public Devolucion ObtenerAcumulado(int idVenta)
+        {
+            var resultado = new Devolucion { IdVenta = idVenta };
+            using (var con = GetConnection())
+            {
+                con.Open();
+                using (var cmd = con.Comando("SELECT COALESCE(SUM(Monto), 0) FROM Devolucion WHERE IdVenta = @id;"))
+                {
+                    cmd.AddParam("@id", idVenta);
+                    resultado.Monto = Convert.ToDecimal(cmd.ExecuteScalar());
+                }
+                using (var cmd = con.Comando(@"
+                    SELECT di.IdProducto, SUM(di.Cantidad), SUM(di.Subtotal)
+                    FROM DevolucionItem di JOIN Devolucion d ON d.IdDevolucion = di.IdDevolucion
+                    WHERE d.IdVenta = @id GROUP BY di.IdProducto;"))
+                {
+                    cmd.AddParam("@id", idVenta);
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) resultado.Detalles.Add(new DevolucionItem {
+                            IdProducto = r.GetInt32(0), Cantidad = Convert.ToDecimal(r.GetValue(1)),
+                            Subtotal = Convert.ToDecimal(r.GetValue(2)) });
+                }
+            }
+            return resultado;
+        }
+
         // Registra la devolución (cabecera + ítems) y REINTEGRA el stock, en una transacción.
         public int Registrar(Devolucion dev)
         {
@@ -81,12 +108,9 @@ namespace AccesoData.DAO
                                 cmd.ExecuteNonQuery();
                             }  
                         }
-                        using (var cmd = con.Comando("UPDATE Venta SET Total = Total - @monto WHERE IdVenta = @idVenta;", tran))
-                        {
-                            cmd.AddParam("@monto", dev.Monto);
-                            cmd.AddParam("@idVenta", dev.IdVenta);
-                            cmd.ExecuteNonQuery();
-                        }
+                        // Conservar el importe cobrado en Venta.Total y sus pagos originales.
+                        // La devolución es un movimiento separado: reportes y arqueo la descuentan
+                        // una sola vez, en la fecha/turno del reembolso (que puede ser posterior).
                         tran.Commit();
                         return idDev;
                     }

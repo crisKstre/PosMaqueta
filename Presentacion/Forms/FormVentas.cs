@@ -900,9 +900,13 @@ namespace Presentacion.Forms
                 pagos.Add(new PagoVenta { MedioPago = medioPago, Monto = total });
             }
 
+            int idVenta;
+            try { idVenta = ventaService.CobrarVenta(Sesion.UsuarioActual.IdUsuario, pagos); }
+            catch (Exception ex) { Errores.Mostrar(this, ex); return; }
+
+            // Desde aquí la venta ya fue confirmada; un fallo visual no debe invitar a cobrarla otra vez.
             try
             {
-                int idVenta = ventaService.CobrarVenta(Sesion.UsuarioActual.IdUsuario, pagos);
                 string detalleMedio = pagos.Count > 1
                     ? string.Join(" + ", pagos.Select(p => p.MedioPago + " $" + p.Monto.ToString("N0")))
                     : pagos[0].MedioPago;
@@ -919,7 +923,12 @@ namespace Presentacion.Forms
                 CargarGridProductos();
                 txtCodigo.Focus();
             }
-            catch (Exception ex) { Errores.Mostrar(this, ex); }
+            catch (Exception ex)
+            {
+                AccesoData.Log.Error("Venta N°" + idVenta + " registrada; falló la actualización de pantalla.", ex);
+                Aviso.Advertencia(this, "La venta N° " + idVenta + " quedó registrada. No vuelva a cobrarla.\n" +
+                    "No se pudo actualizar la pantalla; vuelva a abrir el módulo y consulte el historial.", "Venta registrada");
+            }
         }
 
         private void btnCancelar_Click(object sender, EventArgs e)

@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-01",
+  "baseCommit": "5d05101",
+  "scope": "H03 local, parte de MIG-004, sobre cambios anteriores sin commit",
+  "runs": [
+    {
+      "name": "h03-antes",
+      "start": "2026-10-01T13:36:27.5594014-03:00",
+      "finish": "2026-10-01T13:36:30.7839715-03:00",
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/h03/h03-antes.trx"
+    },
+    {
+      "name": "h03-focalizadas",
+      "start": "2026-10-01T13:37:30.0249540-03:00",
+      "finish": "2026-10-01T13:37:33.5465673-03:00",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/h03/h03-focalizadas.trx"
+    },
+    {
+      "name": "h03-despues",
+      "start": "2026-10-01T13:38:29.4216975-03:00",
+      "finish": "2026-10-01T13:39:49.1485948-03:00",
+      "total": 215,
+      "passed": 215,
+      "failed": 0,
+      "notExecuted": 0,
+      "rawTrx": "PosMaqueta.Tests/obj/h03/h03-despues.trx"
+    }
+  ],
+  "excludedSqlServerCases": 9,
+  "build": {
+    "command": "dotnet build Presentacion/Presentacion.csproj --no-restore",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "limitations": [
+    "Sin SQL Server ni UI interactiva.",
+    "Sin idempotencia persistente, caída de proceso ni concurrencia.",
+    "Sin datos productivos."
+  ]
+}

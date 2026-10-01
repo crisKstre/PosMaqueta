@@ -46,7 +46,9 @@ namespace Presentacion.Forms
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colId", Visible = false, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colNombre", HeaderText = "Producto",   FillWeight = 46, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDisp",   HeaderText = "Disponible", FillWeight = 18, ReadOnly = true });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrecio", HeaderText = "Precio",     FillWeight = 18, ReadOnly = true });
+            dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrecio", HeaderText = "Reembolso máx.",
+                ToolTipText = "Importe por devolver toda la cantidad disponible; incluye descuentos y redondeo.",
+                FillWeight = 18, ReadOnly = true });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDevolver", HeaderText = "Devolver *", FillWeight = 18 });
             EstiloPos.AplicarGrid(dgv);
 
@@ -97,11 +99,18 @@ namespace Presentacion.Forms
 
         private void Cargar()
         {
-            devolvibles = service.ObtenerDevolvibles(idVenta);
+            try { devolvibles = service.ObtenerDevolvibles(idVenta); }
+            catch (Exception ex)
+            {
+                lblTotal.Text = "No se pudo preparar la devolución.";
+                btnConfirmar.Enabled = false;
+                Aviso.Error(this, Errores.Usuario(ex), "No se pudo devolver");
+                return;
+            }
             dgv.Rows.Clear();
             foreach (var it in devolvibles)
-                dgv.Rows.Add(it.IdProducto, it.NombreProducto, it.Cantidad.ToString("0.##"),
-                    "$" + it.PrecioUnitario.ToString("N0"), "0");
+                dgv.Rows.Add(it.IdProducto, it.NombreProducto, it.Cantidad.ToString("0.###"),
+                    "$" + it.Subtotal.ToString("N0"), "0");
 
             if (devolvibles.Count == 0)
             {
@@ -113,7 +122,26 @@ namespace Presentacion.Forms
 
         private void Recalcular()
         {
-            decimal total = 0;
+            btnConfirmar.Enabled = false;
+            if (devolvibles.Count == 0) return;
+            try
+            {
+                var items = LeerSeleccion();
+                decimal total = items.Count == 0 ? 0 : service.Previsualizar(idVenta, items).Sum(i => i.Subtotal);
+                lblTotal.Text = "A reembolsar: $" + total.ToString("N0");
+                // Puede ser cero por descuento total o por el redondeo de una devolución parcial.
+                btnConfirmar.Enabled = items.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                lblTotal.Text = "No se pudo calcular la devolución.";
+                Aviso.Error(this, Errores.Usuario(ex), "Revisa la devolución");
+            }
+        }
+
+        private List<DevolucionItem> LeerSeleccion()
+        {
+            var items = new List<DevolucionItem>();
             foreach (DataGridViewRow row in dgv.Rows)
             {
                 if (row.IsNewRow) continue;
@@ -121,35 +149,26 @@ namespace Presentacion.Forms
                 if (it == null) continue;
                 decimal cant = ParseCant(row.Cells["colDevolver"].Value);
                 if (cant < 0) cant = 0;
-                if (cant > it.Cantidad) { cant = it.Cantidad; row.Cells["colDevolver"].Value = cant.ToString("0.##"); }
-                total += Dinero.Redondear(cant * it.PrecioUnitario);
+                if (cant > it.Cantidad) { cant = it.Cantidad; row.Cells["colDevolver"].Value = cant.ToString("0.###"); }
+                if (cant > 0) items.Add(new DevolucionItem { IdProducto = it.IdProducto, Cantidad = cant });
             }
-            if (devolvibles.Count > 0) lblTotal.Text = "A reembolsar: $" + total.ToString("N0");
-            btnConfirmar.Enabled = total > 0;
+            return items;
         }
 
         private void Confirmar()
         {
-            var items = new List<DevolucionItem>();
-            foreach (DataGridViewRow row in dgv.Rows)
-            {
-                if (row.IsNewRow) continue;
-                decimal cant = ParseCant(row.Cells["colDevolver"].Value);
-                if (cant <= 0) continue;
-                items.Add(new DevolucionItem { IdProducto = Convert.ToInt32(row.Cells["colId"].Value), Cantidad = cant });
-            }
-            if (items.Count == 0) { Aviso.Info(this, "Indica una cantidad a devolver.", "Devolución"); return; }
-
-            decimal totalRef = items.Sum(i => Dinero.Redondear(
-                i.Cantidad * devolvibles.First(d => d.IdProducto == i.IdProducto).PrecioUnitario));
-            if (!Aviso.Confirmar(this,
-                    "Se devolverán " + items.Count + " producto(s) por $" + totalRef.ToString("N0") + ".\n" +
-                    "El stock vuelve al inventario y el efectivo sale de la caja del turno.",
-                    "¿Registrar devolución?", "Devolver", TipoAviso.Advertencia))
-                return;
             try
             {
-                int id = service.Devolver(idVenta, items);
+                dgv.EndEdit();
+                var items = LeerSeleccion();
+                if (items.Count == 0) { Aviso.Info(this, "Indica una cantidad a devolver.", "Devolución"); return; }
+                decimal totalRef = service.Previsualizar(idVenta, items).Sum(i => i.Subtotal);
+                if (!Aviso.Confirmar(this,
+                        "Se devolverán " + items.Count + " producto(s) por $" + totalRef.ToString("N0") + ".\n" +
+                        "El stock vuelve al inventario y el efectivo sale de la caja del turno.",
+                        "¿Registrar devolución?", "Devolver", TipoAviso.Advertencia))
+                    return;
+                int id = service.Devolver(idVenta, items, totalRef);
                 Aviso.Exito(this, "Devolución N° " + id + " registrada. Stock reintegrado y $" +
                     totalRef.ToString("N0") + " descontado del efectivo de la caja.", "Devolución registrada");
                 DialogResult = DialogResult.OK;

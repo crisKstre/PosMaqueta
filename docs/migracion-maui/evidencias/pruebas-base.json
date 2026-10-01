@@ -1,0 +1,30 @@
+﻿{
+    "analysisDate":  "2026-09-24",
+    "commit":  "5d05101",
+    "sdk":  "9.0.300",
+    "targetFramework":  "net472",
+    "command":  "dotnet test PosMaqueta.Tests/PosMaqueta.Tests.csproj --no-restore --filter \u0027FullyQualifiedName!~SqlServerSmokeTests\u0027 --logger \u0027trx;LogFileName=baseline-maui.trx\u0027 --results-directory .artifacts/maui-analysis",
+    "start":  "2026-09-24T14:09:36.8192191-03:00",
+    "finish":  "2026-09-24T14:10:47.5122539-03:00",
+    "total":  173,
+    "executed":  173,
+    "passed":  172,
+    "failed":  1,
+    "notExecuted":  0,
+    "excludedSqlServerCases":  9,
+    "exclusionReason":  "SqlServerSmokeTests recrea tablas en una base LocalDB de nombre fijo; no se ejecutó.",
+    "failedCases":  [
+                        {
+                            "name":  "PosMaqueta.Tests.DevolucionServiceTests.ResumenVentas_refleja_las_devoluciones",
+                            "outcome":  "Failed",
+                            "message":  "Assert.Equal() Failure: Values differ\r\nExpected: 3000\r\nActual:   1000,0",
+                            "source":  "PosMaqueta.Tests/DevolucionServiceTests.cs:118"
+                        }
+                    ],
+    "limitations":  [
+                        "No se ejecutó UI WinForms ni MAUI.",
+                        "No se ejecutó SQL Server.",
+                        "No se midió cobertura ni rendimiento."
+                    ],
+    "rawTrx":  "PosMaqueta.Tests/obj/maui-analysis/baseline-maui.trx"
+}

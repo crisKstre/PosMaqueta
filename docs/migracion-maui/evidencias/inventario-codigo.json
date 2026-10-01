@@ -1,0 +1,363 @@
+﻿{
+    "commit":  "5d05101",
+    "date":  "2026-09-24",
+    "criterion":  "Archivos C# excluyendo bin/obj; líneas físicas, incluidos blancos, comentarios y diseñadores.",
+    "files":  [
+                  {
+                      "path":  "AccesoData/ConexionBD.cs",
+                      "lines":  20
+                  },
+                  {
+                      "path":  "AccesoData/ConfigBD.cs",
+                      "lines":  41
+                  },
+                  {
+                      "path":  "AccesoData/DAO/CajaDao.cs",
+                      "lines":  169
+                  },
+                  {
+                      "path":  "AccesoData/DAO/CategoriaDao.cs",
+                      "lines":  78
+                  },
+                  {
+                      "path":  "AccesoData/DAO/DevolucionDao.cs",
+                      "lines":  102
+                  },
+                  {
+                      "path":  "AccesoData/DAO/LogDao.cs",
+                      "lines":  89
+                  },
+                  {
+                      "path":  "AccesoData/DAO/ProductoDao.cs",
+                      "lines":  380
+                  },
+                  {
+                      "path":  "AccesoData/DAO/UsuarioDao.cs",
+                      "lines":  222
+                  },
+                  {
+                      "path":  "AccesoData/DAO/VentaDao.cs",
+                      "lines":  429
+                  },
+                  {
+                      "path":  "AccesoData/DatabaseInitializer.cs",
+                      "lines":  456
+                  },
+                  {
+                      "path":  "AccesoData/Log.cs",
+                      "lines":  73
+                  },
+                  {
+                      "path":  "AccesoData/LogRemoto.cs",
+                      "lines":  306
+                  },
+                  {
+                      "path":  "AccesoData/Persistencia.cs",
+                      "lines":  51
+                  },
+                  {
+                      "path":  "AccesoData/ProveedorBD.cs",
+                      "lines":  8
+                  },
+                  {
+                      "path":  "AccesoData/RespaldoBD.cs",
+                      "lines":  181
+                  },
+                  {
+                      "path":  "AccesoData/Seguridad.cs",
+                      "lines":  87
+                  },
+                  {
+                      "path":  "Dominio/Autorizacion.cs",
+                      "lines":  18
+                  },
+                  {
+                      "path":  "Dominio/Eventos/NotificadorCambios.cs",
+                      "lines":  29
+                  },
+                  {
+                      "path":  "Dominio/NegocioException.cs",
+                      "lines":  16
+                  },
+                  {
+                      "path":  "Dominio/Servicios/CajaService.cs",
+                      "lines":  85
+                  },
+                  {
+                      "path":  "Dominio/Servicios/CategoriaService.cs",
+                      "lines":  35
+                  },
+                  {
+                      "path":  "Dominio/Servicios/DevolucionService.cs",
+                      "lines":  109
+                  },
+                  {
+                      "path":  "Dominio/Servicios/ImportacionService.cs",
+                      "lines":  197
+                  },
+                  {
+                      "path":  "Dominio/Servicios/LogService.cs",
+                      "lines":  36
+                  },
+                  {
+                      "path":  "Dominio/Servicios/ProductoService.cs",
+                      "lines":  210
+                  },
+                  {
+                      "path":  "Dominio/Servicios/RespaldoService.cs",
+                      "lines":  72
+                  },
+                  {
+                      "path":  "Dominio/Servicios/UsuarioService.cs",
+                      "lines":  169
+                  },
+                  {
+                      "path":  "Dominio/Servicios/VentaService.cs",
+                      "lines":  370
+                  },
+                  {
+                      "path":  "Entidades/Caja.cs",
+                      "lines":  23
+                  },
+                  {
+                      "path":  "Entidades/Categoria.cs",
+                      "lines":  8
+                  },
+                  {
+                      "path":  "Entidades/DetalleVenta.cs",
+                      "lines":  19
+                  },
+                  {
+                      "path":  "Entidades/Devolucion.cs",
+                      "lines":  29
+                  },
+                  {
+                      "path":  "Entidades/Dinero.cs",
+                      "lines":  17
+                  },
+                  {
+                      "path":  "Entidades/Impuestos.cs",
+                      "lines":  21
+                  },
+                  {
+                      "path":  "Entidades/LogMovimiento.cs",
+                      "lines":  24
+                  },
+                  {
+                      "path":  "Entidades/PagoVenta.cs",
+                      "lines":  9
+                  },
+                  {
+                      "path":  "Entidades/Producto.cs",
+                      "lines":  40
+                  },
+                  {
+                      "path":  "Entidades/ProductoVendido.cs",
+                      "lines":  12
+                  },
+                  {
+                      "path":  "Entidades/RespaldoInfo.cs",
+                      "lines":  25
+                  },
+                  {
+                      "path":  "Entidades/ResultadoImportacion.cs",
+                      "lines":  15
+                  },
+                  {
+                      "path":  "Entidades/ResumenCaja.cs",
+                      "lines":  12
+                  },
+                  {
+                      "path":  "Entidades/ResumenVentas.cs",
+                      "lines":  24
+                  },
+                  {
+                      "path":  "Entidades/RolUsuario.cs",
+                      "lines":  11
+                  },
+                  {
+                      "path":  "Entidades/Sesion.cs",
+                      "lines":  19
+                  },
+                  {
+                      "path":  "Entidades/Usuario.cs",
+                      "lines":  18
+                  },
+                  {
+                      "path":  "Entidades/Venta.cs",
+                      "lines":  28
+                  },
+                  {
+                      "path":  "Entidades/VentaEnCurso.cs",
+                      "lines":  25
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/CajaServiceTests.cs",
+                      "lines":  73
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/CategoriaServiceTests.cs",
+                      "lines":  54
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/DevolucionServiceTests.cs",
+                      "lines":  123
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/EntidadesTests.cs",
+                      "lines":  63
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/EsquemaVersionTests.cs",
+                      "lines":  106
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/ImportacionServiceTests.cs",
+                      "lines":  127
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/ImpuestosTests.cs",
+                      "lines":  81
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/LogRemotoTests.cs",
+                      "lines":  109
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/ProductoServiceTests.cs",
+                      "lines":  157
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/RespaldoServiceTests.cs",
+                      "lines":  69
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/SeguridadTests.cs",
+                      "lines":  146
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/ServiciosTestBase.cs",
+                      "lines":  79
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/SqlServerSmokeTests.cs",
+                      "lines":  212
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/TestConfig.cs",
+                      "lines":  5
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/UsuarioServiceTests.cs",
+                      "lines":  185
+                  },
+                  {
+                      "path":  "PosMaqueta.Tests/VentaServiceTests.cs",
+                      "lines":  363
+                  },
+                  {
+                      "path":  "Presentacion/EstiloPos.cs",
+                      "lines":  206
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormCaja.cs",
+                      "lines":  370
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormCaja.Designer.cs",
+                      "lines":  340
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormCambiarPassword.cs",
+                      "lines":  127
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormCobroEfectivo.cs",
+                      "lines":  119
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormCobroMixto.cs",
+                      "lines":  171
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormDashboard.cs",
+                      "lines":  263
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormDetalleVenta.cs",
+                      "lines":  105
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormDevolucion.cs",
+                      "lines":  167
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormGestionCategorias.cs",
+                      "lines":  107
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormHistorialCajas.cs",
+                      "lines":  159
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormLogin.cs",
+                      "lines":  97
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormLogin.Designer.cs",
+                      "lines":  162
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormPrincipal.cs",
+                      "lines":  231
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormPrincipal.Designer.cs",
+                      "lines":  292
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormProductos.cs",
+                      "lines":  606
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormProductos.Designer.cs",
+                      "lines":  732
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormReportes.cs",
+                      "lines":  321
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormRespaldos.cs",
+                      "lines":  179
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormUsuarios.cs",
+                      "lines":  310
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormVentas.cs",
+                      "lines":  998
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormVentas.Designer.cs",
+                      "lines":  629
+                  },
+                  {
+                      "path":  "Presentacion/Forms/FormVerificarAdmin.cs",
+                      "lines":  128
+                  },
+                  {
+                      "path":  "Presentacion/Program.cs",
+                      "lines":  108
+                  },
+                  {
+                      "path":  "Presentacion/UI/Aviso.cs",
+                      "lines":  359
+                  },
+                  {
+                      "path":  "Presentacion/UI/Errores.cs",
+                      "lines":  41
+                  }
+              ]
+}

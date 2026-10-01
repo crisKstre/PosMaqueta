@@ -88,13 +88,13 @@ namespace Presentacion.Forms
                 BackColor = EstiloPos.Fondo, FlowDirection = FlowDirection.LeftToRight, WrapContents = true
             };
             pnlCards.Controls.Add(CrearCard("Ventas",          EstiloPos.Azul,  out lblVentasVal));
-            pnlCards.Controls.Add(CrearCard("Total vendido",   EstiloPos.Verde, out lblTotalVal));
-            pnlCards.Controls.Add(CrearCard("Utilidad",        EstiloPos.Verde, out lblUtilVal));
-            pnlCards.Controls.Add(CrearCard("Margen",          EstiloPos.Azul,  out lblMargenVal));
-            pnlCards.Controls.Add(CrearCard("IVA (19%) incl.", EstiloPos.Ink2,  out lblIvaVal));
+            pnlCards.Controls.Add(CrearCard("Venta neta",      EstiloPos.Verde, out lblTotalVal));
+            pnlCards.Controls.Add(CrearCard("Utilidad tras devol.", EstiloPos.Verde, out lblUtilVal));
+            pnlCards.Controls.Add(CrearCard("Margen s/venta neta", EstiloPos.Azul, out lblMargenVal));
+            pnlCards.Controls.Add(CrearCard("IVA de ventas (bruto)", EstiloPos.Ink2, out lblIvaVal));
             pnlCards.Controls.Add(CrearCard("Ticket promedio", EstiloPos.Amber, out lblTicketVal));
             pnlCards.Controls.Add(CrearCard("Inventario a costo", EstiloPos.Ink2, out lblInvVal));
-            pnlCards.Controls.Add(CrearCard("Medios de pago",  EstiloPos.Ink2,  out lblDesgloseVal));
+            pnlCards.Controls.Add(CrearCard("Cobros / reembolsos", EstiloPos.Ink2, out lblDesgloseVal));
             pnlCards.Controls.Add(CrearCard("Inventario total", EstiloPos.Ink2, out lblInvValTot));
             pnlCards.Controls.Add(CrearCard("Total productos", EstiloPos.Ink2, out lblTotalProd));
             lblDesgloseVal.Font      = EstiloPos.FontSmall;
@@ -113,10 +113,10 @@ namespace Presentacion.Forms
             split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54F));
             split.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-            var pnlTopProd = CrearPanelTabla("Top productos por utilidad", out dgvTop, new Padding(0, 0, 10, 0));
+            var pnlTopProd = CrearPanelTabla("Productos por utilidad tras devoluciones", out dgvTop, new Padding(0, 0, 10, 0));
             dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Producto", FillWeight = 120 });
-            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Cant.",    FillWeight = 40 });
-            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",    FillWeight = 50 });
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Cant. neta", FillWeight = 40 });
+            dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Venta neta", FillWeight = 50 });
             dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Utilidad", FillWeight = 55 });
             EstiloPos.AplicarGrid(dgvTop);
 
@@ -165,13 +165,28 @@ namespace Presentacion.Forms
 
         private void Generar()
         {
+            try { GenerarReporte(); }
+            catch (Exception ex)
+            {
+                foreach (var label in new[] { lblVentasVal, lblTotalVal, lblIvaVal, lblTicketVal,
+                    lblDesgloseVal, lblUtilVal, lblMargenVal, lblInvVal, lblInvValTot, lblTotalProd })
+                    label.Text = "—";
+                dgvTop.Rows.Clear();
+                dgvVentas.Rows.Clear();
+                ventasPeriodo.Clear();
+                Aviso.Error(this, Errores.Usuario(ex), "No se pudo generar el reporte");
+            }
+        }
+
+        private void GenerarReporte()
+        {
             DateTime desde = dtpDesde.Value.Date, hasta = dtpHasta.Value.Date;
             if (hasta < desde) { var t = desde; desde = hasta; hasta = t; }
 
             
             var r = ventaService.ObtenerResumenVentas(desde, hasta);
             lblVentasVal.Text   = r.CantidadVentas.ToString();
-            lblTotalVal.Text    = "$" + r.TotalVendido.ToString("N0");
+            lblTotalVal.Text    = "$" + r.TotalNeto.ToString("N0");
             lblIvaVal.Text      = "$" + Impuestos.Iva(r.TotalVendido).ToString("N0");
             lblTicketVal.Text   = "$" + r.TicketPromedio.ToString("N0");
             lblTotalProd.Text   = productoService.ContarProductos().ToString();
@@ -179,15 +194,16 @@ namespace Presentacion.Forms
             lblDesgloseVal.Text =
                 "Efectivo:  $" + r.TotalEfectivo.ToString("N0") + "\n" +
                 "Tarjeta:   $" + r.TotalTarjeta.ToString("N0") + "\n" +
-                "Transfer.: $" + r.TotalTransferencia.ToString("N0");
+                "Transfer.: $" + r.TotalTransferencia.ToString("N0") + "\n" +
+                "Devuelto:  $" + r.TotalDevoluciones.ToString("N0");
             lblUtilVal.Text   = "$" + r.Utilidad.ToString("N0");
-            lblMargenVal.Text = r.MargenPorcentaje.ToString("0") + "%";
+            lblMargenVal.Text = r.TieneMargen ? r.MargenPorcentaje.ToString("0") + "%" : "—";
             lblInvVal.Text    = "$" + productoService.ValorInventarioACosto().ToString("N0");
             lblInvValTot.Text = "$" + productoService.ValorInventario().ToString("N0");
 
             dgvTop.Rows.Clear();
             foreach (var p in ventaService.ObtenerTopUtilidad(desde, hasta, 12))
-                dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.##"), "$" + p.Total.ToString("N0"), "$" + p.Utilidad.ToString("N0"));
+                dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.###"), "$" + p.Total.ToString("N0"), "$" + p.Utilidad.ToString("N0"));
 
             ventasPeriodo = ventaService.ObtenerVentas(desde, hasta);
             dgvVentas.Rows.Clear();
