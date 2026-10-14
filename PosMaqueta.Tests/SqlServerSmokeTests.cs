@@ -51,6 +51,7 @@ namespace PosMaqueta.Tests
                         DROP TABLE IF EXISTS Venta;
                         DROP TABLE IF EXISTS Caja;
                         DROP TABLE IF EXISTS LogMovimiento;
+                        DROP TABLE IF EXISTS FotoProducto;
                         DROP TABLE IF EXISTS Producto;
                         DROP TABLE IF EXISTS Categoria;
                         DROP TABLE IF EXISTS Usuario;
@@ -75,6 +76,32 @@ namespace PosMaqueta.Tests
         {
             try { using (var c = new SqlConnection(ConnMaster)) { c.Open(); } return true; }
             catch { return false; }
+        }
+
+        [SkippableFact]
+        public void Foto_producto_binaria_migracion_y_reemplazo()
+        {
+            Skip.IfNot(disponible, "LocalDB no disponible");
+            int id = CrearProducto("Con foto", 1000m, 10m);
+            using (var con = new SqlConnection(ConnTest))
+            {
+                con.Open();
+                using (var cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "DROP TABLE FotoProducto; UPDATE SchemaVersion SET Version = 4;";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            new DatabaseInitializer().Inicializar();
+            var fotos = new FotoProductoService();
+            fotos.Guardar(id, FotoPrueba.Crear(System.Drawing.Color.Red, 512, 512, ruido: true));
+            Assert.True(fotos.ObtenerImagen(id).Length > 8000);
+            Assert.NotNull(fotos.ObtenerMiniatura(id));
+            fotos.Guardar(id, FotoPrueba.Crear(System.Drawing.Color.Blue));
+            new DatabaseInitializer().Inicializar();
+            Assert.NotNull(fotos.ObtenerImagen(id));
+            fotos.Quitar(id);
+            Assert.Null(fotos.ObtenerImagen(id));
         }
 
         private static void EjecutarMaster(string sql)

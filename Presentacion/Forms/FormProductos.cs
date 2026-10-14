@@ -16,11 +16,16 @@ namespace Presentacion.Forms
         private readonly LogService         logService         = new LogService();
         private readonly ImportacionService importacionService = new ImportacionService();
         private int  idEnEdicion = 0;
+        private readonly CacheFotosProducto fotos = new CacheFotosProducto();
         private bool logVisible  = false;
         private ContextMenuStrip menuDescuento;
         private System.Windows.Forms.Timer timerBuscar;
 
-        public FormProductos() { InitializeComponent(); }
+        public FormProductos()
+        {
+            InitializeComponent();
+            Disposed += (s, e) => fotos.Dispose();
+        }
 
         private void FormProductos_Load(object sender, EventArgs e)
         {
@@ -33,6 +38,15 @@ namespace Presentacion.Forms
             // Re-aplicar grids en runtime para garantizar estilos correctos
             EstiloPos.AplicarGrid(dgvProductos);
             EstiloPos.AplicarGrid(dgvLog);
+
+            var columnaFoto = new DataGridViewTextBoxColumn { Name = "colFoto", HeaderText = "Foto",
+                Width = 76, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, ReadOnly = true,
+                SortMode = DataGridViewColumnSortMode.NotSortable, ToolTipText = "Haz clic para ver o cambiar la foto del producto." };
+            dgvProductos.Columns.Add(columnaFoto);
+            columnaFoto.DisplayIndex = 1;
+            dgvProductos.RowTemplate.Height = 60;
+            dgvProductos.CellPainting += PintarFoto;
+            dgvProductos.CellClick += AbrirFoto;
 
             comboUnidad.Items.AddRange(new object[] { UnidadMedida.Unidad, UnidadMedida.Kilogramo });
             comboUnidad.SelectedIndex = 0;
@@ -282,6 +296,7 @@ namespace Presentacion.Forms
             var lista = productoService.Buscar(txtBuscar.Text);
             dgvProductos.SuspendLayout();
             dgvProductos.Rows.Clear();
+            fotos.Limpiar();
             foreach (var p in lista)
             {
                 bool bajo = productoService.EstaBajoStock(p);
@@ -289,7 +304,7 @@ namespace Presentacion.Forms
                 int fila = dgvProductos.Rows.Add(p.IdProducto, p.CodigoBarras, p.Nombre,
                     p.Categoria, "$" + p.Precio.ToString("N0"),
                     p.TieneDescuento ? "-" + p.DescuentoPorcentaje.ToString("0.##") + "%" : "—",
-                    p.Stock.ToString("0.##") + " " + p.UnidadMedida, estado,
+                    p.Stock.ToString("0.###") + " " + p.UnidadMedida, estado,
                     p.TieneCosto ? "$" + p.Costo.ToString("N0") : "—",
                     p.TieneCosto ? "$" + p.MargenUnitario.ToString("N0") + " (" + p.MargenPorcentaje.ToString("0") + "%)" : "—");
 
@@ -481,6 +496,7 @@ namespace Presentacion.Forms
 
         private void dgvProductos_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (e.ColumnIndex >= 0 && dgvProductos.Columns[e.ColumnIndex].Name == "colFoto") return;
             if (!Sesion.EsAdmin) return;   // los empleados no editan productos
             if (e.RowIndex < 0) return;
             int id = Convert.ToInt32(dgvProductos.Rows[e.RowIndex].Cells["colId"].Value);
@@ -493,8 +509,8 @@ namespace Presentacion.Forms
             comboCategoria.Text    = prod.Categoria;
             txtPrecio.Text         = prod.Precio.ToString("0.##");
             txtCosto.Text          = prod.Costo.ToString("0.##");
-            txtStock.Text          = prod.Stock.ToString("0.##");
-            txtStockMin.Text       = prod.StockMinimo.ToString("0.##");
+            txtStock.Text          = prod.Stock.ToString("0.###");
+            txtStockMin.Text       = prod.StockMinimo.ToString("0.###");
             comboUnidad.SelectedItem = prod.UnidadMedida;
             lblModo.Text           = "Editando: " + prod.Nombre;
             btnGuardar.Text        = "Actualizar";
@@ -502,6 +518,38 @@ namespace Presentacion.Forms
         }
 
         private void btnCancelar_Click(object sender, EventArgs e) => LimpiarFormulario();
+
+        private void PintarFoto(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0 || dgvProductos.Columns[e.ColumnIndex].Name != "colFoto") return;
+            e.Paint(e.CellBounds, DataGridViewPaintParts.Background | DataGridViewPaintParts.SelectionBackground | DataGridViewPaintParts.Border);
+            int id = Convert.ToInt32(dgvProductos.Rows[e.RowIndex].Cells["colId"].Value);
+            var imagen = fotos.Obtener(id);
+            if (imagen == null)
+                TextRenderer.DrawText(e.Graphics, Sesion.EsAdmin ? "+ Foto" : "Sin foto", EstiloPos.FontSmall,
+                    e.CellBounds, EstiloPos.Ink3, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            else
+            {
+                float escala = Math.Min((e.CellBounds.Width - 10f) / imagen.Width, (e.CellBounds.Height - 10f) / imagen.Height);
+                int ancho = Math.Max(1, (int)(imagen.Width * escala)), alto = Math.Max(1, (int)(imagen.Height * escala));
+                e.Graphics.DrawImage(imagen, e.CellBounds.Left + (e.CellBounds.Width - ancho) / 2,
+                    e.CellBounds.Top + (e.CellBounds.Height - alto) / 2, ancho, alto);
+            }
+            e.Handled = true;
+        }
+
+        private void AbrirFoto(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0 || dgvProductos.Columns[e.ColumnIndex].Name != "colFoto") return;
+            try
+            {
+                int id = Convert.ToInt32(dgvProductos.Rows[e.RowIndex].Cells["colId"].Value);
+                var producto = productoService.ObtenerPorId(id);
+                if (producto == null) return;
+                using (var dialogo = new FormFotoProducto(producto)) dialogo.ShowDialog(this);
+            }
+            catch (Exception ex) { Errores.Mostrar(this, ex); }
+        }
 
         // ── Inventario ────────────────────────────────────────────
 

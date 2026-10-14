@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using Dominio.Servicios;
+using Dominio.Eventos;
 using Entidades;
 
 namespace Presentacion.Forms
@@ -15,6 +16,8 @@ namespace Presentacion.Forms
         private readonly CategoriaService categoriaService = new CategoriaService();
         private readonly CajaService     cajaService     = new CajaService();
         private readonly LogService      logService      = new LogService();
+        private readonly CacheFotosProducto fotos = new CacheFotosProducto();
+        private bool refrescoFotosPendiente;
         private bool logVentasVisible = false;
         private string categoriaActual = "";
         private FlowLayoutPanel pnlTabs;
@@ -29,22 +32,22 @@ namespace Presentacion.Forms
         private static readonly Pen PenAccionQuitar = new Pen(EstiloPos.Rojo,  2.6f);
 
         // Tope de tarjetas de producto que se dibujan a la vez. Una pared de cientos/miles de tiles
-        // (cada uno es un Panel con varios Labels) hace lentísimo el load; el cajero igual agrega por
+        // (cada uno es una tarjeta dibujada en una sola superficie) hace lentísimo el load; el cajero igual agrega por
         // escáner o por la búsqueda. Si hay más resultados, se muestra un aviso para filtrar.
         private const int MaxTiles = 60;
 
         // Fonts de las tarjetas: ESTÁTICAS y compartidas. Antes se creaba un Font por etiqueta y por
         // tarjeta (miles de objetos GDI) y nunca se liberaban (Control.Dispose no libera su Font),
         // así que fugaban en cada recarga. Compartidas: sin fuga y sin coste por tarjeta.
-        private static readonly Font FontTileNombre    = new Font("Segoe UI", 11F,  FontStyle.Bold);
-        private static readonly Font FontTilePrecio    = new Font("Segoe UI", 14F,  FontStyle.Bold);
         private static readonly Font FontTileStock     = new Font("Segoe UI", 10F);
-        private static readonly Font FontTilePrecioOrig= new Font("Segoe UI", 9.5F, FontStyle.Strikeout);
-        private static readonly Font FontTileBadge     = new Font("Segoe UI", 8.5F, FontStyle.Bold);
         private List<Venta> ventasRegistro = new List<Venta>();
         private static readonly TimeSpan InactividadMax = TimeSpan.FromMinutes(10);
 
-        public FormVentas() { InitializeComponent(); }
+        public FormVentas()
+        {
+            InitializeComponent();
+            Disposed += (s, e) => { NotificadorCambios.Cambio -= ProductoActualizado; fotos.Dispose(); };
+        }
 
         private void FormVentas_Load(object sender, EventArgs e)
         {
@@ -60,6 +63,7 @@ namespace Presentacion.Forms
 
             CargarCategorias();
             CargarGridProductos();
+            NotificadorCambios.Cambio += ProductoActualizado;
             InicializarPestanas();
             ventaService.CerrarPausadasInactivas(InactividadMax);   // limpia las que vencieron en otro módulo
             RefrescarCarrito();
@@ -192,7 +196,8 @@ namespace Presentacion.Forms
             ConfigColAccion(colQuitar, 36, 13F, EstiloPos.Rojo,  colSel);
 
             colVCantidad.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            colVCantidad.Width        = 54;
+            colVCantidad.Width        = 70;
+            colVCantidad.ToolTipText  = "Haz clic para editar la cantidad o el peso.";
             colVCantidad.DefaultCellStyle = new DataGridViewCellStyle {
                 Alignment = DataGridViewContentAlignment.MiddleCenter,
                 Font = EstiloPos.FontTabla,
@@ -295,12 +300,24 @@ namespace Presentacion.Forms
 
         // ── Grid de productos (tarjetas clickeables) ───────────────────
 
+        private void ProductoActualizado(string entidad)
+        {
+            if (entidad != Entidad.Producto || !IsHandleCreated || IsDisposed || Disposing || refrescoFotosPendiente) return;
+            refrescoFotosPendiente = true;
+            BeginInvoke(new Action(() =>
+            {
+                refrescoFotosPendiente = false;
+                if (!IsDisposed && !Disposing) CargarGridProductos(txtBuscar.Text.Trim());
+            }));
+        }
+
         private void CargarGridProductos(string busqueda = "")
         {
             pnlProdGrid.SuspendLayout();
             var tilesViejos = pnlProdGrid.Controls.Cast<Control>().ToArray();
             pnlProdGrid.Controls.Clear();
             foreach (var c in tilesViejos) c.Dispose();   // libera los controles/handlers previos (las Fonts son estáticas compartidas)
+            fotos.Limpiar();
 
             List<Producto> productos;
             if (!string.IsNullOrEmpty(busqueda))
@@ -332,132 +349,22 @@ namespace Presentacion.Forms
         private void AjustarTamañoTiles()
         {
             if (pnlProdGrid.Controls.Count == 0) return;
-            int cols  = 4;
+            int anchoMinimo = (int)Math.Round(180 * DeviceDpi / 96f);
+            int cols  = Math.Max(1, Math.Min(4, pnlProdGrid.ClientSize.Width / anchoMinimo));
             int gap   = 8;
             int ancho = (pnlProdGrid.ClientSize.Width - (gap * cols)) / cols;
             if (ancho < 100) return;
             pnlProdGrid.SuspendLayout();
             foreach (Control c in pnlProdGrid.Controls)
-                c.Size = new Size(ancho, 100);
+                c.Size = new Size(ancho, c is TarjetaProducto tarjeta ? tarjeta.AltoPreferido : 100);
             pnlProdGrid.ResumeLayout();
         }
 
-        private Panel CrearTileProducto(Producto p)
+        private Control CrearTileProducto(Producto p)
         {
-            bool bajoStock = productoService.EstaBajoStock(p);
-
-            var tile = new Panel
-            {
-                Tag       = p,
-                BackColor = bajoStock ? Color.FromArgb(255, 253, 245) : EstiloPos.Surface,
-                Cursor    = Cursors.Hand,
-                Margin    = new Padding(0, 0, 8, 8),
-                Padding   = new Padding(10, 8, 10, 8),
-                Size      = new Size(220, 100)  // tamaño inicial — AjustarTamañoTiles lo corrige
-            };
-
-            // Borde pintado; cambia a azul resaltado cuando el mouse está encima
-            bool hover = false;
-            tile.Paint += (s, pe) =>
-            {
-                Color colorBorde = hover ? EstiloPos.Azul : (bajoStock ? EstiloPos.Amber : EstiloPos.Border);
-                // Dibujado HACIA ADENTRO (1px de margen): con pluma gruesa, dibujar en el filo (0,0)
-                // recorta la mitad del trazo y se ve mal junto al título. Inset = borde limpio y parejo.
-                using (var pen = new System.Drawing.Pen(colorBorde, hover ? 2f : 1.5f))
-                    pe.Graphics.DrawRectangle(pen, 1, 1, tile.Width - 3, tile.Height - 3);
-            };
-
-            var lblNombre = new Label
-            {
-                Text      = p.Nombre,
-                Font      = FontTileNombre,
-                ForeColor = EstiloPos.Ink1,
-                BackColor = Color.Transparent,   // sigue el fondo de la tarjeta (incl. el hover)
-                AutoSize  = false,
-                Location  = new Point(10, 10),
-                Size      = new Size(tile.Width - 20, 36),
-                TextAlign = ContentAlignment.TopLeft
-            };
-            var lblPrecio = new Label
-            {
-                Text      = "$" + p.PrecioConDescuento.ToString("N0"),
-                Font      = FontTilePrecio,
-                ForeColor = p.TieneDescuento ? EstiloPos.Verde : EstiloPos.Ink1,
-                BackColor = Color.Transparent,
-                AutoSize  = true,
-                Location  = new Point(10, 48)
-            };
-            var lblStock = new Label
-            {
-                Text      = bajoStock ? "⚠ " + p.Stock.ToString("0.##") + " " + p.UnidadMedida
-                                      : p.Stock.ToString("0.##") + " " + p.UnidadMedida,
-                Font      = FontTileStock,
-                ForeColor = bajoStock ? EstiloPos.Amber : EstiloPos.Ink3,
-                BackColor = Color.Transparent,
-                AutoSize  = true,
-                Location  = new Point(10, 74)
-            };
-
-            tile.Controls.AddRange(new System.Windows.Forms.Control[] { lblNombre, lblPrecio, lblStock });
-
-            // Click => agregar al carrito
-            EventHandler clickHandler = (s, e) => AgregarProductoAlCarrito(p);
-            tile.Click       += clickHandler;
-            lblNombre.Click  += clickHandler;
-            lblPrecio.Click  += clickHandler;
-            lblStock.Click   += clickHandler;
-
-            // Feedback hover: fondo azul claro + borde azul (los hijos también disparan el evento)
-            Color fondoNormal = tile.BackColor;
-            Color fondoHover  = bajoStock ? Color.FromArgb(255, 246, 228) : EstiloPos.HoverFila;
-            EventHandler entrar = (s, e) => { hover = true;  tile.BackColor = fondoHover;  tile.Invalidate(); };
-            EventHandler salir  = (s, e) =>
-            {
-                if (!tile.ClientRectangle.Contains(tile.PointToClient(Cursor.Position)))
-                { hover = false; tile.BackColor = fondoNormal; tile.Invalidate(); }
-            };
-            foreach (Control c in new Control[] { tile, lblNombre, lblPrecio, lblStock })
-            {
-                c.MouseEnter += entrar;
-                c.MouseLeave += salir;
-            }
-
-            // Oferta: precio de lista tachado + badge "-X%" en la esquina
-            if (p.TieneDescuento)
-            {
-                int wPrecio = TextRenderer.MeasureText(lblPrecio.Text, lblPrecio.Font).Width;
-                var lblPrecioOrig = new Label
-                {
-                    Text      = "$" + p.Precio.ToString("N0"),
-                    Font      = FontTilePrecioOrig,
-                    ForeColor = EstiloPos.Ink3,
-                    AutoSize  = true,
-                    Location  = new Point(10 + wPrecio + 8, 55)
-                };
-                var badge = new Label
-                {
-                    Text      = "-" + p.DescuentoPorcentaje.ToString("0.##") + "%",
-                    Font      = FontTileBadge,
-                    ForeColor = Color.White,
-                    BackColor = EstiloPos.Verde,
-                    AutoSize  = false,
-                    Size      = new Size(48, 20),
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Location  = new Point(tile.Width - 48 - 8, 8),
-                    Anchor    = AnchorStyles.Top | AnchorStyles.Right
-                };
-                foreach (var c in new Control[] { lblPrecioOrig, badge })
-                {
-                    c.Cursor      = Cursors.Hand;
-                    c.Click      += clickHandler;
-                    c.MouseEnter += entrar;
-                    c.MouseLeave += salir;
-                    tile.Controls.Add(c);
-                }
-                badge.BringToFront();
-            }
-
-            return tile;
+            var tarjeta = new TarjetaProducto(p, fotos.Obtener(p.IdProducto), productoService.EstaBajoStock(p));
+            tarjeta.Click += (s, e) => AgregarProductoAlCarrito(p);
+            return tarjeta;
         }
 
         // Tarjeta-aviso al final cuando hay más productos que el tope dibujado: indica cuántos quedan
@@ -483,16 +390,40 @@ namespace Presentacion.Forms
             return tile;
         }
 
-        private void AgregarProductoAlCarrito(Producto p)
+        private bool AgregarProductoAlCarrito(Producto p)
         {
-            if (!decimal.TryParse(txtCantidad.Text, out decimal cant) || cant <= 0) cant = 1;
             try
             {
+                // La tarjeta puede ser anterior a una venta o ajuste de stock.
+                p = productoService.ObtenerPorId(p.IdProducto);
+                if (p == null || !p.Activo) { MostrarMensaje("El producto ya no está disponible."); return false; }
+                decimal cant;
+                if (p.UnidadMedida == UnidadMedida.Kilogramo)
+                {
+                    var item = ventaService.Carrito.FirstOrDefault(d => d.IdProducto == p.IdProducto);
+                    decimal disponible = p.Stock - (item?.Cantidad ?? 0m);
+                    decimal? inicial = EntradaCantidad.TryParse(txtCantidad.Text, true, out decimal escrita)
+                        && escrita != 1m ? escrita : (decimal?)null;
+                    using (var dialogo = new FormCantidadVenta(p, inicial, disponible, item?.PrecioUnitario ?? p.PrecioConDescuento))
+                    {
+                        if (dialogo.ShowDialog(this) != DialogResult.OK) return false;
+                        cant = dialogo.Cantidad;
+                    }
+                }
+                else if (!EntradaCantidad.TryParse(txtCantidad.Text, false, out cant))
+                {
+                    MostrarMensaje("Ingresa una cantidad entera mayor que cero.");
+                    txtCantidad.Focus();
+                    txtCantidad.SelectAll();
+                    return false;
+                }
                 ventaService.AgregarPorId(p.IdProducto, cant);
                 RefrescarCarrito();
                 txtCantidad.Text = "1";
+                return true;
             }
             catch (Exception ex) { Errores.Mostrar(this, ex); }
+            return false;
         }
 
         // ── Scanner / Código de barras ─────────────────────────────────
@@ -512,16 +443,15 @@ namespace Presentacion.Forms
         {
             string codigo = txtCodigo.Text.Trim();
             if (string.IsNullOrEmpty(codigo)) return;
-            if (!decimal.TryParse(txtCantidad.Text, out decimal cant) || cant <= 0) cant = 1;
             try
             {
-                ventaService.AgregarPorCodigo(codigo, cant);
-                RefrescarCarrito();
+                var producto = productoService.ObtenerPorCodigo(codigo);
+                if (producto == null) { MostrarMensaje("Producto no encontrado con ese código de barras."); return; }
+                if (!AgregarProductoAlCarrito(producto)) return;
+                txtCodigo.Clear();
+                txtCodigo.Focus();
             }
             catch (Exception ex) { Errores.Mostrar(this, ex); }
-            txtCodigo.Clear();
-            txtCantidad.Text = "1";
-            txtCodigo.Focus();
         }
 
         // ── Buscador por nombre ────────────────────────────────────────
@@ -543,11 +473,9 @@ namespace Presentacion.Forms
             var encontrados = ventaService.BuscarProductos(texto);
             if (encontrados.Count == 0) { MostrarMensaje("Sin resultados para \"" + texto + "\"."); return; }
 
-            if (!decimal.TryParse(txtCantidad.Text, out decimal cant) || cant <= 0) cant = 1;
             try
             {
-                ventaService.AgregarPorId(encontrados[0].IdProducto, cant);
-                RefrescarCarrito();
+                if (!AgregarProductoAlCarrito(encontrados[0])) return;
                 txtBuscar.Clear();
                 CargarGridProductos();
                 txtCantidad.Text = "1";
@@ -783,7 +711,7 @@ namespace Presentacion.Forms
                         ? d.NombreProducto + "  (-" + d.DescuentoPorcentaje.ToString("0.##") + "%)"
                         : d.NombreProducto,
                     "−",
-                    d.Cantidad.ToString("0.##"),
+                    d.Cantidad.ToString("0.###"),
                     "+",
                     "$" + d.Subtotal.ToString("N0"),
                     "✕");
@@ -805,14 +733,27 @@ namespace Presentacion.Forms
 
         private void dgvCarrito_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0) return;
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
             string col = dgvCarrito.Columns[e.ColumnIndex].Name;
             int id = Convert.ToInt32(dgvCarrito.Rows[e.RowIndex].Cells["colVId"].Value);
             try
             {
-                if (col == "colQuitar")     ventaService.QuitarDelCarrito(id);
-                else if (col == "colMenos") ventaService.AjustarCantidadCarrito(id, -1);
-                else if (col == "colMas")   ventaService.AjustarCantidadCarrito(id, +1);
+                if (col == "colQuitar") ventaService.QuitarDelCarrito(id);
+                else if (col == "colVCantidad" || col == "colMenos" || col == "colMas")
+                {
+                    var producto = productoService.ObtenerPorId(id);
+                    if (producto == null) { MostrarMensaje("El producto ya no existe."); return; }
+                    if (col == "colVCantidad" || producto.UnidadMedida == UnidadMedida.Kilogramo)
+                    {
+                        var item = ventaService.Carrito.First(d => d.IdProducto == id);
+                        using (var dialogo = new FormCantidadVenta(producto, item.Cantidad, producto.Stock, item.PrecioUnitario, editando: true))
+                        {
+                            if (dialogo.ShowDialog(this) != DialogResult.OK) return;
+                            ventaService.CambiarCantidad(id, dialogo.Cantidad);
+                        }
+                    }
+                    else ventaService.AjustarCantidadCarrito(id, col == "colMenos" ? -1m : 1m);
+                }
                 else return;
                 RefrescarCarrito();
             }
@@ -823,7 +764,7 @@ namespace Presentacion.Forms
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0) { dgvCarrito.Cursor = Cursors.Default; return; }
             string col = dgvCarrito.Columns[e.ColumnIndex].Name;
-            dgvCarrito.Cursor = (col == "colMenos" || col == "colMas" || col == "colQuitar")
+            dgvCarrito.Cursor = (col == "colMenos" || col == "colMas" || col == "colQuitar" || col == "colVCantidad")
                 ? Cursors.Hand : Cursors.Default;
         }
 

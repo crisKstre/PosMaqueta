@@ -90,7 +90,7 @@ namespace Presentacion.Forms
                 dgv.Rows.Add(
                     string.IsNullOrEmpty(d.CodigoBarras) ? "—" : d.CodigoBarras,
                     d.NombreProducto,
-                    d.Cantidad.ToString("0.##"),
+                    d.Cantidad.ToString("0.###"),
                     "$" + d.PrecioUnitario.ToString("N0"),
                     d.TieneDescuento ? "-" + d.DescuentoPorcentaje.ToString("0.##") + "%" : "—",
                     "$" + d.Subtotal.ToString("N0"));

@@ -15,7 +15,7 @@ namespace AccesoData
         // Versión del esquema que maneja ESTA app. Se sube al agregar una migración nueva (0.B).
         // Si la BD trae una versión MAYOR (otra caja con binario más nuevo ya migró), se aborta el
         // arranque con un mensaje claro, en vez de operar contra un esquema desconocido.
-        public const int ESQUEMA_VERSION = 4;   // v2: PagoVenta; v3: Devolucion; v4: Costo/CostoUnitario (utilidad)
+        public const int ESQUEMA_VERSION = 5;   // v5: foto y miniatura del producto dentro de la BD
 
         public void Inicializar()
         {
@@ -289,6 +289,20 @@ namespace AccesoData
         // ColumnaExiste devuelve true y no ejecuta los ALTER).
         private void MigrarEsquema(DbConnection con)
         {
+            // Se ejecuta tanto en bases nuevas como existentes; no altera los productos.
+            Ejecutar(con, ConfigBD.Proveedor == ProveedorBD.SqlServer
+                ? @"IF OBJECT_ID(N'dbo.FotoProducto', 'U') IS NULL
+                    CREATE TABLE FotoProducto (
+                        IdProducto INT NOT NULL PRIMARY KEY,
+                        Imagen VARBINARY(MAX) NOT NULL,
+                        Miniatura VARBINARY(MAX) NOT NULL,
+                        FOREIGN KEY (IdProducto) REFERENCES Producto(IdProducto) ON DELETE CASCADE);"
+                : @"CREATE TABLE IF NOT EXISTS FotoProducto (
+                        IdProducto INTEGER NOT NULL PRIMARY KEY,
+                        Imagen BLOB NOT NULL,
+                        Miniatura BLOB NOT NULL,
+                        FOREIGN KEY (IdProducto) REFERENCES Producto(IdProducto) ON DELETE CASCADE);");
+
             if (!ColumnaExiste(con, "Venta", "Anulada"))
                 Ejecutar(con, "ALTER TABLE Venta ADD COLUMN Anulada INTEGER NOT NULL DEFAULT 0;");
             if (!ColumnaExiste(con, "Venta", "Descuento"))

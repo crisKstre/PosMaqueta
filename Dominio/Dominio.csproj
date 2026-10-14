@@ -11,4 +11,7 @@
     <ProjectReference Include="..\AccesoData\AccesoData.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
 </Project>

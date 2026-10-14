@@ -31,4 +31,11 @@
     <ProjectReference Include="..\Dominio\Dominio.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Mismo parser que consume WinForms, probado sin abrir ventanas. -->
+    <Compile Include="..\Presentacion\UI\EntradaCantidad.cs" Link="UI\EntradaCantidad.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
 </Project>
