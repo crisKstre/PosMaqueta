@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using Entidades;
@@ -50,26 +50,32 @@ namespace AccesoData.DAO
             }
         }
 
-        public bool CerrarCaja(int idCaja, decimal montoEsperado, decimal montoReal)
+        public decimal CerrarConArqueo(int idCaja, decimal montoReal)
         {
             using (var con = GetConnection())
             {
                 con.Open();
-                string sql = @"
-                    UPDATE Caja SET
-                        FechaCierre   = @fechaCierre,
-                        MontoEsperado = @montoEsperado,
-                        MontoReal     = @montoReal,
-                        Estado        = @estado
-                    WHERE IdCaja = @id;";
-                using (var cmd = con.Comando(sql))
+                using (var tx = con.BeginTransaction())
                 {
-                    cmd.AddParam("@fechaCierre", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                    cmd.AddParam("@montoEsperado", montoEsperado);
-                    cmd.AddParam("@montoReal", montoReal);
-                    cmd.AddParam("@estado", EstadoCaja.Cerrada);
-                    cmd.AddParam("@id", idCaja);
-                    return cmd.ExecuteNonQuery() > 0;
+                    MovimientoCajaDao.ExigirCajaAbierta(con, tx, idCaja);
+                    decimal inicial;
+                    using (var cmd = con.Comando("SELECT MontoInicial FROM Caja WHERE IdCaja=@id;", tx))
+                    {
+                        cmd.AddParam("@id", idCaja);
+                        inicial = Convert.ToDecimal(cmd.ExecuteScalar());
+                    }
+                    var r = ObtenerResumen(con, tx, idCaja);
+                    decimal esperado = inicial + r.TotalEfectivo - r.TotalDevoluciones + r.OtrasEntradas - r.OtrasSalidas;
+                    using (var cmd = con.Comando(@"UPDATE Caja SET FechaCierre=@fecha,
+                        MontoEsperado=@esperado, MontoReal=@real, Estado=@estado WHERE IdCaja=@id;", tx))
+                    {
+                        cmd.AddParam("@fecha", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                        cmd.AddParam("@esperado", esperado); cmd.AddParam("@real", montoReal);
+                        cmd.AddParam("@estado", EstadoCaja.Cerrada); cmd.AddParam("@id", idCaja);
+                        cmd.ExecuteNonQuery();
+                    }
+                    tx.Commit();
+                    return montoReal - esperado;
                 }
             }
         }
@@ -77,44 +83,63 @@ namespace AccesoData.DAO
         // Resumen de las ventas asociadas a un turno de caja.
         public ResumenCaja ObtenerResumen(int idCaja)
         {
-            var r = new ResumenCaja();
             using (var con = GetConnection())
             {
                 con.Open();
-                using (var cmd = con.Comando(
-                    "SELECT COUNT(*), COALESCE(SUM(Total), 0) FROM Venta WHERE IdCaja = @idCaja AND Anulada = 0;"))
-                {
-                    cmd.AddParam("@idCaja", idCaja);
-                    using (var reader = cmd.ExecuteReader())
-                        if (reader.Read()) { r.CantidadVentas = reader.GetInt32(0); r.TotalVendido = reader.GetDecimal(1); }
-                }
+                return ObtenerResumen(con, null, idCaja);
+            }
+        }
 
-                // Desglose por medio de pago desde PagoVenta (soporta pago mixto en el arqueo).
-                using (var cmd = con.Comando(@"
-                    SELECT pv.MedioPago, COALESCE(SUM(pv.Monto), 0)
-                    FROM PagoVenta pv JOIN Venta v ON pv.IdVenta = v.IdVenta
-                    WHERE v.IdCaja = @idCaja AND v.Anulada = 0
-                    GROUP BY pv.MedioPago;"))
-                {
-                    cmd.AddParam("@idCaja", idCaja);
-                    using (var reader = cmd.ExecuteReader())
-                        while (reader.Read())
+        private ResumenCaja ObtenerResumen(DbConnection con, DbTransaction tx, int idCaja)
+        {
+            var r = new ResumenCaja();
+            using (var cmd = con.Comando(
+                "SELECT COUNT(*), COALESCE(SUM(Total), 0) FROM Venta WHERE IdCaja = @idCaja AND Anulada = 0;", tx))
+            {
+                cmd.AddParam("@idCaja", idCaja);
+                using (var reader = cmd.ExecuteReader())
+                    if (reader.Read()) { r.CantidadVentas = reader.GetInt32(0); r.TotalVendido = reader.GetDecimal(1); }
+            }
+
+            // Desglose por medio de pago desde PagoVenta (soporta pago mixto en el arqueo).
+            using (var cmd = con.Comando(@"
+                SELECT pv.MedioPago, COALESCE(SUM(pv.Monto), 0)
+                FROM PagoVenta pv JOIN Venta v ON pv.IdVenta = v.IdVenta
+                WHERE v.IdCaja = @idCaja AND v.Anulada = 0
+                GROUP BY pv.MedioPago;", tx))
+            {
+                cmd.AddParam("@idCaja", idCaja);
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        decimal monto = reader.GetDecimal(1);
+                        switch (reader.GetString(0))
                         {
-                            decimal monto = reader.GetDecimal(1);
-                            switch (reader.GetString(0))
-                            {
-                                case MedioPago.Efectivo:      r.TotalEfectivo      = monto; break;
-                                case MedioPago.Tarjeta:       r.TotalTarjeta       = monto; break;
-                                case MedioPago.Transferencia: r.TotalTransferencia = monto; break;
-                            }
+                            case MedioPago.Efectivo:      r.TotalEfectivo      = monto; break;
+                            case MedioPago.Tarjeta:       r.TotalTarjeta       = monto; break;
+                            case MedioPago.Transferencia: r.TotalTransferencia = monto; break;
                         }
-                }
+                    }
+            }
 
-                // Devoluciones del turno: el efectivo reembolsado sale del cajón (4.B).
-                using (var cmd = con.Comando("SELECT COALESCE(SUM(Monto), 0) FROM Devolucion WHERE IdCaja = @idCaja;"))
+            // Devoluciones del turno: el efectivo reembolsado sale del cajón (4.B).
+            using (var cmd = con.Comando("SELECT COALESCE(SUM(Monto), 0) FROM Devolucion WHERE IdCaja = @idCaja;", tx))
+            {
+                cmd.AddParam("@idCaja", idCaja);
+                r.TotalDevoluciones = Convert.ToDecimal(cmd.ExecuteScalar());
+            }
+            using (var cmd = con.Comando(@"SELECT Tipo, Origen, SUM(Monto)
+                FROM MovimientoCaja WHERE IdCaja=@id AND Anulado=0 GROUP BY Tipo, Origen;", tx))
+            {
+                cmd.AddParam("@id", idCaja);
+                using (var reader = cmd.ExecuteReader()) while (reader.Read())
                 {
-                    cmd.AddParam("@idCaja", idCaja);
-                    r.TotalDevoluciones = Convert.ToDecimal(cmd.ExecuteScalar());
+                    string tipo = reader.GetString(0), origen = reader.GetString(1);
+                    decimal monto = Convert.ToDecimal(reader.GetValue(2));
+                    if (tipo == TipoMovimientoCaja.Gasto) r.TotalGastos += monto;
+                    if (origen != OrigenMovimientoCaja.Cajon) continue;
+                    if (tipo == TipoMovimientoCaja.Reposicion) r.OtrasEntradas += monto;
+                    else r.OtrasSalidas += monto;
                 }
             }
             return r;

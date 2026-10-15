@@ -15,6 +15,7 @@ namespace Entidades
 
     public static class ModuloLog
     {
+        public const string Proveedores = "Proveedores";
         public const string Productos = "Productos";
         public const string Ventas    = "Ventas";
         public const string Caja      = "Caja";

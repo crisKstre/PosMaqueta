@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using Dominio.Eventos;
@@ -11,12 +11,26 @@ namespace Presentacion.Forms
     {
         private readonly CajaService cajaService = new CajaService();
 
+        private Label lblMovimientos;
         public FormCaja() { InitializeComponent(); }
+
+        private void CrearAccesoMovimientos()
+        {
+            var btn = new Button { Text = "Gastos y movimientos", Size = new Size(220, 38), Location = new Point(24, 22) };
+            EstiloPos.AplicarBotonSecundario(btn);
+            btn.Click += (s, e) => { using (var f = new FormMovimientosCaja()) f.ShowDialog(this); };
+            Controls.Add(btn);
+            btn.BringToFront();
+            lblMovimientos = new Label { AutoSize = false, Height = 42, Dock = DockStyle.Bottom,
+                TextAlign = ContentAlignment.MiddleCenter, Font = EstiloPos.FontSmall, ForeColor = EstiloPos.Ink2 };
+            pnlAbierta.Controls.Add(lblMovimientos);
+        }
 
         private void FormCaja_Load(object sender, EventArgs e)
         {
             AplicarEstilos();
             CrearBotonHistorial();
+            CrearAccesoMovimientos();
             NotificadorCambios.Cambio += OnCambioDatos;
             // Desuscribir al disponerse: como form hijo, Close() no dispara FormClosed (evita fuga + handler huérfano).
             this.Disposed += (s, ev) => NotificadorCambios.Cambio -= OnCambioDatos;
@@ -207,6 +221,11 @@ namespace Presentacion.Forms
                     "Efectivo: $"      + resumen.TotalEfectivo.ToString("N0") +
                     "     Tarjeta: $"  + resumen.TotalTarjeta.ToString("N0") +
                     "     Transferencia: $" + resumen.TotalTransferencia.ToString("N0");
+
+                lblMovimientos.Text = "Fondo: $" + caja.MontoInicial.ToString("N0") +
+                    "   ·   Devoluciones: −$" + resumen.TotalDevoluciones.ToString("N0") +
+                    "   ·   Entradas: +$" + resumen.OtrasEntradas.ToString("N0") +
+                    "   ·   Salidas: −$" + resumen.OtrasSalidas.ToString("N0");
 
                 // El cierre con arqueo también lo puede hacer el cajero; un FALTANTE sigue
                 // exigiendo autorización de un administrador (ver btnCerrar_Click).

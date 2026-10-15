@@ -24,6 +24,7 @@ namespace Presentacion.Forms
         public FormProductos()
         {
             InitializeComponent();
+            DetallesGrid.Conectar(this, dgvLog, DetallesGrid.Registro);
             Disposed += (s, e) => fotos.Dispose();
         }
 

@@ -20,6 +20,7 @@ namespace Presentacion.Forms
         private Label        lblEstadoCaja;
         private DataGridView dgvVentas;
         private DataGridView dgvStock;
+        private string fechaVentasMostradas;
 
         public FormDashboard()
         {
@@ -88,6 +89,19 @@ namespace Presentacion.Forms
             pnlCards.Controls.Add(cTotal);
             pnlCards.Controls.Add(cStock);
             pnlCards.Controls.Add(cCaja);
+            DetallesTarjetas.Conectar(this, cVentas, () => DetallesTarjetas.Ventas("Ventas de hoy", fechaVentasMostradas,
+                dgvVentas.Rows.Cast<DataGridViewRow>().Select(fila => fila.Tag).OfType<Venta>().ToList()));
+            DetallesTarjetas.Conectar(this, cTotal, () => DetallesTarjetas.Ventas("Total del día", fechaVentasMostradas,
+                dgvVentas.Rows.Cast<DataGridViewRow>().Select(fila => fila.Tag).OfType<Venta>().ToList()));
+            DetallesTarjetas.Conectar(this, cStock, () => DetallesTarjetas.Inventario("Productos bajo stock",
+                dgvStock.Rows.Cast<DataGridViewRow>().Select(fila => fila.Tag).OfType<Producto>().ToList(), false, true, false));
+            DetallesTarjetas.Conectar(this, cCaja, () =>
+            {
+                var caja = cajaService.ObtenerCajaAbierta();
+                if (caja == null) return new FormHistorialCajas();
+                var turno = cajaService.ObtenerHistorial(caja.FechaApertura.Date, caja.FechaApertura.Date).Find(c => c.IdCaja == caja.IdCaja) ?? caja;
+                return DetallesGrid.Caja(turno, cajaService.ObtenerResumen(caja.IdCaja));
+            });
 
             // ── Tablas ────────────────────────────────────────────────────
             var split = new TableLayoutPanel
@@ -108,12 +122,14 @@ namespace Presentacion.Forms
             dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Medio de pago", FillWeight = 65 });
             dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total",         FillWeight = 55 });
             EstiloPos.AplicarGrid(dgvVentas);
+            DetallesGrid.Conectar(this, dgvVentas, fila => fila.Tag is Venta venta ? new FormDetalleVenta(venta) : null);
 
             var pnlS = CrearPanelTabla("Productos bajo stock minimo", out dgvStock, new Padding(10, 0, 0, 0));
             dgvStock.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Producto", FillWeight = 120 });
             dgvStock.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Stock",    FillWeight = 55  });
             dgvStock.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Minimo",   FillWeight = 45  });
             EstiloPos.AplicarGrid(dgvStock);
+            DetallesGrid.Conectar(this, dgvStock, fila => DetallesGrid.Producto(fila.Tag as Producto));
 
             split.Controls.Add(pnlV, 0, 0);
             split.Controls.Add(pnlS, 1, 0);
@@ -223,9 +239,13 @@ namespace Presentacion.Forms
         private void CargarVentasHoy()
         {
             var ventas = ventaService.ObtenerVentasHoy();
+            fechaVentasMostradas = "Ventas del " + DateTime.Today.ToString("dd/MM/yyyy");
             dgvVentas.Rows.Clear();
             foreach (var v in ventas)
-                dgvVentas.Rows.Add("#" + v.IdVenta, v.Fecha.ToString("HH:mm"), v.MedioPago, "$" + v.Total.ToString("N0"));
+            {
+                int fila = dgvVentas.Rows.Add("#" + v.IdVenta, v.Fecha.ToString("HH:mm"), v.MedioPago, "$" + v.Total.ToString("N0"));
+                dgvVentas.Rows[fila].Tag = v;
+            }
             lblCantVentas.Text = ventas.Count.ToString();
             lblTotalDia.Text   = "$" + ventas.Sum(v => v.Total).ToString("N0");
         }
@@ -235,7 +255,10 @@ namespace Presentacion.Forms
             var productos = productoService.ObtenerBajoStock();
             dgvStock.Rows.Clear();
             foreach (var p in productos)
-                dgvStock.Rows.Add(p.Nombre, p.Stock.ToString("0.##") + " " + p.UnidadMedida, p.StockMinimo.ToString("0.##"));
+            {
+                int fila = dgvStock.Rows.Add(p.Nombre, p.Stock.ToString("0.###") + " " + p.UnidadMedida, p.StockMinimo.ToString("0.###"));
+                dgvStock.Rows[fila].Tag = p;
+            }
             lblBajoStockCount.Text      = productos.Count.ToString();
             lblBajoStockCount.ForeColor = productos.Count > 0 ? EstiloPos.Rojo : EstiloPos.Verde;
         }

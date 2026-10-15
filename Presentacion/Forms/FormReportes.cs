@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 using Dominio.Servicios;
@@ -13,10 +14,14 @@ namespace Presentacion.Forms
         private readonly ProductoService productoService = new ProductoService();
 
         private DateTimePicker dtpDesde, dtpHasta;
-        private Label lblVentasVal, lblTotalVal, lblIvaVal, lblTicketVal, lblDesgloseVal;
+        private Label lblVentasVal, lblTotalVal, lblIvaVal, lblTicketVal;
+        private Label lblCobroEfectivo, lblCobroTarjeta, lblCobroTransferencia, lblReembolsos;
         private Label lblUtilVal, lblMargenVal, lblInvVal, lblInvValTot, lblTotalProd;
         private DataGridView dgvTop, dgvVentas;
         private List<Venta> ventasPeriodo = new List<Venta>();
+        private ResumenVentas resumenMostrado;
+        private List<Producto> inventarioMostrado = new List<Producto>();
+        private string periodoMostrado;
 
         public FormReportes()
         {
@@ -27,11 +32,8 @@ namespace Presentacion.Forms
         private void InitUI()
         {
             this.BackColor = EstiloPos.Fondo;
-            // A 720p el header + tarjetas dejan poco alto para las tablas. AutoScrollMinSize fuerza un
-            // área virtual mínima: si la pantalla es más baja aparece scroll vertical y las tablas se ven
-            // completas; en pantallas altas (1080p) no hay scroll y todo se ve directo.
-            this.AutoScroll = true;
-            this.AutoScrollMinSize = new Size(0, 726);
+            // El cuerpo desplaza tarjetas y tablas; los filtros permanecen accesibles.
+            this.AutoScroll = false;
             this.Load += (s, e) => SetRango(DateTime.Today, DateTime.Today);
 
             // ── Header + filtro de fechas ──────────────────────────────────
@@ -82,26 +84,40 @@ namespace Presentacion.Forms
             };
 
             // ── Cards ──────────────────────────────────────────────────────
-            var pnlCards = new FlowLayoutPanel
+            // Dos filas estables: las columnas absorben los cambios de ancho.
+            var pnlCards = new TableLayoutPanel
             {
-                Dock = DockStyle.Top, Height = 232, Padding = new Padding(65, 8, 0, 14),
-                BackColor = EstiloPos.Fondo, FlowDirection = FlowDirection.LeftToRight, WrapContents = true
+                Dock = DockStyle.Top, Height = 334, ColumnCount = 5, RowCount = 2,
+                GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+                Padding = new Padding(24, 8, 24, 14), BackColor = EstiloPos.Fondo
             };
+            // La tercera columna contiene el desglose y necesita espacio para concepto + importe.
+            foreach (float ancho in new[] { 18F, 18F, 28F, 18F, 18F })
+                pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, ancho));
+            pnlCards.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            pnlCards.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             pnlCards.Controls.Add(CrearCard("Ventas",          EstiloPos.Azul,  out lblVentasVal));
             pnlCards.Controls.Add(CrearCard("Venta neta",      EstiloPos.Verde, out lblTotalVal));
-            pnlCards.Controls.Add(CrearCard("Utilidad tras devol.", EstiloPos.Verde, out lblUtilVal));
-            pnlCards.Controls.Add(CrearCard("Margen s/venta neta", EstiloPos.Azul, out lblMargenVal));
+            pnlCards.Controls.Add(CrearCard("Inventario total", EstiloPos.Ink2, out lblInvValTot));
+            pnlCards.Controls.Add(CrearCard("Margen", EstiloPos.Azul, out lblMargenVal));
             pnlCards.Controls.Add(CrearCard("IVA de ventas (bruto)", EstiloPos.Ink2, out lblIvaVal));
             pnlCards.Controls.Add(CrearCard("Ticket promedio", EstiloPos.Amber, out lblTicketVal));
             pnlCards.Controls.Add(CrearCard("Inventario a costo", EstiloPos.Ink2, out lblInvVal));
-            pnlCards.Controls.Add(CrearCard("Cobros / reembolsos", EstiloPos.Ink2, out lblDesgloseVal));
-            pnlCards.Controls.Add(CrearCard("Inventario total", EstiloPos.Ink2, out lblInvValTot));
+            pnlCards.Controls.Add(CrearCardCobros());
+            pnlCards.Controls.Add(CrearCard("Utilidad", EstiloPos.Verde, out lblUtilVal));
             pnlCards.Controls.Add(CrearCard("Total productos", EstiloPos.Ink2, out lblTotalProd));
-            lblDesgloseVal.Font      = EstiloPos.FontSmall;
-            lblDesgloseVal.ForeColor = EstiloPos.Ink1;
-            lblDesgloseVal.TextAlign = ContentAlignment.TopLeft;
-            lblDesgloseVal.Location  = new Point(16, 32);
-            lblDesgloseVal.Size      = new Size(340, 70);
+            // Todas las tarjetas llenan su celda y mantienen alineados los bordes.
+            foreach (Control card in pnlCards.Controls) card.Dock = DockStyle.Fill;
+            ConectarTarjeta(lblVentasVal.Parent, IndicadorReporte.Ventas);
+            ConectarTarjeta(lblTotalVal.Parent, IndicadorReporte.VentaNeta);
+            ConectarTarjeta(lblInvValTot.Parent, IndicadorReporte.Inventario);
+            ConectarTarjeta(lblMargenVal.Parent, IndicadorReporte.Margen);
+            ConectarTarjeta(lblIvaVal.Parent, IndicadorReporte.Iva);
+            ConectarTarjeta(lblTicketVal.Parent, IndicadorReporte.Ticket);
+            ConectarTarjeta(lblInvVal.Parent, IndicadorReporte.InventarioCosto);
+            ConectarTarjeta(lblCobroEfectivo.Parent.Parent, IndicadorReporte.Cobros);
+            ConectarTarjeta(lblUtilVal.Parent, IndicadorReporte.Utilidad);
+            ConectarTarjeta(lblTotalProd.Parent, IndicadorReporte.Productos);
 
             // ── Tablas ─────────────────────────────────────────────────────
             var split = new TableLayoutPanel
@@ -119,6 +135,7 @@ namespace Presentacion.Forms
             dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Venta neta", FillWeight = 50 });
             dgvTop.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Utilidad", FillWeight = 55 });
             EstiloPos.AplicarGrid(dgvTop);
+            DetallesGrid.Conectar(this, dgvTop, fila => DetallesGrid.Rendimiento(fila.Tag as ProductoVendido, dgvTop.Tag as string));
 
             var pnlListaVentas = CrearPanelTabla("Ventas del período  ·  doble clic para ver detalle", out dgvVentas, new Padding(10, 0, 0, 0));
             dgvVentas.Columns.Add(new DataGridViewTextBoxColumn { Name = "colVtaId", Visible = false });
@@ -132,9 +149,51 @@ namespace Presentacion.Forms
             split.Controls.Add(pnlTopProd, 0, 0);
             split.Controls.Add(pnlListaVentas, 1, 0);
 
-            this.Controls.Add(split);
-            this.Controls.Add(pnlCards);
+            var cuerpo = new Panel
+            {
+                Name = "cuerpoReportes", Dock = DockStyle.Fill,
+                AutoScroll = true, BackColor = EstiloPos.Fondo
+            };
+            var contenido = new Panel { Dock = DockStyle.Top, BackColor = EstiloPos.Fondo };
+            contenido.Controls.Add(split);
+            contenido.Controls.Add(pnlCards);
+            cuerpo.Controls.Add(contenido);
+
+            bool mostrarResumen = true;
+            Action ajustarAlto = () =>
+            {
+                // Al bajar, las tablas pueden ocupar todo el alto disponible del cuerpo.
+                int alto = (mostrarResumen ? pnlCards.Height : 0) + Math.Max(420, cuerpo.ClientSize.Height);
+                if (contenido.Height != alto) contenido.Height = alto;
+            };
+            var btnResumen = new Button
+            {
+                Name = "btnResumen", Text = "Ocultar resumen", Size = new Size(180, 32),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            EstiloPos.AplicarBotonSecundario(btnResumen, EstiloPos.Ink2);
+            btnResumen.Click += (s, e) =>
+            {
+                cuerpo.AutoScrollPosition = Point.Empty;
+                mostrarResumen = !mostrarResumen;
+                pnlCards.Visible = mostrarResumen;
+                btnResumen.Text = mostrarResumen ? "Ocultar resumen" : "Mostrar resumen";
+                ajustarAlto();
+            };
+            pnlHeader.Controls.Add(btnResumen);
+            pnlHeader.Resize += (s, e) =>
+                btnResumen.Location = new Point(pnlHeader.ClientSize.Width - btnResumen.Width - 24, 18);
+            cuerpo.ClientSizeChanged += (s, e) => ajustarAlto();
+
+            this.Controls.Add(cuerpo);
             this.Controls.Add(pnlHeader);
+            ajustarAlto();
+        }
+
+        private void ConectarTarjeta(Control tarjeta, IndicadorReporte indicador)
+        {
+            DetallesTarjetas.Conectar(this, tarjeta, () =>
+                DetallesTarjetas.Reporte(indicador, resumenMostrado, periodoMostrado, ventasPeriodo, inventarioMostrado));
         }
 
         private void SetRango(DateTime desde, DateTime hasta)
@@ -168,8 +227,10 @@ namespace Presentacion.Forms
             try { GenerarReporte(); }
             catch (Exception ex)
             {
+                resumenMostrado = null;
+                inventarioMostrado.Clear();
                 foreach (var label in new[] { lblVentasVal, lblTotalVal, lblIvaVal, lblTicketVal,
-                    lblDesgloseVal, lblUtilVal, lblMargenVal, lblInvVal, lblInvValTot, lblTotalProd })
+                    lblCobroEfectivo, lblCobroTarjeta, lblCobroTransferencia, lblReembolsos, lblUtilVal, lblMargenVal, lblInvVal, lblInvValTot, lblTotalProd })
                     label.Text = "—";
                 dgvTop.Rows.Clear();
                 dgvVentas.Rows.Clear();
@@ -183,32 +244,41 @@ namespace Presentacion.Forms
             DateTime desde = dtpDesde.Value.Date, hasta = dtpHasta.Value.Date;
             if (hasta < desde) { var t = desde; desde = hasta; hasta = t; }
 
-            
+
             var r = ventaService.ObtenerResumenVentas(desde, hasta);
+            // Misma instantánea para los indicadores de inventario y sus listados de detalle.
+            var inventario = productoService.ObtenerTodos();
             lblVentasVal.Text   = r.CantidadVentas.ToString();
             lblTotalVal.Text    = "$" + r.TotalNeto.ToString("N0");
             lblIvaVal.Text      = "$" + Impuestos.Iva(r.TotalVendido).ToString("N0");
             lblTicketVal.Text   = "$" + r.TicketPromedio.ToString("N0");
-            lblTotalProd.Text   = productoService.ContarProductos().ToString();
+            lblTotalProd.Text   = inventario.Count.ToString();
 
-            lblDesgloseVal.Text =
-                "Efectivo:  $" + r.TotalEfectivo.ToString("N0") + "\n" +
-                "Tarjeta:   $" + r.TotalTarjeta.ToString("N0") + "\n" +
-                "Transfer.: $" + r.TotalTransferencia.ToString("N0") + "\n" +
-                "Devuelto:  $" + r.TotalDevoluciones.ToString("N0");
+            lblCobroEfectivo.Text = "$" + r.TotalEfectivo.ToString("N0");
+            lblCobroTarjeta.Text = "$" + r.TotalTarjeta.ToString("N0");
+            lblCobroTransferencia.Text = "$" + r.TotalTransferencia.ToString("N0");
+            lblInvValTot.Text = "$" + inventario.Where(p => p.Activo).Sum(p => p.Stock * p.Precio).ToString("N0");
             lblUtilVal.Text   = "$" + r.Utilidad.ToString("N0");
             lblMargenVal.Text = r.TieneMargen ? r.MargenPorcentaje.ToString("0") + "%" : "—";
-            lblInvVal.Text    = "$" + productoService.ValorInventarioACosto().ToString("N0");
-            lblInvValTot.Text = "$" + productoService.ValorInventario().ToString("N0");
+            lblInvVal.Text    = "$" + inventario.Where(p => p.Activo).Sum(p => p.Stock * p.Costo).ToString("N0");
+
+            lblReembolsos.Text = "$" + r.TotalDevoluciones.ToString("N0");
 
             dgvTop.Rows.Clear();
+            dgvTop.Tag = "Período: " + desde.ToString("dd/MM/yyyy") + " al " + hasta.ToString("dd/MM/yyyy");
             foreach (var p in ventaService.ObtenerTopUtilidad(desde, hasta, 12))
-                dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.###"), "$" + p.Total.ToString("N0"), "$" + p.Utilidad.ToString("N0"));
+            {
+                int fila = dgvTop.Rows.Add(p.Nombre, p.Cantidad.ToString("0.###"), "$" + p.Total.ToString("N0"), "$" + p.Utilidad.ToString("N0"));
+                dgvTop.Rows[fila].Tag = p;
+            }
 
             ventasPeriodo = ventaService.ObtenerVentas(desde, hasta);
             dgvVentas.Rows.Clear();
             foreach (var v in ventasPeriodo)
                 dgvVentas.Rows.Add(v.IdVenta, "#" + v.IdVenta, v.Fecha.ToString("dd/MM HH:mm"), v.MedioPago, "$" + v.Total.ToString("N0"));
+            resumenMostrado = r;
+            inventarioMostrado = inventario;
+            periodoMostrado = dgvTop.Tag as string;
         }
 
         private Venta VentaDeFila(int rowIndex)
@@ -276,31 +346,96 @@ namespace Presentacion.Forms
             return b;
         }
 
+        private Panel CrearCardCobros()
+        {
+            Label marcador;
+            var card = CrearCard("Cobros / reembolsos", EstiloPos.Ink2, out marcador);
+            card.Controls.Remove(marcador);
+            marcador.Dispose();
+            card.Size = new Size(320, 144);
+            foreach (Control c in card.Controls) if (c is Label) c.Height = 20;
+            var filas = new TableLayoutPanel
+            {
+                Location = new Point(16, 36), Size = new Size(288, 96),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                ColumnCount = 2, RowCount = 4, Margin = Padding.Empty, Padding = Padding.Empty
+            };
+            filas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48F));
+            filas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52F));
+            string[] conceptos = { "Efectivo", "Tarjeta", "Transferencia", "Reembolsos" };
+            var importes = new Label[conceptos.Length];
+            for (int i = 0; i < conceptos.Length; i++)
+            {
+                filas.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+                filas.Controls.Add(new Label
+                {
+                    Text = conceptos[i], Dock = DockStyle.Fill, AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleLeft, Font = EstiloPos.FontSmall,
+                    ForeColor = EstiloPos.Ink2, Margin = Padding.Empty
+                }, 0, i);
+                importes[i] = new Label
+                {
+                    Text = "—", Dock = DockStyle.Fill, AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleRight, Font = EstiloPos.FontSmall,
+                    ForeColor = i == 3 ? EstiloPos.Rojo : EstiloPos.Ink1, Margin = Padding.Empty
+                };
+                filas.Controls.Add(importes[i], 1, i);
+            }
+            lblCobroEfectivo = importes[0]; lblCobroTarjeta = importes[1];
+            lblCobroTransferencia = importes[2]; lblReembolsos = importes[3];
+            card.Controls.Add(filas);
+            return card;
+        }
+
         private Panel CrearCard(string titulo, Color acento, out Label valor)
         {
-            var card = new Panel { Width = 230, Height = 100, Margin = new Padding(0, 0, 14, 12), BackColor = EstiloPos.Surface };
+            var card = new Panel { Width = 230, Height = 144, Margin = new Padding(0, 0, 12, 12), BackColor = EstiloPos.Surface };
             var barra = new Panel { Width = 4, Dock = DockStyle.Left, BackColor = acento };
 
             var lblTit = new Label
             {
-                Text = titulo, AutoSize = false, Location = new Point(16, 12), Size = new Size(300, 20),
+                Text = titulo, AutoSize = false, Location = new Point(16, 12), Size = new Size(198, 36),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 ForeColor = EstiloPos.Ink2, Font = EstiloPos.FontSmall
             };
             valor = new Label
             {
-                Text = "—", AutoSize = false, Location = new Point(16, 36), Size = new Size(300, 54),
+                Text = "—", AutoSize = false, Location = new Point(16, 56), Size = new Size(198, 62),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 ForeColor = acento, TextAlign = ContentAlignment.MiddleLeft, Font = EstiloPos.FontMetrica
             };
 
             card.Controls.Add(barra);
             card.Controls.Add(lblTit);
             card.Controls.Add(valor);
+            var valorCard = valor;
+            card.Resize += (s, e) => AjustarAnchoValor(valorCard);
+            valorCard.TextChanged += (s, e) => AjustarAnchoValor(valorCard);
+            valorCard.Disposed += (s, e) => (valorCard.Tag as Font)?.Dispose();
             card.Paint += (s, e) =>
             {
                 using (var pen = new Pen(EstiloPos.Border))
                     e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
             };
             return card;
+        }
+
+        private static void AjustarAnchoValor(Label valor)
+        {
+            if (valor.IsDisposed || valor.ClientSize.Width <= 0) return;
+            float puntos = EstiloPos.FontMetrica.Size;
+            while (puntos > 10F)
+            {
+                using (var prueba = new Font(EstiloPos.FontMetrica.FontFamily, puntos, EstiloPos.FontMetrica.Style))
+                    if (TextRenderer.MeasureText(valor.Text, prueba).Width <= valor.ClientSize.Width) break;
+                puntos -= 1F;
+            }
+            var anterior = valor.Tag as Font;
+            if (anterior != null && anterior.Size == puntos) return;
+            var fuente = new Font(EstiloPos.FontMetrica.FontFamily, puntos, EstiloPos.FontMetrica.Style);
+            valor.Font = fuente;
+            valor.Tag = fuente;
+            anterior?.Dispose();
         }
 
         private Panel CrearPanelTabla(string titulo, out DataGridView dgv, Padding margen)

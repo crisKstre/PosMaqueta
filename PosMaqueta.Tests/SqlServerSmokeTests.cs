@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data.SqlClient;
 using AccesoData;
 using AccesoData.DAO;
@@ -49,11 +49,13 @@ namespace PosMaqueta.Tests
                         DROP TABLE IF EXISTS PagoVenta;
                         DROP TABLE IF EXISTS DetalleVenta;
                         DROP TABLE IF EXISTS Venta;
+                        DROP TABLE IF EXISTS MovimientoCaja;
                         DROP TABLE IF EXISTS Caja;
                         DROP TABLE IF EXISTS LogMovimiento;
                         DROP TABLE IF EXISTS FotoProducto;
                         DROP TABLE IF EXISTS Producto;
                         DROP TABLE IF EXISTS Categoria;
+                        DROP TABLE IF EXISTS Proveedor;
                         DROP TABLE IF EXISTS Usuario;
                         DROP TABLE IF EXISTS SchemaVersion;";
                     cmd.ExecuteNonQuery();
@@ -72,10 +74,59 @@ namespace PosMaqueta.Tests
             ConfigBD.CadenaConexion = null;
         }
 
+        [SkippableFact]
+        public void Proveedores_migran_v6_persisten_y_conservan_inactivos()
+        {
+            Skip.IfNot(disponible, "LocalDB no disponible");
+            using (var con = new SqlConnection(ConnTest))
+            {
+                con.Open(); using (var cmd = con.CreateCommand())
+                { cmd.CommandText = "DROP TABLE Proveedor; UPDATE SchemaVersion SET Version=6;"; cmd.ExecuteNonQuery(); }
+            }
+            new DatabaseInitializer().Inicializar(); new DatabaseInitializer().Inicializar();
+            var svc = new ProveedorService();
+            int id = svc.Crear(new Proveedor { Nombre = "Distribuidora", Rut = "12.345.678-5" });
+            svc.Crear(new Proveedor { Nombre = "Sin RUT 1" }); svc.Crear(new Proveedor { Nombre = "Sin RUT 2" });
+            Assert.Single(svc.Obtener("123456785"));
+            var p = svc.ObtenerPorId(id); p.Contacto = "María"; svc.Actualizar(p);
+            Assert.Equal("María", svc.ObtenerPorId(id).Contacto);
+            svc.CambiarEstado(id, false); Assert.Single(svc.Obtener("", false));
+            Assert.Throws<NegocioException>(() => svc.Crear(new Proveedor { Nombre = "Duplicado", Rut = "12345678-5" }));
+            svc.CambiarEstado(id, true); Assert.Equal(3, svc.Obtener().Count);
+        }
+
         private static bool LocalDbDisponible()
         {
             try { using (var c = new SqlConnection(ConnMaster)) { c.Open(); } return true; }
             catch { return false; }
+        }
+
+        [SkippableFact]
+        public void Movimientos_migran_v5_y_conservan_arqueo_con_anulaciones()
+        {
+            Skip.IfNot(disponible, "LocalDB no disponible");
+            int turno = caja.AbrirCaja(1, 20000m);
+            using (var con = new SqlConnection(ConnTest))
+            {
+                con.Open();
+                using (var cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "DROP TABLE MovimientoCaja; UPDATE SchemaVersion SET Version=5;";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            new DatabaseInitializer().Inicializar(); new DatabaseInitializer().Inicializar();
+            var svc = new MovimientoCajaService();
+            var gasto = new MovimientoCaja { Tipo = TipoMovimientoCaja.Gasto, Categoria = "Insumos",
+                Descripcion = "Bolsas", Monto = 5000m, MedioPago = MedioPago.Efectivo, Origen = OrigenMovimientoCaja.Cajon };
+            int id = svc.Registrar(gasto);
+            Assert.Equal(5000m, caja.ObtenerResumen(turno).OtrasSalidas);
+            svc.Anular(id, "Corrección de prueba");
+            Assert.Equal(0m, caja.ObtenerResumen(turno).OtrasSalidas);
+            id = svc.Registrar(gasto);
+            Assert.Equal(0m, caja.CerrarCaja(15000m));
+            Assert.Throws<NegocioException>(() => svc.Anular(id, "Turno cerrado"));
+            Assert.Equal(2, svc.Obtener(DateTime.Today, DateTime.Today).Count);
         }
 
         [SkippableFact]

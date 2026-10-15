@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data.Common;
 using System.Data.SqlClient;
 using Entidades;
@@ -15,7 +15,7 @@ namespace AccesoData
         // Versión del esquema que maneja ESTA app. Se sube al agregar una migración nueva (0.B).
         // Si la BD trae una versión MAYOR (otra caja con binario más nuevo ya migró), se aborta el
         // arranque con un mensaje claro, en vez de operar contra un esquema desconocido.
-        public const int ESQUEMA_VERSION = 5;   // v5: foto y miniatura del producto dentro de la BD
+        public const int ESQUEMA_VERSION = 7;   // v7: catálogo de proveedores
 
         public void Inicializar()
         {
@@ -289,6 +289,65 @@ namespace AccesoData
         // ColumnaExiste devuelve true y no ejecuta los ALTER).
         private void MigrarEsquema(DbConnection con)
         {
+            // v7: catálogo independiente; conserva productos, ventas y movimientos existentes.
+            Ejecutar(con, Dialecto.EsSqlServer
+                ? @"IF OBJECT_ID(N'dbo.Proveedor','U') IS NULL
+                    CREATE TABLE Proveedor (
+                        IdProveedor INT IDENTITY(1,1) PRIMARY KEY, Nombre NVARCHAR(120) NOT NULL,
+                        Rut NVARCHAR(10) NULL, Contacto NVARCHAR(120) NOT NULL, Telefono NVARCHAR(40) NOT NULL,
+                        Correo NVARCHAR(160) NOT NULL, Direccion NVARCHAR(240) NOT NULL, Notas NVARCHAR(1000) NOT NULL,
+                        Activo INT NOT NULL DEFAULT 1 CHECK (Activo IN (0,1)),
+                        FechaCreacion NVARCHAR(19) NOT NULL, FechaActualizacion NVARCHAR(19) NOT NULL);
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='ux_proveedor_rut' AND object_id=OBJECT_ID('Proveedor'))
+                        CREATE UNIQUE INDEX ux_proveedor_rut ON Proveedor(Rut) WHERE Rut IS NOT NULL;"
+                : @"CREATE TABLE IF NOT EXISTS Proveedor (
+                        IdProveedor INTEGER PRIMARY KEY AUTOINCREMENT, Nombre TEXT NOT NULL,
+                        Rut TEXT NULL, Contacto TEXT NOT NULL, Telefono TEXT NOT NULL,
+                        Correo TEXT NOT NULL, Direccion TEXT NOT NULL, Notas TEXT NOT NULL,
+                        Activo INTEGER NOT NULL DEFAULT 1 CHECK (Activo IN (0,1)),
+                        FechaCreacion TEXT NOT NULL, FechaActualizacion TEXT NOT NULL);
+                    CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedor_rut ON Proveedor(Rut) WHERE Rut IS NOT NULL;");
+
+            // v6: aditiva e idempotente en ambos proveedores; no reescribe turnos anteriores.
+            Ejecutar(con, Dialecto.EsSqlServer
+                ? @"IF OBJECT_ID(N'dbo.MovimientoCaja','U') IS NULL
+                    CREATE TABLE MovimientoCaja (IdMovimiento INT IDENTITY(1,1) PRIMARY KEY,
+                        IdCaja INT, Fecha NVARCHAR(19) NOT NULL, IdUsuario INT NOT NULL,
+                        Tipo NVARCHAR(20) NOT NULL, Categoria NVARCHAR(80) NOT NULL,
+                        Descripcion NVARCHAR(300) NOT NULL, Monto DECIMAL(18,0) NOT NULL CHECK (Monto > 0),
+                        MedioPago NVARCHAR(30) NOT NULL, Origen NVARCHAR(30) NOT NULL,
+                        Referencia NVARCHAR(120) NOT NULL, Anulado INT NOT NULL DEFAULT 0,
+                        FechaAnulacion NVARCHAR(19), IdUsuarioAnulacion INT, MotivoAnulacion NVARCHAR(300),
+                        FOREIGN KEY (IdCaja) REFERENCES Caja(IdCaja),
+                        FOREIGN KEY (IdUsuario) REFERENCES Usuario(IdUsuario),
+                        FOREIGN KEY (IdUsuarioAnulacion) REFERENCES Usuario(IdUsuario),
+                        CHECK (Tipo IN ('Gasto','Retiro','Reposición')),
+                        CHECK (Origen IN ('Cajón','Fuera del cajón')),
+                        CHECK (MedioPago IN ('Efectivo','Tarjeta','Transferencia')),
+                        CHECK (Origen <> 'Cajón' OR (MedioPago='Efectivo' AND IdCaja IS NOT NULL)),
+                        CHECK (Tipo='Gasto' OR Origen='Cajón'));
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_movimiento_caja')
+                        CREATE INDEX idx_movimiento_caja ON MovimientoCaja(IdCaja, Anulado);
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='idx_movimiento_fecha')
+                        CREATE INDEX idx_movimiento_fecha ON MovimientoCaja(Fecha);"
+                : @"CREATE TABLE IF NOT EXISTS MovimientoCaja (IdMovimiento INTEGER PRIMARY KEY AUTOINCREMENT,
+                        IdCaja INTEGER, Fecha TEXT(19) NOT NULL, IdUsuario INTEGER NOT NULL,
+                        Tipo TEXT(20) NOT NULL, Categoria TEXT(80) NOT NULL,
+                        Descripcion TEXT(300) NOT NULL, Monto INTEGER NOT NULL CHECK (Monto > 0),
+                        MedioPago TEXT(30) NOT NULL, Origen TEXT(30) NOT NULL,
+                        Referencia TEXT(120) NOT NULL, Anulado INTEGER NOT NULL DEFAULT 0,
+                        FechaAnulacion TEXT(19), IdUsuarioAnulacion INTEGER, MotivoAnulacion TEXT(300),
+                        FOREIGN KEY (IdCaja) REFERENCES Caja(IdCaja),
+                        FOREIGN KEY (IdUsuario) REFERENCES Usuario(IdUsuario),
+                        FOREIGN KEY (IdUsuarioAnulacion) REFERENCES Usuario(IdUsuario),
+                        CHECK (Tipo IN ('Gasto','Retiro','Reposición')),
+                        CHECK (Origen IN ('Cajón','Fuera del cajón')),
+                        CHECK (MedioPago IN ('Efectivo','Tarjeta','Transferencia')),
+                        CHECK (Origen <> 'Cajón' OR (MedioPago='Efectivo' AND IdCaja IS NOT NULL)),
+                        CHECK (Tipo='Gasto' OR Origen='Cajón'));
+                    CREATE INDEX IF NOT EXISTS idx_movimiento_caja ON MovimientoCaja(IdCaja, Anulado);
+                    CREATE INDEX IF NOT EXISTS idx_movimiento_fecha ON MovimientoCaja(Fecha);");
+
             // Se ejecuta tanto en bases nuevas como existentes; no altera los productos.
             Ejecutar(con, ConfigBD.Proveedor == ProveedorBD.SqlServer
                 ? @"IF OBJECT_ID(N'dbo.FotoProducto', 'U') IS NULL

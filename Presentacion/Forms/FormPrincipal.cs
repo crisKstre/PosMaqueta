@@ -14,6 +14,8 @@ namespace Presentacion.Forms
         private Timer  timerReloj;
         private ToolTip toolTipNav = new ToolTip();
         private readonly UsuarioService usuarioService = new UsuarioService();
+        private readonly Button btnProveedores = new Button { Name = "btnProveedores", FlatStyle = FlatStyle.Flat,
+            BackColor = EstiloPos.Sidebar, ForeColor = Color.FromArgb(160, 160, 175), Cursor = Cursors.Hand };
 
         public FormPrincipal()
         {
@@ -30,9 +32,29 @@ namespace Presentacion.Forms
             btnUsuarios.Visible  = Sesion.EsAdmin;   // gestión de usuarios: solo administrador
             btnRespaldos.Visible = Sesion.EsAdmin;   // respaldos / restauración: solo administrador
 
+            AgregarProveedores();
             EstilizarSidebar();
             IniciarReloj();
             AbrirFormHijo(new FormDashboard(), btnDashboard);
+        }
+
+        private void AgregarProveedores()
+        {
+            btnProveedores.FlatAppearance.BorderSize = 0;
+            btnProveedores.Click += (s, e) => AbrirFormHijo(new FormProveedores(), btnProveedores);
+            int top = btnDashboard.Top;
+            var menu = new Panel { Location = new Point(0, top),
+                Size = new Size(pnlSidebar.ClientSize.Width, Math.Max(60, pnlSidebar.ClientSize.Height - top - btnCambiarPass.Height - btnCerrarSesion.Height)),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right, AutoScroll = true };
+            int y = 0;
+            foreach (var b in new[] { btnDashboard, btnVentas, btnProductos, btnProveedores, btnCaja, btnReportes, btnUsuarios, btnRespaldos })
+            {
+                if (!Sesion.EsAdmin && (b == btnReportes || b == btnUsuarios || b == btnRespaldos)) continue;
+                b.SetBounds(0, y, menu.ClientSize.Width, btnProductos.Height); y += b.Height;
+                menu.Controls.Add(b);
+            }
+            menu.Layout += (s, e) => { foreach (Control b in menu.Controls) if (b.Width != menu.ClientSize.Width) b.Width = menu.ClientSize.Width; };
+            pnlSidebar.Controls.Add(menu);
         }
 
         private void IniciarReloj()
@@ -56,6 +78,7 @@ namespace Presentacion.Forms
             ConfigItemSidebar(btnDashboard, "🏠", "Inicio");
             ConfigItemSidebar(btnVentas,    "🛒", "Ventas");
             ConfigItemSidebar(btnProductos, "📦", "Productos");
+            ConfigItemSidebar(btnProveedores, "🚚", "Proveedores");
             ConfigItemSidebar(btnCaja,      "💵", "Caja");
             ConfigItemSidebar(btnReportes,  "📊", "Reportes");
             ConfigItemSidebar(btnUsuarios,  "👤", "Usuarios");
@@ -68,6 +91,7 @@ namespace Presentacion.Forms
             toolTipNav.SetToolTip(btnReportes,  "Reportes (Ctrl+5)");
             toolTipNav.SetToolTip(btnUsuarios,  "Usuarios (Ctrl+6)");
             toolTipNav.SetToolTip(btnRespaldos, "Respaldos (Ctrl+7)");
+            toolTipNav.SetToolTip(btnProveedores, "Proveedores (Ctrl+8)");
 
             // Acciones del pie: CENTRADAS (a diferencia de los ítems de navegación, que van a la
             // izquierda). "Cambiar contraseña" es largo, así centrado queda prolijo y no se corta.
@@ -211,6 +235,7 @@ namespace Presentacion.Forms
                 case Keys.Control | Keys.D5: destino = btnReportes;  break;
                 case Keys.Control | Keys.D6: destino = btnUsuarios;  break;
                 case Keys.Control | Keys.D7: destino = btnRespaldos; break;
+                case Keys.Control | Keys.D8: destino = btnProveedores; break;
             }
             if (destino != null)
             {

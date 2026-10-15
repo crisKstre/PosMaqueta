@@ -85,6 +85,8 @@ namespace Presentacion.Forms
             dgv.Columns.Add(Col("Diferencia", 80));
             dgv.Columns.Add(Col("Estado",     60));
             EstiloPos.AplicarGrid(dgv);
+            DetallesGrid.Conectar(this, dgv, fila => fila.Tag is Caja caja
+                ? DetallesGrid.Caja(caja, cajaService.ObtenerResumen(caja.IdCaja)) : null);
 
             inner.Controls.Add(dgv);
             outer.Controls.Add(inner);
@@ -127,6 +129,7 @@ namespace Presentacion.Forms
                     difTxt,
                     cerrada ? "Cerrada" : "Abierta");
 
+                dgv.Rows[fila].Tag = c;
                 var celdaDif = dgv.Rows[fila].Cells[6];
                 if (cerrada && dif < 0)      celdaDif.Style.ForeColor = EstiloPos.Rojo;
                 else if (cerrada && dif > 0) celdaDif.Style.ForeColor = EstiloPos.Amber;

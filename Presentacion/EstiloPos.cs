@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
 namespace Presentacion
@@ -9,6 +10,7 @@ namespace Presentacion
     /// </summary>
     public static class EstiloPos
     {
+        private static readonly ConditionalWeakTable<DataGridView, object> gridsConHover = new ConditionalWeakTable<DataGridView, object>();
         // ── Paleta de colores ─────────────────────────────────────────────
 
         // Fondos
@@ -177,21 +179,37 @@ namespace Presentacion
 
             HabilitarDobleBuffer(dgv);   // menos parpadeo y repintado más rápido (sin cambiar el aspecto)
 
-            // Resaltado de fila al pasar el mouse (guarda el color base en Tag para restaurarlo)
+            // Instalar una sola vez, incluso cuando se reaplican los estilos.
+            gridsConHover.GetValue(dgv, ConfigurarHover);
+        }
+
+        private static object ConfigurarHover(DataGridView dgv)
+        {
+            // Tag pertenece a los datos de la fila; el estado visual se guarda aparte.
+            DataGridViewRow filaResaltada = null;
+            Color colorOriginal = Color.Empty;
+            System.Action restaurar = () =>
+            {
+                if (filaResaltada == null) return;
+                filaResaltada.DefaultCellStyle.BackColor = colorOriginal;
+                filaResaltada = null;
+            };
             dgv.CellMouseEnter += (s, e) =>
             {
-                if (e.RowIndex < 0) return;
+                restaurar();
+                if (e.RowIndex < 0 || e.RowIndex >= dgv.Rows.Count) return;
                 var row = dgv.Rows[e.RowIndex];
                 if (row.Selected) return;
-                if (!(row.Tag is Color)) row.Tag = row.DefaultCellStyle.BackColor;
+                filaResaltada = row;
+                colorOriginal = row.DefaultCellStyle.BackColor;
                 row.DefaultCellStyle.BackColor = HoverFila;
             };
-            dgv.CellMouseLeave += (s, e) =>
-            {
-                if (e.RowIndex < 0) return;
-                var row = dgv.Rows[e.RowIndex];
-                if (row.Tag is Color c) row.DefaultCellStyle.BackColor = c;
-            };
+            dgv.CellMouseLeave += (s, e) => restaurar();
+            dgv.MouseLeave += (s, e) => restaurar();
+            dgv.RowsRemoved += (s, e) => restaurar();
+            dgv.Sorted += (s, e) => restaurar();
+            dgv.Disposed += (s, e) => restaurar();
+            return new object();
         }
 
         // Activa el doble buffer (propiedad protegida, vía reflexión) para reducir el parpadeo y

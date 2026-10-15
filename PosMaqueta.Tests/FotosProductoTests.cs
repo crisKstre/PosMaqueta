@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -164,7 +164,7 @@ namespace PosMaqueta.Tests
                 using (var cmd = con.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Version FROM SchemaVersion;";
-                    Assert.Equal(5L, (long)cmd.ExecuteScalar());
+                    Assert.Equal((long)DatabaseInitializer.ESQUEMA_VERSION, (long)cmd.ExecuteScalar());
                 }
             }
         }

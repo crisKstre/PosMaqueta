@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using AccesoData;
 using AccesoData.DAO;
 using Dominio.Eventos;
@@ -30,10 +30,10 @@ namespace Dominio.Servicios
             return cajaDao.ObtenerHistorial(desde, hasta);
         }
 
-        // Efectivo que debería haber físicamente: fondo inicial + ventas en efectivo − devoluciones.
+        // Efectivo que debería haber físicamente: fondo inicial + ventas en efectivo − devoluciones + entradas − salidas.
         public decimal CalcularEfectivoEsperado(Caja caja, ResumenCaja resumen)
         {
-            return caja.MontoInicial + resumen.TotalEfectivo - resumen.TotalDevoluciones;
+            return caja.MontoInicial + resumen.TotalEfectivo - resumen.TotalDevoluciones + resumen.OtrasEntradas - resumen.OtrasSalidas;
         }
 
         public int AbrirCaja(int idUsuario, decimal montoInicial)
@@ -69,11 +69,10 @@ namespace Dominio.Servicios
             if (montoReal < 0)
                 throw new NegocioException("El monto contado no puede ser negativo.");
 
-            var resumen = cajaDao.ObtenerResumen(caja.IdCaja);
-            decimal efectivoEsperado = CalcularEfectivoEsperado(caja, resumen);
-            decimal diferencia = montoReal - efectivoEsperado;
-
-            cajaDao.CerrarCaja(caja.IdCaja, efectivoEsperado, montoReal);
+            decimal diferencia;
+            try { diferencia = cajaDao.CerrarConArqueo(caja.IdCaja, montoReal); }
+            catch (InvalidOperationException ex) { throw new NegocioException(ex.Message); }
+            decimal efectivoEsperado = montoReal - diferencia;
             Log.Info("Caja cerrada N°" + caja.IdCaja + " | esperado $" + efectivoEsperado.ToString("N0") +
                      " | contado $" + montoReal.ToString("N0") + " | diferencia $" + diferencia.ToString("N0") +
                      (diferencia < 0 ? " (FALTANTE)" : diferencia > 0 ? " (sobrante)" : " (cuadrada)"));
